@@ -1,0 +1,11 @@
+{
+    "fastqc":
+    {
+        "path": "/bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5/",
+        "options": "--nogroup",
+        "threads": 4,
+        "memory": "8g",
+        "nodes": 1,
+        "walltime": "00:20:00"
+    }
+}
