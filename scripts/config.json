@@ -7,5 +7,15 @@
         "memory": "8g",
         "nodes": 1,
         "walltime": "00:20:00"
+    },
+    "autotropos":
+    {
+        "path": "",
+        "options": "",
+        "threads": 8,
+        "memory": "16g",
+        "nodes": 1,
+        "walltime": "01:00:00"
     }
+
 }
