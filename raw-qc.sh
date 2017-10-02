@@ -41,7 +41,7 @@ do
             shift
             ;;
         -o|--output-dir)
-            OUTDIR=$2
+            OUTDIR="${2%/}/"
             shift
             ;;
         -c|--config-file)
@@ -50,7 +50,7 @@ do
             ;;
         --cluster)
             CLUSTER=$2
-            shift
+            shiftat
             ;;
         *)
             # unknown option
@@ -64,9 +64,28 @@ BIN_PATH=$(realpath $0)
 BIN_PATH="${BIN_PATH%/*}/"
 SCRIPTS_PATH="${BIN_PATH%/*}/scripts/"
 
+# Set global variable
+PREFIX=${READ1%[_.]R[12][_.]*}
+
 # Load utils function
 . ${SCRIPTS_PATH}utils-bash.sh
 create_directory "${OUTDIR}"
 
 # Fastqc
-. "${SCRIPTS_PATH}fastqc-bash.sh" "${READ1} ${READ2}" ${OUTDIR}
+echo "Run raw fastqc..."
+raw_outdir="${OUTDIR}fastqc_raw"
+cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${READ1}' '${READ2}'" '${raw_outdir}
+run_bash "${cmd}" ${CONFIG}
+
+# Autotropos
+echo "Run Autotropos..."
+TRIM1="${OUTDIR}autotropos/${PREFIX}_R1.fastq.gz"
+TRIM2="${OUTDIR}autotropos/${PREFIX}_R2.fastq.gz"
+cmd=${SCRIPTS_PATH}'autotropos-bash.sh "'${READ1}' '${READ2}'" "'${TRIM1}' '${TRIM2}'"'
+run_bash "${cmd}" ${CONFIG}
+
+# Fastqc
+echo "Run trimmed fastqc..."
+trim_outdir="${OUTDIR}fastqc_trim"
+cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${TRIM1}' '${TRIM2}'" '${trim_outdir}
+run_bash "${cmd}" ${CONFIG}
