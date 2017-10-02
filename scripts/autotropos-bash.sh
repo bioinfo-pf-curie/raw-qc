@@ -38,21 +38,20 @@ autotropos_option="$(get_json_entry ".autotropos.options" ${config})"
 autotropos_threads="$(get_json_entry ".autotropos.threads" ${config})"
 
 # Set some local variable
-autotropos_input="-1 ${fastq[0]}"
-autotropos_output="-o ${output[0]}"
+autotropos_input=("-1" "${fastq[0]}")
+autotropos_output=("-o" "${output[0]}")
 if [[ ${#fastq[@]} -eq 2 && ${#output[@]} -eq 2 ]]; then
-    autotropos_input+=" -2 ${fastq[1]}"
-    autotropos_output+=" -p ${output[1]}"
+    autotropos_input+=("-2" "${fastq[1]}")
+    autotropos_output+=("-p" "${output[1]}")
 fi
 _fail=0 # variable to check if everything is ok 
 
 # Command line:
 cmd="${autotropos_path}autotropos ${autotropos_option} \
                                   --threads ${autotropos_threads} \
-                                  ${autotropos_input} \
-                                  ${autotropos_output}"
+                                  "${autotropos_input[@]}" \
+                                  "${autotropos_output[@]}""
 
-echo $cmd
 $cmd || _fail=1
 
 exit ${_fail}
