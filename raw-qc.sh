@@ -15,77 +15,136 @@
 
 ## Usage: raw-qc.sh
 
-HELP=$(grep "^## " "${BASH_SOURCE[0]}" | cut -c 4-)
-LICENSE=$(grep "^#- " "${BASH_SOURCE[0]}" | cut -c 4-)
+# help and license
+SOURCE="${BASH_SOURCE[0]}"
+SRC_PATH="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+HELP=$(grep "^## " "${SOURCE}" | cut -c 4-)
+LICENSE=$(grep "^#- " "${SOURCE}" | cut -c 4-)
 
-# Parse parameters
-while [[ $# > 0 ]]
-do
-    key="$1"
+if [[ ${#@} -lt 1 ]];then
+    echo "${HELP}"
+    exit 1
+fi
 
-    case $key in
-        -h|--help)
+# Transform long options to short ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+      "--read1") set -- "$@" "-1";;
+      "--read2") set -- "$@" "-2";;
+      "--prefix") set -- "$@" "-p";;
+      "--output-dir") set -- "$@" "-o";;
+      "--config-file") set -- "$@" "-c";;
+      "--sample-plan") set -- "$@" "-s";;
+      "--help") set -- "$@" "-h";;
+      "--license") set -- "$@" "-l";;
+      *) set -- "$@" "$arg" ;;
+  esac
+done
+
+# Parse arguments
+while getopts "1:2:p:o:c:s:hl-:" optchar; do
+    case $optchar in
+        -)
+            case "${OPTARG}" in
+                cluster)
+                    CLUSTER="True"
+                    ;;
+                *)
+                    echo "Invalid option: --${OPTARG}" >&2
+                    echo "${HELP}"
+                    exit 1
+                    ;;
+            esac;;
+        1)
+            READ1=$(realpath ${OPTARG})
+            ;;
+        2)
+            READ2=$(realpath ${OPTARG})
+            ;;
+        p)
+            PREFIX=${OPTARG}
+            ;;
+	    o)
+            OUTDIR=$(realpath ${OPTARG})
+            OUTDIR="${OUTDIR%/}/"
+            ;;
+	    c)
+            CONFIG=$(realpath ${OPTARG})
+            ;;
+        s)
+            PLAN=$(realpath ${OPTARG})
+            ;;
+	    h)
             echo "${HELP}"
             exit 1
             ;;
-        -l|--license)
+        l)
             echo "${LICENSE}"
             exit 1
             ;;
-        -1|--read1)
-            READ1=$2
-            shift
-            ;;
-        -2|--read2)
-            READ2=$2
-            shift
-            ;;
-        -o|--output-dir)
-            OUTDIR="${2%/}/"
-            shift
-            ;;
-        -c|--config-file)
-            CONFIG=$2
-            shift
-            ;;
-        --cluster)
-            CLUSTER=$2
-            shiftat
-            ;;
-        *)
-            # unknown option
-            ;;
+	    \?)
+	        echo "Invalid option: -${OPTARG}" >&2
+	        echo "${HELP}"
+	        exit 1
+	        ;;
+	    :)
+	        echo "Option -${OPTARG} requires an argument." >&2
+	        echo "${HELP}"
+	        exit 1
+	        ;;
     esac
-    shift
 done
 
 # Set paths
-BIN_PATH=$(realpath $0)
-BIN_PATH="${BIN_PATH%/*}/"
-SCRIPTS_PATH="${BIN_PATH%/*}/scripts/"
-
-# Set global variable
-PREFIX=${READ1%[_.]R[12][_.]*}
+SCRIPTS_PATH="${SRC_PATH%/}/scripts/"
+CWD=$(pwd)
 
 # Load utils function
 . ${SCRIPTS_PATH}utils-bash.sh
 create_directory "${OUTDIR}"
 
+# Check if output directory and JSON config are provided
+if [[ -z $OUTDIR && -z $CONFIG ]];then
+    echo "${HELP}"
+    exit 1
+fi
+
+# Check if a sample plan or a FASTQ file is provided
+if [[ -n $PLAN ]];then
+    NB_SAMPLE=$(awk 'END{print NR}' $PLAN)
+elif [[ -n $READ1 ]]; then
+    # Create a temporary sample plan
+    PLAN=$(create_sample_plan "${READ1} ${READ2}" "${PREFIX}")
+    NB_SAMPLE=1
+else
+    echo "${HELP}"
+    exit 1
+fi
+
 # Fastqc
-echo "Run raw fastqc..."
-raw_outdir="${OUTDIR}fastqc_raw"
-cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${READ1}' '${READ2}'" '${raw_outdir}
-run_bash "${cmd}" ${CONFIG}
+raw_outdir="${OUTDIR}{{ID}}/fastqc"
+cmd=$(
+    get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
+                     --plan ${PLAN} \
+                     --input "__raw_data__" \
+                     --output ${raw_outdir}
+)
+pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
 
 # Autotropos
-echo "Run Autotropos..."
-TRIM1="${OUTDIR}autotropos/${PREFIX}_R1.fastq.gz"
-TRIM2="${OUTDIR}autotropos/${PREFIX}_R2.fastq.gz"
-cmd=${SCRIPTS_PATH}'autotropos-bash.sh "'${READ1}' '${READ2}'" "'${TRIM1}' '${TRIM2}'"'
-run_bash "${cmd}" ${CONFIG}
-
-# Fastqc
-echo "Run trimmed fastqc..."
-trim_outdir="${OUTDIR}fastqc_trim"
-cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${TRIM1}' '${TRIM2}'" '${trim_outdir}
-run_bash "${cmd}" ${CONFIG}
+autotropos_output=$(printf '%s %s' "${OUTDIR}{{ID}}/autotropos/{{ID}}_R1.fastq.gz" \
+                                   "${OUTDIR}{{ID}}/autotropos/{{ID}}_R2.fastq.gz"
+)
+cmd=$(
+    get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
+                     --plan ${PLAN} \
+                     --input "__raw_data__" \
+                     --output "${autotropos_output}"
+)
+pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
+echo $pid_autotropos
+## Fastqc
+#trim_outdir="${OUTDIR}fastqc_trim"
+#cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${TRIM1}' '${TRIM2}'" '${trim_outdir}
+#pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")

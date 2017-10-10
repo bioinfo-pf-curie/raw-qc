@@ -23,26 +23,36 @@
 ##      - String $2: Output FASTQ file(s). (R1 (R2)?)
 ##      - String $3: JSON configuration file.
 ## ---------------------------------------------------------------------
-
-fastq=($1)
-output=($2)
-config=$3
-
 # Import utils
-path="${0%/*}/"
+path="${BASH_SOURCE[0]%/*}/"
 . "${path}"utils-bash.sh
 
+# Initiate variable of the wrapper ($INPUT, $OUTPUT, $PLAN, $CONFIG)
+init_wrapper $@
+
+# Check if task is launch as job array
+if [[ -n ${PBS_ARRAYID} ]]; then
+    sample_array=($(get_sample $PLAN ${PBS_ARRAYID}))
+else
+    # case of one sample
+    sample_array=($(get_sample $PLAN 1))
+fi
+
+fastq_input=("${sample_array[@]:1:2}")
+# Add ID name in outputs
+fastq_output=($(populate_template "${OUTPUT}" ${sample_array[0]}))
+
 # Catch variable in json
-autotropos_path="$(get_json_entry ".autotropos.path" ${config})"
-autotropos_option="$(get_json_entry ".autotropos.options" ${config})"
-autotropos_threads="$(get_json_entry ".autotropos.threads" ${config})"
+autotropos_path="$(get_json_entry ".autotropos.path" ${CONFIG})"
+autotropos_option="$(get_json_entry ".autotropos.options" ${CONFIG})"
+autotropos_threads="$(get_json_entry ".autotropos.threads" ${CONFIG})"
 
 # Set some local variable
-autotropos_input=("-1" "${fastq[0]}")
-autotropos_output=("-o" "${output[0]}")
-if [[ ${#fastq[@]} -eq 2 && ${#output[@]} -eq 2 ]]; then
-    autotropos_input+=("-2" "${fastq[1]}")
-    autotropos_output+=("-p" "${output[1]}")
+autotropos_input=("-1" "${fastq_input[0]}")
+autotropos_output=("-o" "${fastq_output[0]}")
+if [[ ${#fastq_input[@]} -eq 2 && ${#fastq_output[@]} -eq 2 ]]; then
+    autotropos_input+=("-2" "${fastq_input[1]}")
+    autotropos_output+=("-p" "${fastq_output[1]}")
 fi
 _fail=0 # variable to check if everything is ok 
 
@@ -51,7 +61,6 @@ cmd="${autotropos_path}autotropos ${autotropos_option} \
                                   --threads ${autotropos_threads} \
                                   "${autotropos_input[@]}" \
                                   "${autotropos_output[@]}""
-
 $cmd || _fail=1
 
 exit ${_fail}
