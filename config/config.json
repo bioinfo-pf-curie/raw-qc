@@ -16,5 +16,14 @@
         "memory": "16g",
         "nodes": 1,
         "time": "01:00:00"
+    },
+    "multiqc":
+    {
+        "path": "",
+        "options": "-f",
+        "threads": 1,
+        "memory": "8g",
+        "nodes": 1,
+        "time": "00:30:00"
     }
 }
