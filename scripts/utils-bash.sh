@@ -91,12 +91,16 @@ get_command_line(){
                 local o="$2"
                 shift
                 ;;
+            -l|--log-file)
+                local l="$2"
+                shift
+                ;;
             *)
                 ;;
         esac
         shift
     done
-    echo $t' --plan '${p}' --input "'${i}'" --output "'${o}'"'
+    echo $t' --plan '${p}' --input "'${i}'" --output "'${o}'" --log-file '${l}
 }
 
 # ----------------------------------------------------------------------------
@@ -121,7 +125,7 @@ populate_template(){
 #       - String $2: JSON config file.
 #
 get_json_entry(){
-    jq_output="$(jq "${1}" ${2})"
+    local jq_output="$(jq "${1}" ${2})"
     echo $(sed -e 's/^"//' -e 's/"$//' <<<"${jq_output}")
 }
 
@@ -142,21 +146,25 @@ init_wrapper(){
             -i|--input)
                 INPUT="$2"
                 shift
-                if [[ $2 != "-"* ]]; then
+                while [[ $2 != "-"* ]]; do
                     INPUT=$(printf '%s %s' $INPUT $2)
                     shift
-                fi
+                done
                 ;;
             -o|--output)
                 OUTPUT="$2"
                 shift
-                if [[ $2 != "-"* ]]; then
+                while [[ $2 != "-"* ]]; do
                     OUTPUT=$(printf '%s %s' $OUTPUT $2)
                     shift
-                fi
+                done
                 ;;
             -c|--config)
                 CONFIG="$2"
+                shift
+                ;;
+            -l|--log-file)
+                LOG="$2"
                 shift
                 ;;
             *)

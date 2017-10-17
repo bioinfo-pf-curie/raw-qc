@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#- ---------------------------------------------------------------------
+#- ---------------------------------------------------------------------------
 #-    Copyright (C) 2017 - Institut Curie
 #-
 #- This file is a part of Raw-qc software.
@@ -11,9 +11,27 @@
 #- Distributed under the terms of the 3-clause BSD license.
 #- The full license is in the LICENSE file, distributed with this
 #- software.
-#- ---------------------------------------------------------------------
+#- ---------------------------------------------------------------------------
 
-## Usage: raw-qc.sh
+## Usage: raw-qc.sh [OPTIONS] -c <json> -1 <file> -o <dir>
+##
+## Raw-qc is a pipeline to check the quality of the input FastQ file(s).
+##
+## Required parameters:
+##  -1, --read1 FILE1               The first read FastQ file (R1) or a single-
+##                                  end read file.  [required if no --sample-plan]
+##  -s, --sample-plan FILE          Sample plan with all sample to run in
+##                                  parallele. [required if no --read1]
+##  -c, --config-file JSON          The JSON config file of the pipeline.
+##  -o, --output-dir OUTDIR         The directory where all the analysis are done
+##
+## Options:
+##  -2, --read2 FILE2               The second read FastQ file (R2).
+##  --cluster                       Run the pipeline with jobarray on a cluster
+##                                  with Torque as scheduler.
+##  -h, --help                      Show this message and exit.
+##  -l, --license                   Show the license and exit.
+##
 
 # help and license
 SOURCE="${BASH_SOURCE[0]}"
@@ -96,19 +114,20 @@ while getopts "1:2:p:o:c:s:hl-:" optchar; do
     esac
 done
 
-# Set paths
-SCRIPTS_PATH="${SRC_PATH%/}/scripts/"
-CWD=$(pwd)
-
-# Load utils function
-. ${SCRIPTS_PATH}utils-bash.sh
-create_directory "${OUTDIR}"
-
 # Check if output directory and JSON config are provided
 if [[ -z $OUTDIR && -z $CONFIG ]];then
     echo "${HELP}"
     exit 1
 fi
+
+# Set paths
+SCRIPTS_PATH="${SRC_PATH%/}/scripts/"
+CWD=$(pwd)
+LOG_PATH="${OUTDIR}{{ID}}/logs/{{ID}}"
+
+# Load utils function
+. ${SCRIPTS_PATH}utils-bash.sh
+create_directory "${OUTDIR}"
 
 # Check if a sample plan or a FASTQ file is provided
 if [[ -n $PLAN ]];then
@@ -123,12 +142,13 @@ else
 fi
 
 # Fastqc
-raw_outdir="${OUTDIR}{{ID}}/fastqc"
+raw_outdir="${OUTDIR}{{ID}}/fastqc_raw/{{ID}}"
 cmd=$(
-    get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
+    get_command_line --tool "${SCRIPTS_PATH}fastqc-bash.sh" \
                      --plan ${PLAN} \
                      --input "__raw_data__" \
-                     --output ${raw_outdir}
+                     --output ${raw_outdir} \
+                     --log-file "${LOG_PATH}.raw_fastqc.log"
 )
 pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
 
@@ -140,11 +160,29 @@ cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
                      --plan ${PLAN} \
                      --input "__raw_data__" \
-                     --output "${autotropos_output}"
+                     --output "${autotropos_output}" \
+                     --log-file "${LOG_PATH}.autotropos.log"
 )
 pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
-echo $pid_autotropos
-## Fastqc
-#trim_outdir="${OUTDIR}fastqc_trim"
-#cmd=${SCRIPTS_PATH}'fastqc-bash.sh "'${TRIM1}' '${TRIM2}'" '${trim_outdir}
-#pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")
+
+# Fastqc
+trim_outdir="${OUTDIR}{{ID}}/fastqc_trim/"
+cmd=$(
+    get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
+                     --plan ${PLAN} \
+                     --input "${autotropos_output}" \
+                     --output "${trim_outdir}" \
+                     --log-file "${LOG_PATH}.trim_fastqc.log"
+)
+pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")
+
+# MultiQC
+multiqc_outdir="${OUTDIR}multiqc/"
+cmd=$(
+    get_command_line --tool ${SCRIPTS_PATH}"multiqc-bash.sh" \
+                     --plan ${PLAN} \
+                     --input "${OUTDIR}" \
+                     --output "${multiqc_outdir}" \
+                     --log-file "${OUTDIR}common_logs/multiqc.log"
+)
+pid_multiqc=$(run_bash "${cmd}" ${CONFIG} "${pid_trim_fastqc}")
