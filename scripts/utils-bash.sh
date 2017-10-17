@@ -12,6 +12,10 @@
 #- The full license is in the LICENSE file, distributed with this
 #- software.
 #- ---------------------------------------------------------------------------
+set -e
+set -u
+set -o pipefail
+umask 002
 
 # ----------------------------------------------------------------------------
 # Check if a directory already exist and create the directory if it does not
@@ -49,6 +53,9 @@ create_sample_plan(){
 #       - String $1: Sample plan file.
 #       - Int $2: Number of the sample in sample plan file.
 #
+# This function is dedicated for simple csv file with ID,SAMPLE_NAME,R1,R2.
+# TODO: A more complete wrapper to retrieve values with keys from the header.
+#
 get_sample(){
     local plan=$1
     local indice=$2
@@ -72,6 +79,7 @@ get_sample(){
 #       "{{ID}}/fastqc/{{ID}}"
 #
 get_command_line(){
+    local key
     while [[ $# > 0 ]]; do
         key="$1"
         case "${key}" in
@@ -207,24 +215,38 @@ run_bash(){
     local cmd=($1)
     local config=$2
     local pid=${3:-None}
+
     # remove path and remove prefix
     local tool=${cmd[0]##*/}
     tool=${tool%.sh}
+    # because my wrappers have "-bash.sh" prefix
     tool=${tool%-bash}
+    echo "Run ${tool}..." >&2
+
+    # get task name for torque logs
+    local task=${cmd[-1]#*.}
+    task=${task%%.*}
+
     if [[ -n ${CLUSTER} ]]; then
         local opt=$(get_cluster_resources ${tool} ${config})
-        opt=(-m ae -j oe -N "rawqc_${tool}" -q batch -l "${opt}" -V -d $CWD)
-        if [[ ${NB_SAMPLE} -gt 1 && "${cmd[@]}" != *"expand("* ]]; then
+        opt=(-m ae -j oe -N "rawqc_${task}" -q batch -l "${opt}" -V -d $CWD)
+        # If an expand is requested -> run the command with all sample as input
+        # If there are no variable in cmd -> it is not a jobarray
+        if [[ ${NB_SAMPLE} -gt 1 && "${cmd[@]}" != *"expand("* && "${cmd[@]}" =~ [*{{*}}*] ]]; then
             opt+=(-t 1-${NB_SAMPLE})
         fi
-        if [[ "${pid}" == *"[]" ]]; then
+        # Check if the PID is from a jobarray
+        if [[ "${pid}" == *"[]"* ]]; then
             opt+=(-W depend=afterokarray:${pid})
         elif [[ "${pid}" != "None" ]]; then
             opt+=(-W depend=afterok:${pid})
         fi
+        echo "bash ${cmd[@]} --config ${config} | qsub ${opt[@]}" >&2
         pid=$(echo "bash ${cmd[@]} --config ${config}" | qsub "${opt[@]}")
         echo ${pid%%.*}
-    else 
+    else
+        # TODO -> for loop to run the wrapper for each sample
+        echo "bash ${cmd[@]} --config ${config}" >&2
         eval "bash ${cmd[@]} --config ${config}" && echo "None"
     fi
 }
