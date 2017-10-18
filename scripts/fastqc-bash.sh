@@ -8,7 +8,7 @@
 #- File author(s):
 #-     Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>
 #- 
-#- Distributed under the terms of the 3-clause BSD license.
+#- Distributed under the terms of the CeCILL-B license.
 #- The full license is in the LICENSE file, distributed with this
 #- software.
 #- ---------------------------------------------------------------------------
