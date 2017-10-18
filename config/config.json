@@ -1,0 +1,29 @@
+{
+    "fastqc":
+    {
+        "path": "/bioinfo/local/build/Centos/FastQC/FastQC_v0.11.5/",
+        "options": "--nogroup",
+        "threads": 4,
+        "memory": "8g",
+        "nodes": 1,
+        "time": "00:20:00"
+    },
+    "autotropos":
+    {
+        "path": "",
+        "options": "--auto",
+        "threads": 8,
+        "memory": "16g",
+        "nodes": 1,
+        "time": "01:00:00"
+    },
+    "multiqc":
+    {
+        "path": "",
+        "options": "-f",
+        "threads": 1,
+        "memory": "8g",
+        "nodes": 1,
+        "time": "00:30:00"
+    }
+}
