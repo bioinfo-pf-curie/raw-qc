@@ -33,9 +33,13 @@
 ##  -l, --license                   Show the license and exit.
 ##
 
-# help and license
 SOURCE="${BASH_SOURCE[0]}"
-SRC_PATH="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+# get real path of the script through on degree of symbolic link
+SRC_PATH=$(realpath "${SOURCE}")
+SRC_PATH=${SRC_PATH%/*}
+
+# help and license
 HELP=$(grep "^## " "${SOURCE}" | cut -c 4-)
 LICENSE=$(grep "^#- " "${SOURCE}" | cut -c 4-)
 
