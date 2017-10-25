@@ -18,5 +18,8 @@ Some dependencies need to be installed. We propose to use Anaconda with the Bioc
 ```
 conda create --name raw-qc python=3.6 atropos fastqc multiqc
 source activate raw-qc
+git clone https://gitlab.curie.fr/ddesvill/autotropos.git
+cd autotropos
+python setup.py install
 ```
 By the way, if these tools are already available, you can just add their directory path in the config.json file.
