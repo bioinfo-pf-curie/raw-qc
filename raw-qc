@@ -146,7 +146,7 @@ else
 fi
 
 # Fastqc
-raw_outdir="${OUTDIR}{{ID}}/fastqc_raw/{{ID}}"
+raw_outdir="${OUTDIR}{{ID}}/fastqc_raw/"
 cmd=$(
     get_command_line --tool "${SCRIPTS_PATH}fastqc-bash.sh" \
                      --plan ${PLAN} \
