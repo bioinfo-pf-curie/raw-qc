@@ -16,7 +16,7 @@ If you do not have root right, create symbolic link in a local bin present in yo
 
 Some dependencies need to be installed. We propose to use Anaconda with the Bioconda channel:
 ```
-conda create --name raw-qc python=3.6 atropos fastqc multiqc
+conda create --name raw-qc python=3.6 atropos fastqc multiqc numpy pandas scipy
 source activate raw-qc
 git clone https://gitlab.curie.fr/ddesvill/autotropos.git
 cd autotropos
