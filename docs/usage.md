@@ -19,12 +19,12 @@ Raw-QC will copy the JSON configuration file to set your pipeline. It looks like
 },
 ```
 There are several options:
-    - path: the directory path of the executable
-    - options: compatible options of the tool
-    - threads: number of threads used by the tool and number of process requested to the cluster
-    - memory: quantity of RAM necessary requested to the cluster
-    - nodes: number of nodes requested to the cluster
-    - time: time requested to the cluster
+- path: the directory path of the executable
+- options: compatible options of the tool
+- threads: number of threads used by the tool and number of process requested to the cluster
+- memory: quantity of RAM necessary requested to the cluster
+- nodes: number of nodes requested to the cluster
+- time: time requested to the cluster
 
 ## Running
 

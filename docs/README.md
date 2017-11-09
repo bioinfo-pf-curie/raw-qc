@@ -10,6 +10,4 @@ The documentation has the following pages:
 - Using Raw-QC
     - [Installing Raw-QC](installation.md)
     - [Running Raw-QC](usage.md)
-    - [Configuration](config.md)
-- [Scripts](scripts.md)
 - [Any problems?](problems.md)
