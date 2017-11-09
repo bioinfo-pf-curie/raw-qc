@@ -14,9 +14,15 @@ sudo ln -s $(realpath raw-qc/raw-qc) /usr/local/bin
 ```
 If you do not have root right, create symbolic link in a local bin present in your `PATH`.
 
+You need to add `conda-forge` and `bioconda` channels:
+```
+conda config --add channels conda-forge
+conda config --add channels bioconda
+```
+
 Some dependencies need to be installed. We propose to use Anaconda with the Bioconda channel:
 ```
-conda create --name raw-qc python=3.6 atropos fastqc multiqc numpy pandas scipy
+conda create --name raw-qc python=3.6 atropos fastqc multiqc numpy click pexpect
 source activate raw-qc
 git clone https://gitlab.curie.fr/ddesvill/autotropos.git
 cd autotropos
