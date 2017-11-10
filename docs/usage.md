@@ -30,7 +30,7 @@ There are several options:
 
 Once the configuration file is filled, you can run the pipeline:
 ```
-raw-qc --config-file config.json --read1 seq_R1.fastq.gz --read2 seq_R2.fastq.gz --outdir analysis
+raw-qc --config-file config.json --read1 seq_R1.fastq.gz --read2 seq_R2.fastq.gz --output-dir analysis
 ```
 Raw-QC will run the pipeline locally on your sample. Add the `--cluster` option to run it on the cluster.
 To use the pipeline with multiple samples, you must provide a mple sample sheet like:
@@ -41,5 +41,5 @@ ID3,BIO_NAME3,R1,R2
 ```
 And the command line is:
 ```
-raw-qc --config-file config.json --sample-plan sample_sheet.csv --cluster
+raw-qc --config-file config.json --sample-plan sample_sheet.csv --cluster --output-dir analysis
 ```
