@@ -1,6 +1,6 @@
 # Raw-QC Pipeline
 
-### A pipeline to control the quality and trim adapter of FastQ files.
+### A pipeline to control the quality and trim adapters of FastQ files.
 
 Raw-QC is a standard quality control pipeline written in bash.
 Input reads (paired or single) adapters are removed with Autotropos a wrapper of Atropos.
