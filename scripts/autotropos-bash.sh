@@ -69,6 +69,7 @@ cmd="${autotropos_path}autotropos ${autotropos_option[@]} \
                                   --threads ${autotropos_threads} \
                                   ${autotropos_input[@]} \
                                   ${autotropos_output[@]}"
-$cmd > "${log_output}" 2>&1 || _fail=1
+echo $cmd > ${log_output}
+$cmd >> "${log_output}" 2>&1 || _fail=1
 
 exit ${_fail}
