@@ -73,7 +73,7 @@ while getopts "1:2:p:o:c:s:hl-:" optchar; do
                     CLUSTER="True"
                     ;;
                 get-config)
-                    cp "${SRC_PATH%/}/config/rawqc_config.json" $(pwd)
+                    cp -i "${SRC_PATH%/}/config/rawqc_config.json" $(pwd)
                     echo "The rawqc_config.json file is copied."
                     exit 0
                     ;;
