@@ -36,7 +36,7 @@
 SOURCE="${BASH_SOURCE[0]}"
 
 # get real path of the script through on degree of symbolic link
-SRC_PATH=$(realpath "${SOURCE}")
+SRC_PATH=$(realpath -P "${SOURCE}")
 SRC_PATH=${SRC_PATH%/*}
 
 # help and license
@@ -71,6 +71,11 @@ while getopts "1:2:p:o:c:s:hl-:" optchar; do
             case "${OPTARG}" in
                 cluster)
                     CLUSTER="True"
+                    ;;
+                get-config)
+                    cp "${SRC_PATH%/}/config/rawqc_config.json" $(pwd)
+                    echo "The rawqc_config.json file is copied."
+                    exit 0
                     ;;
                 *)
                     echo "Invalid option: --${OPTARG}" >&2
