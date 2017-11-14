@@ -6,7 +6,7 @@ Raw-QC is a standard quality control pipeline written in bash.
 Input reads (paired or single) adapters are removed with Autotropos a wrapper of Atropos.
 Autotropos is able to detect adapters contents from a list of adapters.
 
-*Please see the* [documentation](doc/README.md) for install and usage process.
+**Please see the** [documentation](docs/README.md) for install and usage process.
 
 ## Contribution & Support
 

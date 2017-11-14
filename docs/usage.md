@@ -41,5 +41,5 @@ ID3,BIO_NAME3,R1,R2
 ```
 And the command line is:
 ```
-raw-qc --config-file config.json --sample-plan sample_sheet.csv --cluster --output-dir analysis
+raw-qc --config-file config.json --sample-plan sample_plan.csv --cluster --output-dir analysis
 ```
