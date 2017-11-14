@@ -1,0 +1,65 @@
+rule check_rawqc:
+    input:
+        i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_INPUT_1"],
+        i2=config["check_raw-qc"]["PATH"] + "/" + config["extension"]["CHECK_RAW-QC_INPUT_2"],
+        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_INPUT_3"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/check_raw-qc.log"
+    params:
+        cluster=config["check_raw-qc"]["CLUSTER"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"],
+        check_rawqc_input_2 = config["extension"]["CHECK_RAW-QC_INPUT_2"],
+        check_time = config["workflow_parameters"]["CHECK_TIME"],
+    run:
+        shell("""
+        echo "check RAW-QC analysis START" &>>{log}
+        cp {input.i2} {wildcards.output_path}/{params.project}-{params.run}/. &>>{log}
+        ##CAN BE MODIFY##
+        ##TIME LIMIT in seconds, currently equal to 24h
+        time_limit={params.check_time}
+        ##CAN BE MODIFY##
+        time=0
+        while read file
+        do
+            echo "FILE :" &>>{log}
+            echo $file &>>{log}
+            if [ ! -f {wildcards.output_path}/{params.project}-{params.run}/$file ]
+            then
+                echo "The output file \'{wildcards.output_path}/{params.project}-{params.run}/$file\' doesn't exist : check step is running" &>>{log}
+                while [[ $time -le $time_limit ]] ;
+                do
+                    echo "The waiting time \'$time\' is checking" &>>{log}
+                    if [ ! -f {wildcards.output_path}/{params.project}-{params.run}/$file ] && [[ $time -le $time_limit ]]
+                    then
+                        echo "retest" &>>{log}
+                        sleep 5s &&
+                        time=$((time+5))
+                    elif [ -f {wildcards.output_path}/{params.project}-{params.run}/$file ]
+                    then
+                        echo "break" &>>{log}
+                        break
+                    elif [[ $time -gt $time_limit ]]
+                    then
+                        echo "exit" &>>{log}
+                        exit 1
+                    fi
+                done
+                if [ ! -f {wildcards.output_path}/{params.project}-{params.run}/$file ] && ! [[ $time -le $time_limit ]]
+                then
+                    echo "ERROR : The waiting time \'$time\' is greater than the time limit : $time_limit AND the file \'{wildcards.output_path}/{params.project}-{params.run}/$file\' doesn't exist" &>>{log}
+                    exit 1
+                fi
+
+            else
+                echo "Waiting time : $time" &>>{log} &&
+                echo "File : $file is ok" &>>{log}
+            fi
+            echo "Waiting time : $time" &>>{log} &&
+            echo "File : $file is ok" &>>{log}
+            echo "FILE END" &>>{log}
+        done <{wildcards.output_path}/{params.project}-{params.run}/{params.check_rawqc_input_2}
+        touch {output}
+        """)

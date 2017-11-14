@@ -1,0 +1,18 @@
+rule samplesheet_copy:
+    input:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["SAMPLESHEET_COPY_INPUT"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_COPY_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/samplesheet_copy.log"
+    params:
+        cluster=config["samplesheet_copy"]["CLUSTER"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"],
+        samplesheet_dir=config["general_path"]["SAMPLESHEET_DIR"],
+        illumina_ref=config["experience"]["ILLUMINA_REF"],
+        samplesheet_copy_output=config["extension"]["SAMPLESHEET_COPY_OUTPUT"]
+    run:
+        shell("""
+        cp {params.samplesheet_dir}/{params.illumina_ref}/{params.samplesheet_copy_output} {wildcards.output_path}/{params.project}-{params.run}/archive/. 2> {log}
+        """)

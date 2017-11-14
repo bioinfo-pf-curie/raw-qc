@@ -1,0 +1,65 @@
+############################################################
+# RUN SNAKEFILE ON CLUSTER
+
+# echo "/bioinfo/local/build/Centos/python/python-3.5.2/bin/snakemake -s snakefile_tiger_centos --configfile config_centos.yaml --cluster 'qsub {params.cluster}' -j 59" | qsub -q batch -N snakemake_master_raw_files_pipeline -l nodes=1:ppn=1,mem=1Gb
+
+############################################################
+
+workdir: config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"]
+
+###INCLUDE RULES###
+general_rules_path=config["general_path"]["GENERAL_RULES_PATH"]
+
+include: general_rules_path + "samplesheet_checker_rule"
+include: general_rules_path + "bcl_to_fastq_rule"
+include: general_rules_path + "check_fastq_length_rule"
+include: general_rules_path + "samplesheet_copy_rule"
+include: general_rules_path + "transfert_fastq_dir_rule"
+include: general_rules_path + "manage_undetermined_fastq_rule"
+include: general_rules_path + "merge_fastq_loop_rule"
+include: general_rules_path + "samplesheet_to_sampleplan.rule"
+include: general_rules_path + "rims_metadata_launcher.rule"
+include: general_rules_path + "samplesheet_to_sampledescription_rule"
+include: general_rules_path + "config_rawqc_copy.rule"
+###INCLUDE RULES###
+
+###SAMPLES LIST###
+samplesheet_path = config["general_path"]["SAMPLESHEET_DIR"] + "/" + config["experience"]["ILLUMINA_REF"] + "/SampleSheet.csv"
+project_samplesheet=config["experience"]["PROJECT_SAMPLESHEET"]
+bash_command = "cat {0} | grep -w {1} | cut -d ',' -f1 | sort -u | grep -v Sample_ID".format(samplesheet_path, project_samplesheet)
+samples = subprocess.check_output(['bash', '-c', bash_command])
+samples_list = samples.decode("utf-8").rstrip('\n\r').split("\n")
+samples_list.sort()
+###SAMPLES LIST###
+
+###OUTPUTS RULES###
+output_path=config["general_path"]["OUTPUT_PATH"]
+
+samplesheet_checker=config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["SAMPLESHEET_CHECKER_OUTPUT"]
+bcl2fastq=config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["BCL2FASTQ_OUTPUT"]
+check_fastq_length=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["CHECK_FASTQ_LENGTH_OUTPUT"]
+samplesheet_copy=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_COPY_OUTPUT"]
+transfert_fastq_dir=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
+manage_undetermined_fastq=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
+merge_fastq_loop=expand((output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/nobackup/" + config["experience"]["RUN"] + "{sample}/" + config["extension"]["MERGE_FASTQ_LOOP_OUTPUT"]), sample=samples_list)
+samplesheet_to_sampleplan=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
+rims_metadata_launcher=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RIMS_METADATA_LAUNCHER_OUTPUT"]
+samplesheet_to_sampledescription=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT"]
+config_rawqc_copy=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT"]
+###OUTPUTS RULES###
+
+rule all:
+    input:
+#        samplesheet_checker,
+#        bcl2fastq,
+#        check_fastq_length,
+#        samplesheet_copy,
+#        transfert_fastq_dir,
+#        manage_undetermined_fastq,
+#        merge_fastq_loop,
+#        samplesheet_to_sampleplan,
+#        rims_metadata_launcher,
+#        samplesheet_to_sampledescription,
+        config_rawqc_copy,
+    params:
+        cluster="-q batch -N snakemake_RAW-QC_demultiplexing_pipeline -l nodes=1:ppn=1,mem=1Gb"

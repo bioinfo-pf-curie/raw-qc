@@ -1,0 +1,154 @@
+description:
+    "This config file is designed to raw-qc pipeline."
+
+author: "Mathieu Valade"
+
+###TO MODIFY###
+
+experience:
+    RUN: "{{RUN}}"
+    SEQUENCER: "{{ILLUMINA_SEQUENCER}}"
+    PROJECT: "RAW-QC"
+    PROJECT_SAMPLESHEET: "{{KDI_PROJECT}}"
+    ILLUMINA_REF: "{{ILLUMINA_REF}}"
+    ##CODE DEMAND
+    DEMAND: "{{DEMAND}}"
+    PROJECT_SAMPLESHEET: "{{KDI_PROJECT}}"
+
+workflow_parameters:
+    CHECK_TIME: "86400" #24h
+
+kdi:
+    ENV: "{{ENV}}" #dev,valid,prod
+    UNDECLARED: "FALSE"  #TRUE or FALSE
+    DATASET_ID: ""
+#    API_PATH: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/"
+    API_PATH: "/bioinfo/users/mvalade/Documents/Git/kdi_api_scripts/"
+    PROJECT_NAME: "{{KDI_PROJECT}}"
+    TECHNICAL_PF: "{{ILLUMINA_SEQUENCER}}"
+    ORGANISATION: "Plateforme NGS"
+    BIOLOGICAL_CATEGORY: "transcriptomics"
+    PROTOCOL: "Total RNA-seq"
+    DATASET_NAME: "{{RUN}}"
+    RUN_CONF: ""
+    PUBLISHED: "True"
+    SPECIES: "{{KDI_SPECIES}}"
+    SAMPLE_TYPE: "other"
+    SAMPLE_ALIAS_TYPE: "BioinfoNGS sample identifier"
+    REPLICATE_ALIAS_TYPE_NAME: "Platform id NGS"
+
+extension:
+    SAMPLESHEET_CHECKER_INPUT_1: "SampleSheet.csv"
+    SAMPLESHEET_CHECKER_INPUT_2: "{{ILLUMINA_FILE}}"
+    SAMPLESHEET_CHECKER_OUTPUT: "samplesheet_checker_ok.txt"
+    BCL2FASTQ_INPUT: "samplesheet_checker_ok.txt"
+    BCL2FASTQ_OUTPUT: "Reports/html/index.html"
+    CHECK_FASTQ_LENGTH_INPUT: "Reports/html/index.html"
+    CHECK_FASTQ_LENGTH_OUTPUT: "check_fastq_length_ok.txt"
+    SAMPLESHEET_COPY_INPUT: "check_fastq_length_ok.txt"
+    SAMPLESHEET_COPY_OUTPUT: "SampleSheet.csv"
+    TRANSFERT_FASTQ_DIR_INPUT: "SampleSheet.csv"
+    TRANSFERT_FASTQ_DIR_OUTPUT: "transfert_fastq_dir_ok.txt"
+    MANAGE_UNDETERMINED_FASTQ_INPUT: "transfert_fastq_dir_ok.txt"
+    MANAGE_UNDETERMINED_FASTQ_OUTPUT: "manage_undetermined_fastq_ok.txt"
+    MERGE_FASTQ_LOOP_INPUT: "manage_undetermined_fastq_ok.txt"
+    MERGE_FASTQ_LOOP_OUTPUT: "merge_fastq_ok.txt"
+    SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1: "merge_fastq_ok.txt"
+    SAMPLESHEET_TO_SAMPLEPLAN_INPUT_2: "SampleSheet.csv"
+    SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT: "_SAMPLEPLAN"
+    RIMS_METADATA_LAUNCHER_INPUT: "_SAMPLEPLAN"
+    RIMS_METADATA_LAUNCHER_OUTPUT: "-rims_metadata.tsv"
+    SAMPLESHEET_TO_SAMPLEDESCRIPTION_INPUT: "_SAMPLEPLAN"
+    SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT: ".sampleDescription.txt"
+    CONFIG_RAWQC_COPY_INPUT_1: "/config/config.json"
+    CONFIG_RAWQC_COPY_INPUT_2: ".sampleDescription.txt"
+    CONFIG_RAWQC_COPY_OUTPUT: "_config_rawqc_copy_ok.txt"
+    RAW-QC_PIPELINE_INPUT_1: "SampleSheet.csv"
+    RAW-QC_PIPELINE_INPUT_2: "config.json"
+    RAW-QC_PIPELINE_OUTPUT: "_raw-qc_pipeline_ok.txt"
+    CHECK_RAW-QC_INPUT_1: "_raw-qc_pipeline_ok.txt"
+    CHECK_RAW-QC_INPUT_2: "raw-qc_outputs_list.txt"
+    CHECK_RAW-QC_INPUT_3: "_SAMPLEPLAN"
+    CHECK_RAW-QC_OUTPUT: "_check_raw-qc_ok.txt"
+
+general_path:
+    PYTHON_BIN_DIR: "/bioinfo/local/build/Centos/python/python-2.7.12/bin/python2.7"
+    BCL2FASTQ_BIN_DIR: "/bioinfo/local/build/Centos/bcl2fastq/bcl2fastq2-v2.18.0.12/bin/"
+    CONDA_BIN_DIR: "/bioinfo/local/build/Centos/miniconda/miniconda3/bin/"
+    SAMPLESHEET_DIR: "/data/transfert/Illumina/"
+    GENERAL_RULES_PATH: "{{RESEARCH_RULES_PATH}}/"
+    RAW-QC_RULES_PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+    OUTPUT_PATH: "{{OUTPUT_PATH}}"
+    INPUT_DIR: "/data/transfert/Illumina/"
+    PYTHON_PATH: "/bioinfo/pipelines/SOAPclient/python/kdi_{{ENV}}/instance"
+#    RULE_PATH_KDI: "/bioinfo/pipelines/kdi_api_scripts/KDI_snakemake/"
+    RULE_PATH_KDI: "/bioinfo/users/mvalade/Documents/Git/kdi_api_scripts/KDI_snakemake/"
+    DATA_TMP_OUTPATH: "{{OUTPUT_PATH}}"
+    CREATE_KDI_CONF: "/bioinfo/pipelines/ngsdm/dev/Pipelines/SCRIPTS/createKDIconf_Snakemake.sh"
+    SAMPLEDESCRIPTION_PATH: ".sampleDescription.txt"
+
+samplesheet_checker:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_checker.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_checker.err -N snakemake_samplesheet_checker -l nodes=1:ppn=1,mem=1Gb"
+    CLUSTER_ENV: "centos"
+    PROJECT_TYPE: "{{PROJECT_TYPE}}"
+    SCOPE: "{{SCOPE}}"
+    PATH: "/bioinfo/pipelines/samplesheet-checker/{{ENV}}/"
+
+bcl2fastq:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.err -N snakemake_bcl2fastq -l nodes=1:ppn=8,mem=5Gb"
+    THREAD_NUMBER: "8"
+    OPTIONAL_PARAMETERS: ""
+
+check_fastq_length:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_fastq_length.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_fastq_length.err -N snakemake_check_fastq_length -l nodes=1:ppn=1,mem=2Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+samplesheet_copy:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_copy.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_copy.err -N snakemake_samplesheet_copy -l nodes=1:ppn=1,mem=1Gb"
+
+transfert_fastq_dir:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_transfert_fastq_dir.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_transfert_fastq_dir.err -N snakemake_transfert_fastq_dir -l nodes=1:ppn=1,mem=1Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+manage_undetermined_fastq:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_manage_undetermined_fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_manage_undetermined_fastq.err -N snakemake_manage_undetermined_fastq -l nodes=1:ppn=1,mem=1Gb"
+
+merge_fastq:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_merge_fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_merge_fastq.err -N snakemake_merge_fastq -l nodes=1:ppn=1,mem=2Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+samplesheet_to_sampleplan:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampleplan.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampleplan.err -N snakemake_samplesheet_to_sampleplan -l nodes=1:ppn=1,mem=1Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+rims_metadata_launcher:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/rims_metadata_launcher.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/rims_metadata_launcher.err -N rims_metadata_launcher -l nodes=1:ppn=1,mem=1Gb"
+    CLUSTER_ENV: "centos"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+samplesheet_to_sampledescription:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampledescription.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampledescription.err -N snakemake_samplesheet_to_sampledescription -l nodes=1:ppn=1,mem=1Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+config_rawqc_copy:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_config_rawqc_copy.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_config_rawqc_copy.err -N snakemake_config_rawqc_copy -l nodes=1:ppn=1,mem=1Gb"
+
+raw-qc_pipeline:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_raw-qc_pipeline.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_raw-qc_pipeline.err -N snakemake_raw-qc_pipeline -l nodes=1:ppn=1,mem=1Gb"
+    PATH: "{{RAWQC_PATH}}/"
+
+check_raw-qc:
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_raw-qc.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_raw-qc.err -N snakemake_check_raw-qc -l nodes=1:ppn=1,mem=5Gb"
+    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
+
+gaingroup:
+    CMD: "/bioinfo/local/bin/gaingroup -g w-ngsdm-g{{GAINGROUP}}"
+
+kdi_create_dataset:
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.err -N snakemake_KDI_create_dataset -l nodes=1:ppn=1,mem=1Gb"
+kdi_start:
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.err -N snakemake_KDI_start -l nodes=1:ppn=1,mem=1Gb"
+kdi_export:
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.err -N snakemake_KDI_export_rnaseq -l nodes=1:ppn=1,mem=1Gb"
+kdi_conf_file_research:
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.err -N snakemake_KDI_conf_file_research -l nodes=1:ppn=1,mem=1Gb"

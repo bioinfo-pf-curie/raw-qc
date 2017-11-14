@@ -1,0 +1,20 @@
+rule transfert_fastq_dir:
+    input:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["TRANSFERT_FASTQ_DIR_INPUT"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/transfert_fastq_dir.log"
+    params:
+        cluster=config["transfert_fastq_dir"]["CLUSTER"],
+        transfert_fastq_dir_path = config["transfert_fastq_dir"]["PATH"],
+        samplesheet_dir=config["general_path"]["SAMPLESHEET_DIR"],
+        illumina_ref=config["experience"]["ILLUMINA_REF"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"],
+        project_samplesheet=config["experience"]["PROJECT_SAMPLESHEET"]
+    run:
+        shell("""
+        {params.transfert_fastq_dir_path}/transfert_fastq_dir.sh -s {params.samplesheet_dir}/{params.illumina_ref}/SampleSheet.csv -i {wildcards.output_path}/{params.project}-{params.run}/bcl2fastq/{params.project_samplesheet} -o {wildcards.output_path}/{params.project}-{params.run}/archive/ -r {params.run} -p {params.project_samplesheet} &>> {log} &&
+        touch {wildcards.output_path}/{params.project}-{params.run}/archive/transfert_fastq_dir_ok.txt 2>> {log}
+        """)
