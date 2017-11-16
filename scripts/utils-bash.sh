@@ -154,7 +154,7 @@ init_wrapper(){
                 INPUT="$2"
                 shift
                 while [[ $2 != "-"* ]]; do
-                    INPUT=$(printf '%s %s' $INPUT $2)
+                    INPUT=$(printf '%s %s ' $INPUT $2)
                     shift
                 done
                 ;;
@@ -162,7 +162,7 @@ init_wrapper(){
                 OUTPUT="$2"
                 shift
                 while [[ $2 != "-"* ]]; do
-                    OUTPUT=$(printf '%s %s' $OUTPUT $2)
+                    OUTPUT=$(printf '%s %s ' $OUTPUT $2)
                     shift
                 done
                 ;;
