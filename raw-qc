@@ -162,9 +162,18 @@ cmd=$(
 pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
 
 # Autotropos
-autotropos_output=$(printf '%s %s' "${OUTDIR}{{ID}}/autotropos/{{ID}}_R1.fastq.gz" \
-                                   "${OUTDIR}{{ID}}/autotropos/{{ID}}_R2.fastq.gz"
+
+# outputs are decomposed to ease connection between jobs
+autotropos_fastq_output=$(
+    printf '%s %s %s %s' "${OUTDIR}{{ID}}/autotropos/{{ID}}_R1.fastq.gz" \
+                         "${OUTDIR}{{ID}}/autotropos/{{ID}}_R2.fastq.gz"
 )
+autotropos_output=$(
+    printf '%s %s %s' "${autotropos_fastq_output}" \
+                      "${OUTDIR}{{ID}}/autotropos/{{ID}}.metrics" \
+                      "${OUTDIR}{{ID}}/autotropos/{{ID}}.json"
+)
+
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
                      --plan ${PLAN} \
@@ -174,12 +183,27 @@ cmd=$(
 )
 pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
 
+# Basic metrics
+basic_metrics_input=$(
+    printf '%s %s' "__raw_data__" \
+                   "${OUTDIR}{{ID}}/autotropos/{{ID}}.json"
+)
+basic_metrics_output="${OUTDIR}{{ID}}/basic_metrics/{{ID}}"
+cmd=$(
+    get_command_line --tool ${SCRIPTS_PATH}"basic_metrics-bash.sh" \
+                     --plan ${PLAN} \
+                     --input "${basic_metrics_input}" \
+                     --output "${basic_metrics_output}" \
+                     --log-file "${LOG_PATH}.basic_metrics.log"
+)
+pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG})
+
 # Fastqc
 trim_outdir="${OUTDIR}{{ID}}/fastqc_trim/"
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
                      --plan ${PLAN} \
-                     --input "${autotropos_output}" \
+                     --input "${autotropos_fastq_output}" \
                      --output "${trim_outdir}" \
                      --log-file "${LOG_PATH}.trim_fastqc.log"
 )
@@ -194,4 +218,4 @@ cmd=$(
                      --output "${multiqc_outdir}" \
                      --log-file "${OUTDIR}common_logs/multiqc.log"
 )
-pid_multiqc=$(run_bash "${cmd}" ${CONFIG} "${pid_trim_fastqc}")
+pid_multiqc=$(run_bash "${cmd}" ${CONFIG} "${pid_trim_fastqc}:${pid_basic_metrics}")
