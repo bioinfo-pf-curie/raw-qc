@@ -81,14 +81,27 @@ else
     exit 1;
 fi
 
+if [[ ${ENV,,} == "dev" ]]
+then
+    GAINGROUP="/bioinfo/local/bin/gaingroup -g w-ngsdm-gd" 2>>$LOG_PATH
+elif [[ ${ENV,,} == "valid" ]]
+then
+    GAINGROUP="/bioinfo/local/bin/gaingroup -g w-ngsdm-gv" 2>>$LOG_PATH
+elif [[ ${ENV,,} == "prod" ]]
+then
+    GAINGROUP="/bioinfo/local/bin/gaingroup -g w-ngsdm-gp" 2>>$LOG_PATH
+else
+    echo "ERROR : Wrong env in arg (dev,valid,prod)"  &>> $LOG_PATH
+    exit 1;
+fi
 
 
 SNAKEMAKE_BIN_DIR="/bioinfo/local/build/Centos/python/python-3.6.1/bin/snakemake"
 # set commands
-demultiplexCmd="echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_preprocessing -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_preprocessing.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_preprocessing.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
-snakemakeAnalysis="echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_analysis -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_analysis.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_analysis.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
-snakemakeIntegration="echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_integration -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_integration.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_integration.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb";
-fillConfigCmd="echo \"${RAWQC_PATH}/raw-qc_snakemake/fill_raw-qc_pipeline_config_snakemake.sh --project $PROJECT --run $RUN --output $OUTPUT_PATH --illumina $ILLUMINA_REF --kdi $KDI --kdiproject $KDI_PROJECT --env $ENV --raw-qc_path ${RAWQC_PATH} --project_type $PROJECT_TYPE --scope $SCOPE --queue $QUEUE --kdi_species $KDI_SPECIES --demand $DEMAND --datatype $DATATYPE --illumina_file $ILLUMINA_FILE --illumina_sequencer $ILLUMINA_SEQUENCER --research_rules_path $RESEARCH_FUNC_PATH &>> $LOG\" | qsub -q ${QUEUE} -N RAW-QC_fill_config_cmd -o $OUTPUT_PATH/$PROJECT-$RUN/RAW-QC_fill_config_cmd.out -e $OUTPUT_PATH/$PROJECT-$RUN/RAW-QC_fill_config_cmd.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
+demultiplexCmd="${GAINGROUP} echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_preprocessing -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_preprocessing.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_preprocessing.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
+snakemakeAnalysis="${GAINGROUP} echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_analysis -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_analysis.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_analysis.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
+snakemakeIntegration="${GAINGROUP} echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --latency-wait 60 --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_integration -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_integration.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_integration.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb";
+fillConfigCmd="${GAINGROUP} echo \"${RAWQC_PATH}/raw-qc_snakemake/fill_raw-qc_pipeline_config_snakemake.sh --project $PROJECT --run $RUN --output $OUTPUT_PATH --illumina $ILLUMINA_REF --kdi $KDI --kdiproject $KDI_PROJECT --env $ENV --raw-qc_path ${RAWQC_PATH} --project_type $PROJECT_TYPE --scope $SCOPE --queue $QUEUE --kdi_species $KDI_SPECIES --demand $DEMAND --datatype $DATATYPE --illumina_file $ILLUMINA_FILE --illumina_sequencer $ILLUMINA_SEQUENCER --research_rules_path $RESEARCH_FUNC_PATH &>> $LOG\" | qsub -q ${QUEUE} -N RAW-QC_fill_config_cmd -o $OUTPUT_PATH/$PROJECT-$RUN/RAW-QC_fill_config_cmd.out -e $OUTPUT_PATH/$PROJECT-$RUN/RAW-QC_fill_config_cmd.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb"
 
 if [[ ${UNLOCK,,} == "yes" ]]
 then
@@ -103,7 +116,7 @@ then
             echo "INFO : The config file '$OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml' is already present. The fillConfigCmd ($fillConfigCmd) isn't launched."  &>> $LOG
             pid_fillConfigCmd="no"
         fi
-        unlockCmd="echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_unlock -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.err -l nodes=1:ppn=1,mem=1Gb";
+        unlockCmd="${GAINGROUP} echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_unlock -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.err -l nodes=1:ppn=1,mem=1Gb";
     elif [[ ${DEMULTIPLEXING,,} == "yes" ]]
     then
         # create config
@@ -115,7 +128,7 @@ then
             echo "INFO : The config file '$OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml' is already present. The fillConfigCmd ($fillConfigCmd) isn't launched."  &>> $LOG
             pid_fillConfigCmd="no"
         fi
-        unlockCmd="echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_unlock -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.err -l nodes=1:ppn=1,mem=1Gb";
+        unlockCmd="${GAINGROUP} echo \"$SNAKEMAKE_BIN_DIR -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile $OUTPUT_PATH/$PROJECT-$RUN/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>> $LOG\" | qsub -q ${QUEUE} -N snakemake_master_RAW-QC_unlock -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_RAW-QC_unlock.err -l nodes=1:ppn=1,mem=1Gb";
     fi
     echo "LAUNCH : $unlockCmd" &>> $LOG
     if [[ ! $pid_fillConfigCmd == "no" ]]
@@ -232,7 +245,7 @@ if [[ $KDI == "yes" ]]; then
             pid_integration=$(eval $snakemakeIntegration)
             if [ $RIMS_ID != "no" ]
             then
-                DATASET_ID=$(echo \"awk -v ligne=1 ' NR == ligne { print $1}' $OUTPUT_PATH/$PROJECT-$RUN/kdi_create_dataset_rule_ok.txt\" | qsub -q ${QUEUE} -N snakemake_master_dataset_id -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_dataset_id.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_dataset_id.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb -W depend=afterok:$pid_integration)
+                DATASET_ID=$(${GAINGROUP} echo \"awk -v ligne=1 ' NR == ligne { print $1}' $OUTPUT_PATH/$PROJECT-$RUN/kdi_create_dataset_rule_ok.txt\" | qsub -q ${QUEUE} -N snakemake_master_dataset_id -o $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_dataset_id.out -e $OUTPUT_PATH/$PROJECT-$RUN/snakemake_master_dataset_id.err -d $OUTPUT_PATH/$PROJECT-$RUN/ -l nodes=1:ppn=1,mem=1Gb -W depend=afterok:$pid_integration)
             fi
         } || {
             STATE="integration_error" &>> $LOG;

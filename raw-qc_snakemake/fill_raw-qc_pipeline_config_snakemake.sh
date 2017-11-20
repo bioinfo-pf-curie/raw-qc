@@ -111,19 +111,16 @@ sed -i "s|{{ILLUMINA_FILE}}|$ILLUMINA_FILE|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PAT
 sed -i "s|{{RESEARCH_RULES_PATH}}|$RESEARCH_RULES_PATH|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH &&
 sed -i "s|{{ILLUMINA_SEQUENCER}}|$ILLUMINA_SEQUENCER|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
 
-if [[ $KDI == "yes" ]]
+if [[ ${ENV,,} == "dev" ]]
 then
-    if [[ ${ENV,,} == "dev" ]]
-    then
-        sed -i "s|{{GAINGROUP}}|d|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
-    elif [[ ${ENV,,} == "valid" ]]
-    then
-        sed -i "s|{{GAINGROUP}}|v|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
-    elif [[ ${ENV,,} == "prod" ]]
-    then
-        sed -i "s|{{GAINGROUP}}|p|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
-    else
-        echo "ERROR : Wrong env in arg (dev,valid,prod)"  &>> $LOG_PATH
-        exit 1;
-    fi
+    sed -i "s|{{GAINGROUP}}|d|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
+elif [[ ${ENV,,} == "valid" ]]
+then
+    sed -i "s|{{GAINGROUP}}|v|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
+elif [[ ${ENV,,} == "prod" ]]
+then
+    sed -i "s|{{GAINGROUP}}|p|g" $CONFIG_SNAKEMAKE_FILE 2>>$LOG_PATH
+else
+    echo "ERROR : Wrong env in arg (dev,valid,prod)"  &>> $LOG_PATH
+    exit 1;
 fi
