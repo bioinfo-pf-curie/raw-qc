@@ -21,7 +21,6 @@
 ## Inputs:
 ##      - String $INPUT: Input FastQ file(s).
 ##      - String $OUTPUT: Output FastQ file(s), metrics file and json file.
-##      - String $PLAN: CSV file of sample plan.
 ##      - String $CONFIG: JSON configuration file.
 ##      - String $LOG: Log file.
 ## ---------------------------------------------------------------------------
@@ -42,19 +41,11 @@ if [[ -n "${autotropos_path}" ]]; then
     autotropos_path="${autotropos_path%/}/"
 fi
 
-# Check if task is launch as job array
-if [[ -n ${PBS_ARRAYID} ]]; then
-    sample_array=($(get_sample $PLAN ${PBS_ARRAYID}))
-else
-    # case of one sample
-    sample_array=($(get_sample $PLAN 1))
-fi
-
-fastq_input=("${sample_array[@]:1:2}")
+fastq_input=($INPUT)
 # Add ID name in outputs and logs
-outputs=($(populate_template "${OUTPUT}" ${sample_array[0]}))
+outputs=(${OUTPUT})
 create_directory ${outputs[0]%/*}
-log_output=$(populate_template "${LOG}" ${sample_array[0]})
+log_output=${LOG}
 create_directory ${log_output%/*}
 
 # set atropos logs and autotropos json

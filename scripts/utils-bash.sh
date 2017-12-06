@@ -29,6 +29,15 @@ create_directory(){
 }
 
 # ----------------------------------------------------------------------------
+# Join array list with a specified delimiter.
+#       - String $1: Delimiter
+#       - $*: Array list
+#
+join_by(){
+    local IFS="$1"; shift; echo "$*";
+}
+
+# ----------------------------------------------------------------------------
 # Create a temporary sample plan if only one sample is provided.
 # Inputs:
 #       - String $1: FASTQ file(s).
@@ -107,7 +116,7 @@ get_command_line(){
         esac
         shift
     done
-    echo $t' --plan '${p}' --input "'${i}'" --output "'${o}'" --log-file '${l}
+    echo $t' --input "'${i}'" --output "'${o}'" --log-file '${l}
 }
 
 # ----------------------------------------------------------------------------
@@ -146,10 +155,6 @@ init_wrapper(){
     while [[ $# > 0 ]]; do
         key="$1"
         case "${key}" in
-            -p|--plan)
-                PLAN="$2"
-                shift
-                ;;
             -i|--input)
                 INPUT="$2"
                 shift
@@ -227,13 +232,9 @@ run_bash(){
     task=${task%%.*}
 
     if [[ -n ${CLUSTER} ]]; then
+        sleep ${LATENCY}
         local opt=$(get_cluster_resources ${tool} ${config})
         opt=(-m ae -j oe -N "rawqc_${task}" -q batch -l "${opt}" -V -d $CWD)
-        # If an expand is requested -> run the command with all sample as input
-        # If there are no variable in cmd -> it is not a jobarray
-        if [[ ${NB_SAMPLE} -gt 1 && "${cmd[@]}" != *"expand("* && "${cmd[@]}" =~ [*{{*}}*] ]]; then
-            opt+=(-t 1-${NB_SAMPLE})
-        fi
         # Check if the PID is from a jobarray
         if [[ "${pid}" == *"[]"* ]]; then
             opt+=(-W depend=afterokarray:${pid})
@@ -244,7 +245,6 @@ run_bash(){
         pid=$(echo "bash ${cmd[@]} --config ${config}" | qsub "${opt[@]}")
         echo ${pid%%.*}
     else
-        # TODO -> for loop to run the wrapper for each sample
         echo "bash ${cmd[@]} --config ${config}" >&2
         eval "bash ${cmd[@]} --config ${config}" && echo "None"
     fi

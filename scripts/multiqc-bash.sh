@@ -27,7 +27,6 @@
 ## Inputs:
 ##      - String $INPUT: Input logs file(s).
 ##      - String $OUTPUT: report HTML file.
-##      - String $PLAN: CSV file of sample plan.
 ##      - String $CONFIG: JSON configuration file.
 ##      - String $LOG: Log file.
 ## ---------------------------------------------------------------------------

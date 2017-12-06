@@ -21,7 +21,6 @@
 ## Inputs:
 ##      - String $INPUT: Input template.
 ##      - String $OUTPUT: Output directory.
-##      - String $PLAN: Sample plan file.
 ##      - String $CONFIG: JSON configuration file.
 ##      - String $LOG: Log file.
 ## ---------------------------------------------------------------------------
@@ -30,27 +29,12 @@
 path="${BASH_SOURCE[0]%/*}/"
 . "${path}"utils-bash.sh
 
-# Initiate variable of the wrapper ($INPUT, $OUTPUT, $PLAN, $CONFIG, $LOG)
+# Initiate variable of the wrapper ($INPUT, $OUTPUT, $CONFIG, $LOG)
 init_wrapper $@
 
-# Check if task is launch as job array
-if [[ -n ${PBS_ARRAYID} ]]; then
-    sample_array=($(get_sample $PLAN ${PBS_ARRAYID}))
-else
-    # case of one sample
-    sample_array=($(get_sample $PLAN 1))
-fi
-
-# Check the task use raw_data
-if [[ "${INPUT}" == "__raw_data__" ]]; then
-    fastq=("${sample_array[@]:1:2}")
-else
-    fastq=($(populate_template "${INPUT}" ${sample_array[0]}))
-fi
-
-# Add ID name in the outdir
-outdir=$(populate_template $OUTPUT ${sample_array[0]})
-log_output=$(populate_template "${LOG}" ${sample_array[0]})
+fastq=($INPUT)
+outdir=$OUTPUT
+log_output=$LOG
 create_directory $outdir
 create_directory ${log_output%/*}
 
@@ -63,7 +47,7 @@ if [[ -n "${fastqc_path}" ]]; then
 fi
 
 # Set some local variable
-name=${fastq[0]%.fastq*}
+name=$(basename ${fastq[0]%.fastq*})
 fastqc_zip_file="${outdir}${name}_fastqc.zip"
 
 # if the zip file already exists we have nothing to do
@@ -75,7 +59,7 @@ test -d ${outdir} && \
 # if the file is empty, we don't need to do anything
 test -s ${fastq[0]} || exit 0
 
-# seems that fastqc seldomly failed.
+# seems that fastqc rarely failed.
 _fail=0
 cmd="${fastqc_path}fastqc ${fastqc_opt} ${fastq[@]} \
                           --threads ${fastqc_threads} \

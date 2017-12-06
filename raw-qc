@@ -18,19 +18,27 @@
 ## Raw-qc is a pipeline to check the quality of the input FastQ file(s).
 ##
 ## Required parameters:
-##  -1, --read1 FILE1               The first read FastQ file (R1) or a single-
-##                                  end read file.  [required if no --sample-plan]
-##  -s, --sample-plan FILE          Sample plan with all sample to run in
-##                                  parallele. [required if no --read1]
-##  -c, --config-file JSON          The JSON config file of the pipeline.
-##  -o, --output-dir OUTDIR         The directory where all the analysis are done
+##  -1, --read1 FILE1     The first read FastQ file (R1) or a single-end read
+##                        file.  [required if no --sample-plan]
+##  -s, --sample-plan FILE          
+##                        Sample plan with all sample to run in cloud.
+##                        NAMESPACE is the namespace you want to use for
+##                        parallele. [required if no --read1]
+##  -c, --config-file JSON
+##                        The JSON config file of the pipeline.
+##  -o, --output-dir OUTDIR
+##                        The directory where all the analysis are done.
 ##
 ## Options:
-##  -2, --read2 FILE2               The second read FastQ file (R2).
-##  --cluster                       Run the pipeline with jobarray on a cluster
-##                                  with Torque as scheduler.
-##  -h, --help                      Show this message and exit.
-##  -l, --license                   Show the license and exit.
+##  -2, --read2 FILE2     The second read FastQ file (R2).
+##  -p, --prefix STRING   Prefix name of output files.
+##                        (ie OUTDIR/PREFIX/task/PREFIX.extension)
+##  --cluster             Run the pipeline on a cluster with Torque as
+##                        scheduler.
+##  -w, --latency-wait SECONDS      
+##                        Wait SECONDS between each cluster submission.
+##  -h, --help            Show this message and exit.
+##  -l, --license         Show the license and exit.
 ##
 
 SOURCE="${BASH_SOURCE[0]}"
@@ -39,9 +47,10 @@ SOURCE="${BASH_SOURCE[0]}"
 SRC_PATH=$(realpath -P "${SOURCE}")
 SRC_PATH=${SRC_PATH%/*}
 
-# help and license
+# help, license and latency
 HELP=$(grep "^## " "${SOURCE}" | cut -c 4-)
 LICENSE=$(grep "^#- " "${SOURCE}" | cut -c 4-)
+LATENCY=0.5
 
 if [[ ${#@} -lt 1 ]];then
     echo "${HELP}"
@@ -58,6 +67,7 @@ for arg in "$@"; do
       "--output-dir") set -- "$@" "-o";;
       "--config-file") set -- "$@" "-c";;
       "--sample-plan") set -- "$@" "-s";;
+      "--latency-wait") set -- "$@" "-w";;
       "--help") set -- "$@" "-h";;
       "--license") set -- "$@" "-l";;
       *) set -- "$@" "$arg" ;;
@@ -65,7 +75,7 @@ for arg in "$@"; do
 done
 
 # Parse arguments
-while getopts "1:2:p:o:c:s:hl-:" optchar; do
+while getopts "1:2:p:o:c:s:w:hl-:" optchar; do
     case $optchar in
         -)
             case "${OPTARG}" in
@@ -102,6 +112,14 @@ while getopts "1:2:p:o:c:s:hl-:" optchar; do
         s)
             PLAN=$(realpath ${OPTARG})
             ;;
+        w)
+            if [[ ${OPTARG} =~ ^[0-9]+\.[0-9]+$ ]]; then
+                LATENCY=${OPTARG}
+            else
+                echo "Invalid parameter for --latency-wait: it must be a FLOAT" >&2
+                exit 1
+            fi
+            ;;
 	    h)
             echo "${HELP}"
             exit 1
@@ -132,90 +150,107 @@ fi
 # Set paths
 SCRIPTS_PATH="${SRC_PATH%/}/scripts/"
 CWD=$(pwd)
-LOG_PATH="${OUTDIR}{{ID}}/logs/{{ID}}"
 
 # Load utils function
 . ${SCRIPTS_PATH}utils-bash.sh
 create_directory "${OUTDIR}"
 
 # Check if a sample plan or a FASTQ file is provided
-if [[ -n $PLAN ]];then
-    NB_SAMPLE=$(awk 'END{print NR}' $PLAN)
-elif [[ -n $READ1 ]]; then
+if [[ -z $PLAN && -n $READ1 ]];then
     # Create a temporary sample plan
+    if [[ -z $PREFIX ]];then
+        PREFIX=$(basename ${READ1%.fastq*})
+    fi
     PLAN=$(create_sample_plan "${READ1} ${READ2}" "${PREFIX}")
-    NB_SAMPLE=1
 else
+    echo "Missing input." >&2
     echo "${HELP}"
     exit 1
 fi
 
-# Fastqc
-raw_outdir="${OUTDIR}{{ID}}/fastqc_raw/"
-cmd=$(
-    get_command_line --tool "${SCRIPTS_PATH}fastqc-bash.sh" \
-                     --plan ${PLAN} \
-                     --input "__raw_data__" \
-                     --output ${raw_outdir} \
-                     --log-file "${LOG_PATH}.raw_fastqc.log"
-)
-pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
+process_qc(){
+    local sample_array
+    local cmd
 
-# Autotropos
+    IFS=',' read -r -a sample_array <<< "$1"
+    local sample_id=${sample_array[0]}
+    local raw_fastq=$(printf '%s %s' "${sample_array[@]:2:2}")
+    local outdir="${OUTDIR}${sample_id}"
+    local log_path="${outdir}/logs/${sample_id}"
 
-# outputs are decomposed to ease connection between jobs
-autotropos_fastq_output=$(
-    printf '%s %s %s %s' "${OUTDIR}{{ID}}/autotropos/{{ID}}_R1.fastq.gz" \
-                         "${OUTDIR}{{ID}}/autotropos/{{ID}}_R2.fastq.gz"
-)
-autotropos_output=$(
-    printf '%s %s %s' "${autotropos_fastq_output}" \
-                      "${OUTDIR}{{ID}}/autotropos/{{ID}}.metrics" \
-                      "${OUTDIR}{{ID}}/autotropos/{{ID}}.json"
-)
+    # Fastqc
+    local raw_outdir="${outdir}/fastqc_raw/"
+    cmd=$(
+        get_command_line --tool "${SCRIPTS_PATH}fastqc-bash.sh" \
+                         --input "${raw_fastq}" \
+                         --output ${raw_outdir} \
+                         --log-file "${log_path}.raw_fastqc.log"
+    )
+    local pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
+    
+    # Autotropos
+    
+    # outputs are decomposed to ease connection between jobs
+    local autotropos_prefix="${outdir}/autotropos/${sample_id}"
+    local autotropos_fastq_output=$(
+        printf '%s %s' "${autotropos_prefix}_R1.fastq.gz" \
+                       "${autotropos_prefix}_R2.fastq.gz"
+    )
+    local autotropos_output=$(
+        printf '%s %s %s' "${autotropos_fastq_output}" \
+                          "${autotropos_prefix}.metrics" \
+                          "${autotropos_prefix}.json"
+    )
+    
+    cmd=$(
+        get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
+                         --input "${raw_fastq}" \
+                         --output "${autotropos_output}" \
+                         --log-file "${log_path}.autotropos.log"
+    )
+    local pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
+ 
+    # Basic metrics
+    local basic_metrics_input=$(
+        printf '%s %s' "${raw_fastq}" \
+                       "${autotropos_prefix}.json"
+    )
+    local basic_metrics_output="${outdir}/basic_metrics/${sample_id}"
+    cmd=$(
+        get_command_line --tool ${SCRIPTS_PATH}"basic_metrics-bash.sh" \
+                         --input "${basic_metrics_input}" \
+                         --output "${basic_metrics_output}" \
+                         --log-file "${log_path}.basic_metrics.log"
+    )
+    local pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG} ${pid_autotropos})
+    
+    # Fastqc
+    local trim_outdir="${outdir}/fastqc_trim/"
+    cmd=$(
+        get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
+                         --input "${autotropos_fastq_output}" \
+                         --output "${trim_outdir}" \
+                         --log-file "${log_path}.trim_fastqc.log"
+    )
+    local pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")
+    echo "${pid_basic_metrics}:${pid_trim_fastqc}"
+}
 
-cmd=$(
-    get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
-                     --plan ${PLAN} \
-                     --input "__raw_data__" \
-                     --output "${autotropos_output}" \
-                     --log-file "${LOG_PATH}.autotropos.log"
-)
-pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
+qc_pid=()
+while read line; do
+    echo ${line}
+    qc_pid+=($(process_qc "${line}"))
+    sleep $LATENCY
+done < ${PLAN}
 
-# Basic metrics
-basic_metrics_input=$(
-    printf '%s %s' "__raw_data__" \
-                   "${OUTDIR}{{ID}}/autotropos/{{ID}}.json"
-)
-basic_metrics_output="${OUTDIR}{{ID}}/basic_metrics/{{ID}}"
-cmd=$(
-    get_command_line --tool ${SCRIPTS_PATH}"basic_metrics-bash.sh" \
-                     --plan ${PLAN} \
-                     --input "${basic_metrics_input}" \
-                     --output "${basic_metrics_output}" \
-                     --log-file "${LOG_PATH}.basic_metrics.log"
-)
-pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG})
-
-# Fastqc
-trim_outdir="${OUTDIR}{{ID}}/fastqc_trim/"
-cmd=$(
-    get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
-                     --plan ${PLAN} \
-                     --input "${autotropos_fastq_output}" \
-                     --output "${trim_outdir}" \
-                     --log-file "${LOG_PATH}.trim_fastqc.log"
-)
-pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")
-
+# join pid
+qc_pid=$(join_by ":" "${qc_pid[@]}")
 # MultiQC
 multiqc_outdir="${OUTDIR}multiqc/"
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"multiqc-bash.sh" \
-                     --plan ${PLAN} \
                      --input "${OUTDIR}" \
                      --output "${multiqc_outdir}" \
                      --log-file "${OUTDIR}common_logs/multiqc.log"
 )
-pid_multiqc=$(run_bash "${cmd}" ${CONFIG} "${pid_trim_fastqc}:${pid_basic_metrics}")
+pid_multiqc=$(run_bash "${cmd}" ${CONFIG} ${qc_pid})
