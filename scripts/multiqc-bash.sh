@@ -46,11 +46,20 @@ create_directory ${LOG%/*}
 multiqc_path="$(get_json_entry ".multiqc.path" ${CONFIG})"
 multiqc_option="$(get_json_entry ".multiqc.options" ${CONFIG})"
 multiqc_threads="$(get_json_entry ".multiqc.threads" ${CONFIG})"
+metadata="$(get_json_entry ".multiqc.metadata" ${CONFIG})"
+
 if [[ -n "${multiqc_path}" ]]; then
     multiqc_path="${multiqc_path%/}/"
 fi
 
 _fail=0 # variable to check if everything is ok
+
+# generate raw_qc config for multiqc
+if [[ -f $metadata ]];then    
+    ${path}populate_multiqc.py -i metadata
+else
+    ${path}populate_multiqc.py
+fi
 
 # Command line
 cmd="${multiqc_path}multiqc ${multiqc_option} \
