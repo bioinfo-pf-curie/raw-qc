@@ -30,7 +30,7 @@
 path="${BASH_SOURCE[0]%/*}/"
 . "${path}"utils-bash.sh
 
-# Initiate variable of the wrapper ($INPUT, $OUTPUT, $PLAN, $CONFIG, $LOG)
+# Initiate variable of the wrapper ($INPUT, $OUTPUT, $CONFIG, $LOG)
 init_wrapper $@
 
 # Catch variable in json
@@ -45,15 +45,13 @@ fi
 # add ID name in outputs, inputs and logs
 inputs=($INPUT)
 fastq_input=("${inputs[@]:0:2}")
-outputs=(${OUTPUT})
-create_directory ${outputs[0]%/*}
-log_output=${LOG}
-create_directory ${log_output%/*}
+create_directory ${OUTPUT%/*}
+create_directory ${LOG%/*}
 
 # set some local variable
 basic_metrics_fastq=("-1" "${fastq_input[0]}")
 basic_metrics_json=("--json" "${inputs[1]}")
-if [[ ${#fastq_input[@]} -eq 2 ]]; then
+if [[ ${#inputs[@]} -eq 3 ]]; then
     basic_metrics_fastq+=("-2" "${fastq_input[1]}")
     basic_metrics_json=("--json" "${inputs[2]}")
 fi
@@ -64,7 +62,8 @@ _fail=0 # variable to check if everything is ok
 cmd="${basic_metrics_path}fastq_basic_metrics ${basic_metrics_option} \
                             ${basic_metrics_fastq[@]} \
                             ${basic_metrics_json[@]} \
-                            -p ${outputs[@]}"
-$cmd > ${log_output} 2>&1 || _fail=1
+                            -p ${OUTPUT} \
+                            -i $(basename ${OUTPUT%.*})"
+$cmd > ${LOG} 2>&1 || _fail=1
 
 exit ${_fail}

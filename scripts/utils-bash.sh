@@ -17,6 +17,17 @@ set -o pipefail
 umask 002
 
 # ----------------------------------------------------------------------------
+# Print message in stderr if the debug mode is activated
+# Inputs:
+#       - String $1: message to print.
+#
+debug_msg(){
+    if [[ -n "${DEBUG}" ]]; then
+        echo $* >&2
+    fi
+}
+
+# ----------------------------------------------------------------------------
 # Check if a directory already exist and create the directory if it does not
 # exist.
 # Inputs:
@@ -225,27 +236,26 @@ run_bash(){
     tool=${tool%.sh}
     # because my wrappers have "-bash.sh" prefix
     tool=${tool%-bash}
-    echo "Run ${tool}..." >&2
+    debug_msg "Run ${tool}..."
 
     # get task name for torque logs
-    local task=${cmd[-1]#*.}
-    task=${task%%.*}
+    local task=$(basename ${cmd[-1]%.*})
 
     if [[ -n ${CLUSTER} ]]; then
         sleep ${LATENCY}
         local opt=$(get_cluster_resources ${tool} ${config})
-        opt=(-m ae -j oe -N "rawqc_${task}" -q batch -l "${opt}" -V -d $CWD)
+        opt=(-m ae -j oe -N "${task}" -q batch -l "${opt}" -V -d $CWD)
         # Check if the PID is from a jobarray
         if [[ "${pid}" == *"[]"* ]]; then
             opt+=(-W depend=afterokarray:${pid})
         elif [[ "${pid}" != "None" ]]; then
             opt+=(-W depend=afterok:${pid})
         fi
-        echo "bash ${cmd[@]} --config ${config} | qsub ${opt[@]}" >&2
+        debug_msg "bash ${cmd[@]} --config ${config} | qsub ${opt[@]}"
         pid=$(echo "bash ${cmd[@]} --config ${config}" | qsub "${opt[@]}")
         echo ${pid%%.*}
     else
-        echo "bash ${cmd[@]} --config ${config}" >&2
+        debug_msg "bash ${cmd[@]} --config ${config}"
         eval "bash ${cmd[@]} --config ${config}" && echo "None"
     fi
 }

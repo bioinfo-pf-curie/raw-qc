@@ -3,7 +3,8 @@
 #- ---------------------------------------------------------------------------
 #-    Copyright (C) 2017 - Institut Curie
 #-
-#- This file is a part of Raw-qc software.
+#- This file is the pipeline Raw-QC.
+#- Version: v1.0
 #-
 #- File author(s):
 #-     Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>
@@ -37,6 +38,7 @@
 ##                        scheduler.
 ##  -w, --latency-wait SECONDS      
 ##                        Wait SECONDS between each cluster submission.
+##  --debug               Debug mode if you have any problem.
 ##  -h, --help            Show this message and exit.
 ##  -l, --license         Show the license and exit.
 ##
@@ -86,6 +88,9 @@ while getopts "1:2:p:o:c:s:w:hl-:" optchar; do
                     cp -i "${SRC_PATH%/}/config/rawqc_config.json" $(pwd)
                     echo "The rawqc_config.json file is copied."
                     exit 0
+                    ;;
+                debug)
+                    DEBUG="True"
                     ;;
                 *)
                     echo "Invalid option: --${OPTARG}" >&2
@@ -156,16 +161,18 @@ CWD=$(pwd)
 create_directory "${OUTDIR}"
 
 # Check if a sample plan or a FASTQ file is provided
-if [[ -z $PLAN && -n $READ1 ]];then
-    # Create a temporary sample plan
-    if [[ -z $PREFIX ]];then
-        PREFIX=$(basename ${READ1%.fastq*})
+if [[ -z $PLAN ]];then
+    if [[ -n $READ1 ]];then
+        # Create a temporary sample plan
+        if [[ -z $PREFIX ]];then
+            PREFIX=$(basename ${READ1%.fastq*})
+        fi
+        PLAN=$(create_sample_plan "${READ1} ${READ2}" "${PREFIX}")
+    else
+        echo "Missing input." >&2
+        echo "${HELP}"
+        exit 1
     fi
-    PLAN=$(create_sample_plan "${READ1} ${READ2}" "${PREFIX}")
-else
-    echo "Missing input." >&2
-    echo "${HELP}"
-    exit 1
 fi
 
 process_qc(){
@@ -192,16 +199,19 @@ process_qc(){
     
     # outputs are decomposed to ease connection between jobs
     local autotropos_prefix="${outdir}/autotropos/${sample_id}"
-    local autotropos_fastq_output=$(
-        printf '%s %s' "${autotropos_prefix}_R1.fastq.gz" \
-                       "${autotropos_prefix}_R2.fastq.gz"
-    )
+    local autotropos_fastq_output="${autotropos_prefix}.R1.fastq.gz"
+    if [[ -n "${sample_array[3]}" ]];then
+        autotropos_fastq_output=$(
+            printf '%s %s' "${autotropos_fastq_output}" \
+                           "${autotropos_prefix}.R2.fastq.gz"
+        )
+    fi
     local autotropos_output=$(
         printf '%s %s %s' "${autotropos_fastq_output}" \
                           "${autotropos_prefix}.metrics" \
                           "${autotropos_prefix}.json"
     )
-    
+
     cmd=$(
         get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
                          --input "${raw_fastq}" \
@@ -238,9 +248,8 @@ process_qc(){
 
 qc_pid=()
 while read line; do
-    echo ${line}
+    echo "Run the sample ${line%%,*}"
     qc_pid+=($(process_qc "${line}"))
-    sleep $LATENCY
 done < ${PLAN}
 
 # join pid
@@ -249,7 +258,7 @@ qc_pid=$(join_by ":" "${qc_pid[@]}")
 multiqc_outdir="${OUTDIR}multiqc/"
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"multiqc-bash.sh" \
-                     --input "${OUTDIR}" \
+                     --input "${OUTDIR}/*/basic_metrics/*.json ${OUTDIR}/*/fastqc_trim/*.zip" \
                      --output "${multiqc_outdir}" \
                      --log-file "${OUTDIR}common_logs/multiqc.log"
 )

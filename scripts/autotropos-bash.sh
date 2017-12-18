@@ -59,7 +59,7 @@ if [[ ${#fastq_input[@]} -eq 2 ]]; then
     autotropos_input+=("-2" "${fastq_input[1]}")
     autotropos_output+=("-p" "${outputs[1]}")
 fi
-_fail=0 # variable to check if everything is ok 
+_fail=0 # variable to check if everything is ok
 
 # Command line:
 cmd="${autotropos_path}autotropos ${autotropos_option[@]} \
