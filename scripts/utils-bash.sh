@@ -17,6 +17,17 @@ set -o pipefail
 umask 002
 
 # ----------------------------------------------------------------------------
+# Print message in stderr if the debug mode is activated
+# Inputs:
+#       - String $1: message to print.
+#
+debug_msg(){
+    if [[ -n "${DEBUG}" ]]; then
+        echo $* >&2
+    fi
+}
+
+# ----------------------------------------------------------------------------
 # Check if a directory already exist and create the directory if it does not
 # exist.
 # Inputs:
@@ -26,6 +37,15 @@ create_directory(){
     if [ ! -d "${1}" ]; then
         mkdir -p "${1}"
     fi
+}
+
+# ----------------------------------------------------------------------------
+# Join array list with a specified delimiter.
+#       - String $1: Delimiter
+#       - $*: Array list
+#
+join_by(){
+    local IFS="$1"; shift; echo "$*";
 }
 
 # ----------------------------------------------------------------------------
@@ -107,7 +127,7 @@ get_command_line(){
         esac
         shift
     done
-    echo $t' --plan '${p}' --input "'${i}'" --output "'${o}'" --log-file '${l}
+    echo $t' --input "'${i}'" --output "'${o}'" --log-file '${l}
 }
 
 # ----------------------------------------------------------------------------
@@ -146,15 +166,11 @@ init_wrapper(){
     while [[ $# > 0 ]]; do
         key="$1"
         case "${key}" in
-            -p|--plan)
-                PLAN="$2"
-                shift
-                ;;
             -i|--input)
                 INPUT="$2"
                 shift
                 while [[ $2 != "-"* ]]; do
-                    INPUT=$(printf '%s %s' $INPUT $2)
+                    INPUT=$(printf '%s %s ' $INPUT $2)
                     shift
                 done
                 ;;
@@ -162,7 +178,7 @@ init_wrapper(){
                 OUTPUT="$2"
                 shift
                 while [[ $2 != "-"* ]]; do
-                    OUTPUT=$(printf '%s %s' $OUTPUT $2)
+                    OUTPUT=$(printf '%s %s ' $OUTPUT $2)
                     shift
                 done
                 ;;
@@ -220,32 +236,26 @@ run_bash(){
     tool=${tool%.sh}
     # because my wrappers have "-bash.sh" prefix
     tool=${tool%-bash}
-    echo "Run ${tool}..." >&2
+    debug_msg "Run ${tool}..."
 
     # get task name for torque logs
-    local task=${cmd[-1]#*.}
-    task=${task%%.*}
+    local task=$(basename ${cmd[-1]%.*})
 
     if [[ -n ${CLUSTER} ]]; then
+        sleep ${LATENCY}
         local opt=$(get_cluster_resources ${tool} ${config})
-        opt=(-m ae -j oe -N "rawqc_${task}" -q batch -l "${opt}" -V -d $CWD)
-        # If an expand is requested -> run the command with all sample as input
-        # If there are no variable in cmd -> it is not a jobarray
-        if [[ ${NB_SAMPLE} -gt 1 && "${cmd[@]}" != *"expand("* && "${cmd[@]}" =~ [*{{*}}*] ]]; then
-            opt+=(-t 1-${NB_SAMPLE})
-        fi
+        opt=(-m ae -j oe -N "${task}" -q batch -l "${opt}" -V -d $CWD)
         # Check if the PID is from a jobarray
         if [[ "${pid}" == *"[]"* ]]; then
             opt+=(-W depend=afterokarray:${pid})
         elif [[ "${pid}" != "None" ]]; then
             opt+=(-W depend=afterok:${pid})
         fi
-        echo "bash ${cmd[@]} --config ${config} | qsub ${opt[@]}" >&2
+        debug_msg "bash ${cmd[@]} --config ${config} | qsub ${opt[@]}"
         pid=$(echo "bash ${cmd[@]} --config ${config}" | qsub "${opt[@]}")
         echo ${pid%%.*}
     else
-        # TODO -> for loop to run the wrapper for each sample
-        echo "bash ${cmd[@]} --config ${config}" >&2
+        debug_msg "bash ${cmd[@]} --config ${config}"
         eval "bash ${cmd[@]} --config ${config}" && echo "None"
     fi
 }
