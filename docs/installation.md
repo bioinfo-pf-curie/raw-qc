@@ -24,7 +24,7 @@ conda config --add channels bioconda
 
 And then you can create your environment:
 ```
-conda create --name raw-qc python=3.6 atropos fastqc multiqc numpy click pexpect
+conda create --name raw-qc --file raw-qc/requirements.txt
 source activate raw-qc
 git clone https://gitlab.curie.fr/ddesvill/autotropos.git
 cd autotropos
