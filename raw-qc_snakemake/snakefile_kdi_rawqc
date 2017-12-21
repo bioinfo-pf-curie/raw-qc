@@ -1,0 +1,44 @@
+############################################################
+# RUN SNAKEFILE ON DEBIAN CLUSTER
+# echo "/bioinfo/local/build/Centos/python/python-3.6.1/bin/snakemake  \
+#       -s SNAKEFILE_PATH/snakefile_kdi_rawqc \
+#       --configfile CONFIG_PATH/config.yaml \
+#       --verbose --cluster 'qsub {params.cluster}' -j 59" | \
+#       qsub -q batch -N snakemake_kdi_rawqc -l nodes=1:ppn=1,mem=1Gb
+############################################################
+
+
+# Path for KDI rules
+rule_path_kdi=config["general_path"]["RULE_PATH_KDI"]
+
+
+####### KDI rules
+if config["kdi"]["UNDECLARED"] == "FALSE":
+    include: rule_path_kdi+"/KDI_create_dataset.rule"
+    include: rule_path_kdi+"/KDI_start.rule"
+include: rule_path_kdi+"/KDI_conf_file_research_rule"
+include: rule_path_kdi+"/KDI_export.rule"
+####### KDI rules
+
+
+#Create a KDI dataset
+create_dataset = expand(config["general_path"]["DATA_TMP_OUTPATH"]+ "/{project}-{run}/kdi_create_dataset_rule_ok.txt", project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
+
+if config["kdi"]["UNDECLARED"] == "FALSE":
+    kdi_start_rule = expand(config["general_path"]["DATA_TMP_OUTPATH"]+ "/{project}-{run}/kdi_start_rule_ok.txt", project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
+
+    kdi_conf_file_research=expand(config["general_path"]["DATA_TMP_OUTPATH"]+"/{project}-{run}/kdi_conf_files_research_rule_ok.txt",project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
+
+    kdi_export=expand(config["general_path"]["DATA_TMP_OUTPATH"]+"/{project}-{run}/kdi_export_rule_ok.txt",project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
+
+
+rule all:
+    input:
+#        create_dataset,
+#        kdi_start_rule,
+#        kdi_conf_file_research,
+        kdi_export,
+
+    params:
+        cluster="-q config[\"general_path\"][\"QUEUE\"] \
+                 -N snakemake_kdi_rawqc -l nodes=1:ppn=1,mem=1Gb"

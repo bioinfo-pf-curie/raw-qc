@@ -27,8 +27,8 @@ kdi:
     PROJECT_NAME: "{{KDI_PROJECT}}"
     TECHNICAL_PF: "{{ILLUMINA_SEQUENCER}}"
     ORGANISATION: "Plateforme NGS"
-    BIOLOGICAL_CATEGORY: "transcriptomics"
-    PROTOCOL: "Total RNA-seq"
+    BIOLOGICAL_CATEGORY: "{{BIOLOGICAL_CATEGORY}}"
+    PROTOCOL: "{{PROTOCOL}}"
     DATASET_NAME: "{{RUN}}"
     RUN_CONF: ""
     PUBLISHED: "True"
@@ -36,6 +36,17 @@ kdi:
     SAMPLE_TYPE: "other"
     SAMPLE_ALIAS_TYPE: "BioinfoNGS sample identifier"
     REPLICATE_ALIAS_TYPE_NAME: "Platform id NGS"
+
+run_information:
+    RUN: "{{RUN}}"
+    WORKFLOW: "none"
+    DATA_TYPE: "{{DATATYPE}}"
+    ANALYSIS: "raw"
+    PIPELINE_NAME: "raw-qc"
+    PIPELINE_TYPE: "{{SCOPE}}"
+    EXPORT_PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/KDI_conf/"
+    EXPORT_TO_KDI_SAMPLE: "exportToKDI.conf"
+    EXPORT_TO_KDI_RUNFILE: "exportToKDI-RunFiles.conf"
 
 extension:
     SAMPLESHEET_CHECKER_INPUT_1: "SampleSheet.csv"
@@ -60,16 +71,18 @@ extension:
     RIMS_METADATA_LAUNCHER_OUTPUT: "-rims_metadata.tsv"
     SAMPLESHEET_TO_SAMPLEDESCRIPTION_INPUT: "_SAMPLEPLAN"
     SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT: ".sampleDescription.txt"
-    CONFIG_RAWQC_COPY_INPUT_1: "/config/config.json"
+    CONFIG_RAWQC_COPY_INPUT_1: "/config/rawqc_config.json"
     CONFIG_RAWQC_COPY_INPUT_2: ".sampleDescription.txt"
     CONFIG_RAWQC_COPY_OUTPUT: "_config_rawqc_copy_ok.txt"
     RAW-QC_PIPELINE_INPUT_1: "SampleSheet.csv"
-    RAW-QC_PIPELINE_INPUT_2: "config.json"
+    RAW-QC_PIPELINE_INPUT_2: "rawqc_config.json"
     RAW-QC_PIPELINE_OUTPUT: "_raw-qc_pipeline_ok.txt"
     CHECK_RAW-QC_INPUT_1: "_raw-qc_pipeline_ok.txt"
     CHECK_RAW-QC_INPUT_2: "raw-qc_outputs_list.txt"
     CHECK_RAW-QC_INPUT_3: "_SAMPLEPLAN"
     CHECK_RAW-QC_OUTPUT: "_check_raw-qc_ok.txt"
+    KDI_CREATE_DATASET_INPUT: "{{RUN}}_check_raw-qc_ok.txt"
+    KDI_START_INPUT: "{{RUN}}_check_raw-qc_ok.txt"
 
 general_path:
     PYTHON_BIN_DIR: "/bioinfo/local/build/Centos/python/python-2.7.12/bin/python2.7"
@@ -145,10 +158,10 @@ gaingroup:
     CMD: "/bioinfo/local/bin/gaingroup -g w-ngsdm-g{{GAINGROUP}}"
 
 kdi_create_dataset:
-  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.err -N snakemake_KDI_create_dataset -l nodes=1:ppn=1,mem=1Gb"
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_create_dataset.err -N snakemake_raw-qc_KDI_create_dataset -l nodes=1:ppn=1,mem=1Gb"
 kdi_start:
-  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.err -N snakemake_KDI_start -l nodes=1:ppn=1,mem=1Gb"
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.err -N snakemake_raw-qc_KDI_start -l nodes=1:ppn=1,mem=1Gb"
 kdi_export:
-  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.err -N snakemake_KDI_export_rnaseq -l nodes=1:ppn=1,mem=1Gb"
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.err -N snakemake_raw-qc_KDI_export -l nodes=1:ppn=1,mem=1Gb"
 kdi_conf_file_research:
-  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.err -N snakemake_KDI_conf_file_research -l nodes=1:ppn=1,mem=1Gb"
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.err -N snakemake_raw-qc_KDI_conf_file_research -l nodes=1:ppn=1,mem=1Gb"

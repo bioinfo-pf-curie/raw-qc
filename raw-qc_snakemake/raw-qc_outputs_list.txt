@@ -1,1 +1,1 @@
-/backup/multi-qc/multi-qc.html
+/backup/multiqc/rawqc_report.html
