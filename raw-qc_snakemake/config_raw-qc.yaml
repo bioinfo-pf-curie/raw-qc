@@ -108,7 +108,7 @@ samplesheet_checker:
     PATH: "/bioinfo/pipelines/samplesheet-checker/{{ENV}}/"
 
 bcl2fastq:
-    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.err -N snakemake_bcl2fastq -l nodes=1:ppn=8,mem=5Gb"
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.err -N snakemake_bcl2fastq -l nodes=1:ppn=8,mem={{MEM_BCL2FASTQ}}"
     THREAD_NUMBER: "8"
     OPTIONAL_PARAMETERS: ""
 

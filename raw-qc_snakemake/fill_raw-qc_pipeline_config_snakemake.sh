@@ -101,3 +101,11 @@ else
     echo "ERROR : Wrong env in arg (dev,valid,prod)"  &>> $LOG_PATH
     exit 1;
 fi
+
+if [[ $ILLUMINA_SEQUENCER == "hiseq" ]] || [[ $ILLUMINA_SEQUENCER == "nextseq" ]]
+then
+	sed -i "s|{{MEM_BCL2FASTQ}}|50Gb|g" $OUTPUT_PATH/$PROJECT-$RUN/config_rnaseq_centos.yaml 2>>$LOG_PATH
+else
+	sed -i "s|{{MEM_BCL2FASTQ}}|5Gb|g" $OUTPUT_PATH/$PROJECT-$RUN/config_rnaseq_centos.yaml 2>>$LOG_PATH
+fi
+
