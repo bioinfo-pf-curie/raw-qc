@@ -18,8 +18,13 @@ SAMPLES_LIST=$OUTDIR/$RUN_NAME.sampleList.txt
 
 mkdir -p $OUTDIR
 
-
-grep $PROJECT_NAME $SAMPLE_SHEET|awk -F"(,)" '{ print $1 }'|grep -v SampleID|sort -u > $SAMPLES_LIST
+sequencer_type=`grep -A1 "Data" $SAMPLE_SHEET | tail -1 | cut -f1 -d','`
+if [[ $sequencer_type == "Sample_ID" ]]
+then
+	grep $PROJECT_NAME $SAMPLE_SHEET|awk -F"(,)" '{ print $1 }'|grep -v SampleID|sort -u > $SAMPLES_LIST
+else
+	grep $PROJECT_NAME $SAMPLE_SHEET|awk -F"(,)" '{ print $2 }'|grep -v SampleID|sort -u > $SAMPLES_LIST
+fi
 
 if [[ ! -s $SAMPLES_LIST ]]
 then
