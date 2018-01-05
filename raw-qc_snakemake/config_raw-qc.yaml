@@ -22,8 +22,7 @@ kdi:
     ENV: "{{ENV}}" #dev,valid,prod
     UNDECLARED: "FALSE"  #TRUE or FALSE
     DATASET_ID: ""
-#    API_PATH: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/"
-    API_PATH: "/bioinfo/users/mvalade/Documents/Git/kdi_api_scripts/"
+    API_PATH: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/"
     PROJECT_NAME: "{{KDI_PROJECT}}"
     TECHNICAL_PF: "{{ILLUMINA_SEQUENCER}}"
     ORGANISATION: "Plateforme NGS"
