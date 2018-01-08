@@ -193,9 +193,9 @@ fi
 
 
 # set commands
-demultiplexCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
-snakemakeAnalysis="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>>${LOG}";
-snakemakeIntegration="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
+demultiplexCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
+snakemakeAnalysis="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>>${LOG}";
+snakemakeIntegration="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
 fillConfigCmd="${RAWQC_PATH}/raw-qc_snakemake/fill_raw-qc_pipeline_config_snakemake.sh -c ${config} -b \"${biological_application}\" -a \"${analysis_type}\" -i ${ILLUMINA_FILE} -g ${GAINGROUP} -r ${RAWQC_PATH} &>>${LOG}";
 unlockCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
 if [[ -n ${RIMS_ID:-} ]]; then
