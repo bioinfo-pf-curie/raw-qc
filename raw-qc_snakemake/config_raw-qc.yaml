@@ -22,8 +22,7 @@ kdi:
     ENV: "{{ENV}}" #dev,valid,prod
     UNDECLARED: "FALSE"  #TRUE or FALSE
     DATASET_ID: ""
-#    API_PATH: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/"
-    API_PATH: "/bioinfo/users/mvalade/Documents/Git/kdi_api_scripts/"
+    API_PATH: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/"
     PROJECT_NAME: "{{KDI_PROJECT}}"
     TECHNICAL_PF: "{{ILLUMINA_SEQUENCER}}"
     ORGANISATION: "Plateforme NGS"
@@ -94,8 +93,7 @@ general_path:
     OUTPUT_PATH: "{{OUTPUT_PATH}}"
     INPUT_DIR: "/data/transfert/Illumina/"
     PYTHON_PATH: "/bioinfo/pipelines/SOAPclient/python/kdi_{{ENV}}/instance"
-#    RULE_PATH_KDI: "/bioinfo/pipelines/kdi_api_scripts/KDI_snakemake/"
-    RULE_PATH_KDI: "/bioinfo/users/mvalade/Documents/Git/kdi_api_scripts/KDI_snakemake/"
+    RULE_PATH_KDI: "/bioinfo/pipelines/kdi_api_scripts/{{ENV}}/KDI_snakemake/"
     DATA_TMP_OUTPATH: "{{OUTPUT_PATH}}"
     CREATE_KDI_CONF: "/bioinfo/pipelines/ngsdm/dev/Pipelines/SCRIPTS/createKDIconf_Snakemake.sh"
     SAMPLEDESCRIPTION_PATH: ".sampleDescription.txt"
@@ -108,7 +106,7 @@ samplesheet_checker:
     PATH: "/bioinfo/pipelines/samplesheet-checker/{{ENV}}/"
 
 bcl2fastq:
-    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.err -N snakemake_bcl2fastq -l nodes=1:ppn=8,mem=5Gb"
+    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_bcl2fastq.err -N snakemake_bcl2fastq -l nodes=1:ppn=8,mem={{MEM_BCL2FASTQ}}"
     THREAD_NUMBER: "8"
     OPTIONAL_PARAMETERS: ""
 
