@@ -16,7 +16,6 @@ include: general_rules_path + "check_fastq_length_rule"
 include: general_rules_path + "samplesheet_copy_rule"
 include: general_rules_path + "transfert_fastq_dir_rule"
 include: general_rules_path + "manage_undetermined_fastq_rule"
-include: general_rules_path + "merge_fastq_loop_rule"
 include: general_rules_path + "samplesheet_to_sampleplan.rule"
 include: general_rules_path + "rims_metadata_launcher.rule"
 include: general_rules_path + "samplesheet_to_sampledescription_rule"
@@ -42,9 +41,8 @@ samplesheet_checker=config["general_path"]["OUTPUT_PATH"] + "/" + config["experi
 bcl2fastq=config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["BCL2FASTQ_OUTPUT"]
 check_fastq_length=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["CHECK_FASTQ_LENGTH_OUTPUT"]
 samplesheet_copy=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_COPY_OUTPUT"]
-transfert_fastq_dir=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
+transfert_fastq_dir=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
 manage_undetermined_fastq=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
-merge_fastq_loop=expand((output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/nobackup/" + config["experience"]["RUN"] + "{sample}/" + config["extension"]["MERGE_FASTQ_LOOP_OUTPUT"]), sample=samples_list)
 samplesheet_to_sampleplan=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
 rims_metadata_launcher=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RIMS_METADATA_LAUNCHER_OUTPUT"]
 samplesheet_to_sampledescription=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT"]
@@ -59,7 +57,6 @@ rule all:
 #        samplesheet_copy,
 #        transfert_fastq_dir,
 #        manage_undetermined_fastq,
-#        merge_fastq_loop,
 #        samplesheet_to_sampleplan,
 #        rims_metadata_launcher,
 #        samplesheet_to_sampledescription,
