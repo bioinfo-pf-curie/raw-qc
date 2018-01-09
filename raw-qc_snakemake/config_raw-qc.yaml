@@ -61,9 +61,7 @@ extension:
     TRANSFERT_FASTQ_DIR_OUTPUT: "transfert_fastq_dir_ok.txt"
     MANAGE_UNDETERMINED_FASTQ_INPUT: "transfert_fastq_dir_ok.txt"
     MANAGE_UNDETERMINED_FASTQ_OUTPUT: "manage_undetermined_fastq_ok.txt"
-    MERGE_FASTQ_LOOP_INPUT: "manage_undetermined_fastq_ok.txt"
-    MERGE_FASTQ_LOOP_OUTPUT: "merge_fastq_ok.txt"
-    SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1: "merge_fastq_ok.txt"
+    SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1: "manage_undetermined_fastq_ok.txt"
     SAMPLESHEET_TO_SAMPLEPLAN_INPUT_2: "SampleSheet.csv"
     SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT: "_SAMPLEPLAN"
     RIMS_METADATA_LAUNCHER_INPUT: "_SAMPLEPLAN"
@@ -123,10 +121,6 @@ transfert_fastq_dir:
 
 manage_undetermined_fastq:
     CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_manage_undetermined_fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_manage_undetermined_fastq.err -N snakemake_manage_undetermined_fastq -l nodes=1:ppn=1,mem=1Gb"
-
-merge_fastq:
-    CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_merge_fastq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_merge_fastq.err -N snakemake_merge_fastq -l nodes=1:ppn=1,mem=2Gb"
-    PATH: "{{RAWQC_PATH}}/raw-qc_snakemake/"
 
 samplesheet_to_sampleplan:
     CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampleplan.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_samplesheet_to_sampleplan.err -N snakemake_samplesheet_to_sampleplan -l nodes=1:ppn=1,mem=1Gb"

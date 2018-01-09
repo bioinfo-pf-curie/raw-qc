@@ -1,22 +1,6 @@
-samplesheet_path = config["general_path"]["SAMPLESHEET_DIR"]+config["experience"]["ILLUMINA_REF"]+"/SampleSheet.csv"
-source = open(samplesheet_path, "rU")
-pre_line = str()
-data = False
-id_col = None
-samples_list = list()
-for line in source:
-    if "[Data]" in pre_line:
-        data = True
-        columns_names = [name.lower() for name in line.rstrip('\n\r').split(",")]
-        columns_dict = {columns_names[i]: i for i in range(0, len(columns_names))}
-        id_col = columns_dict["sample_id"]
-    elif data == True:
-        samples_list.append(line.rstrip('\n\r').split(",")[id_col])
-    pre_line = line
-samples_list.sort()
 rule samplesheet_to_sampleplan:
     input:
-        i1=expand((config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/nobackup/" + config["experience"]["RUN"] + "{sample}/" + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1"]), sample=samples_list),
+        i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1"],
         i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_INPUT_2"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
