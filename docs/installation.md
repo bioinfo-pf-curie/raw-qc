@@ -26,7 +26,7 @@ And then you can create your environment:
 ```
 conda create --name raw-qc --file raw-qc/requirements.txt
 source activate raw-qc
-git clone https://gitlab.curie.fr/ddesvill/autotropos.git
+git clone https://gitlab.curie.fr/data-analysis/autotropos.git
 cd autotropos
 python setup.py install
 ```
