@@ -5,13 +5,17 @@ from logging.handlers import RotatingFileHandler
 import argparse
 
 
-def parse_data(output_file, line, col_dict, run_name):
+def parse_data(output_file, line, col_dict, run_name, sample_id_list):
     sep = "|"
     infos = line.rstrip('\n\r').split(",")
-    sample_id = infos[col_dict["sample_id"]]
-    sample_name = infos[col_dict["sample_name"]]
-    output_file.write(run_name + sample_id + sep + sample_name + "\n")
-
+    sample_id_key = [col_dict[i] for i in col_dict.keys() if "sample" in i and "id" in i]
+    sample_id = infos[sample_id_key[0]]
+    if not sample_id in sample_id_list:
+        sample_id_list.append(sample_id)
+        sample_name_key = [col_dict[i] for i in col_dict.keys() if "sample" in i and "name" in i]
+        sample_name = infos[sample_name_key[0]]
+        output_file.write(run_name + sample_id + sep + sample_name + "\n")
+    return sample_id_list
 
 def parse_colnames(header_line):
     col_dict = dict()
@@ -24,6 +28,7 @@ def parse_colnames(header_line):
 def parse_samplesheet(src, output_file, run_name):
     pre_line = str()
     col_dict = dict()
+    sample_id_list = list()
     data = False
     for line in src:
         if not line[0] == "#":
@@ -31,7 +36,7 @@ def parse_samplesheet(src, output_file, run_name):
                 data = True
                 col_dict = parse_colnames(line)
             elif data:
-                parse_data(output_file, line, col_dict, run_name)
+                sample_id_list = parse_data(output_file, line, col_dict, run_name, sample_id_list)
             pre_line = line
 
 

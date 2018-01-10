@@ -14,49 +14,52 @@ def parse_colnames(header_line):
     return col_dict
 
 
-def parse_data(output_file, line, col_dict, output_path, run_name, exception):
+def parse_data(output_file, line, col_dict, output_path, run_name, exception, sample_id_list):
     sep = ","
     infos = line.rstrip('\n\r').split(",")
     sample_id_key = [col_dict[i] for i in col_dict.keys() if "sample" in i and "id" in i]
     sample_id = infos[sample_id_key[0]]
-    sample_name_key = [i for i in col_dict.keys() if "sample" in i and "name" in i]
-    sample_name = infos[col_dict[sample_name_key[0]]]
-    unique_sample_id = run_name + sample_id
-    fastq_path = output_path + "/" + unique_sample_id
-    fastq_nb = len(glob.glob1(fastq_path, "*.fastq*"))
-    if fastq_nb == 1:
-        R1_path = fastq_path + "/" + unique_sample_id + ".R1.fastq.gz"
-        R1_path_check = os.path.isfile(R1_path)
-        if R1_path_check:
-            output_file.write(unique_sample_id + sep + sample_name + sep + R1_path + sep + "" + sep + "\n")
+    if not sample_id in sample_id_list:
+        sample_id_list.append(sample_id)
+        sample_name_key = [col_dict[i] for i in col_dict.keys() if "sample" in i and "name" in i]
+        sample_name = infos[sample_name_key[0]]
+        unique_sample_id = run_name + sample_id
+        fastq_path = output_path + "/" + unique_sample_id
+        fastq_nb = len(glob.glob1(fastq_path, "*.fastq*"))
+        if fastq_nb == 1:
+            R1_path = fastq_path + "/" + unique_sample_id + ".R1.fastq.gz"
+            R1_path_check = os.path.isfile(R1_path)
+            if R1_path_check:
+                output_file.write(unique_sample_id + sep + sample_name + sep + R1_path + sep + "" + sep + "\n")
+            else:
+                logger.error("ERROR : The fastq files path '{0}' doesn't exist".format(R1_path))
+                exception = True
+        elif fastq_nb == 2:
+            R1_path = fastq_path + "/" + unique_sample_id + ".R1.fastq.gz"
+            R2_path = fastq_path + "/" + unique_sample_id + ".R2.fastq.gz"
+            R1_path_check = os.path.isfile(R1_path)
+            R2_path_check = os.path.isfile(R2_path)
+            if R1_path_check and R2_path_check:
+                output_file.write(unique_sample_id + sep + sample_name + sep + R1_path + sep + R2_path + sep + "\n")
+            elif not R1_path_check or not R2_path_check:
+                if not R1_path_check:
+                    wrong_path = R1_path
+                if not R2_path_check:
+                    wrong_path = R2_path
+                logger.error("ERROR : The fastq files path '{0}' doesn't exist".format(wrong_path))
+                exception = True
+            elif not R1_path_check and not R1_path_check:
+                logger.error("ERROR : Fastq files paths '{0}' and '{1}' don't exist".format(R1_path, R2_path))
+                exception = True
         else:
-            logger.error("ERROR : The fastq files path '{0}' doesn't exist".format(R1_path))
+            logger.error("ERROR : Wrong number of fastq files '{0}' in the path '{1}' or this path doesn't exist. It must have one fastq file for SE samples or two fastq files for PE samples".format(fastq_nb, fastq_path))
             exception = True
-    elif fastq_nb == 2:
-        R1_path = fastq_path + "/" + unique_sample_id + ".R1.fastq.gz"
-        R2_path = fastq_path + "/" + unique_sample_id + ".R2.fastq.gz"
-        R1_path_check = os.path.isfile(R1_path)
-        R2_path_check = os.path.isfile(R2_path)
-        if R1_path_check and R2_path_check:
-            output_file.write(unique_sample_id + sep + sample_name + sep + R1_path + sep + R2_path + sep + "\n")
-        elif not R1_path_check or not R2_path_check:
-            if not R1_path_check:
-                wrong_path = R1_path
-            if not R2_path_check:
-                wrong_path = R2_path
-            logger.error("ERROR : The fastq files path '{0}' doesn't exist".format(wrong_path))
-            exception = True
-        elif not R1_path_check and not R1_path_check:
-            logger.error("ERROR : Fastq files paths '{0}' and '{1}' don't exist".format(R1_path, R2_path))
-            exception = True
-    else:
-        logger.error("ERROR : Wrong number of fastq files '{0}' in the path '{1}' or this path doesn't exist. It must have one fastq file for SE samples or two fastq files for PE samples".format(fastq_nb, fastq_path))
-        exception = True
-    return exception
+    return exception, sample_id_list
 
 
 def parse_samplesheet(src, output_file, output_path, run_name):
     exception, header, data = False, False, False
+    sample_id_list = list()
     pre_line = str()
     col_dict = dict()
     line_number = 0
@@ -70,14 +73,14 @@ def parse_samplesheet(src, output_file, output_path, run_name):
                     data = True
                     col_dict = parse_colnames(line)
                 elif data:
-                    exception = parse_data(output_file, line, col_dict, output_path, run_name, exception)
+                    exception, sample_id_list = parse_data(output_file, line, col_dict, output_path, run_name, exception, sample_id_list)
                 pre_line = line
             # Old samplesheet format
             else:
                 if line_number == 1:
                     col_dict = parse_colnames(line)
                 else:
-                    exception = parse_data(output_file, line, col_dict, output_path, run_name, exception)
+                    exception, sample_id_list = parse_data(output_file, line, col_dict, output_path, run_name, exception, sample_id_list)
     return exception
 
 
