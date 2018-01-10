@@ -1,7 +1,8 @@
 rule config_rawqc_copy:
     input:
         i1=config["raw-qc_pipeline"]["PATH"] +  config["extension"]["CONFIG_RAWQC_COPY_INPUT_1"],
-        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_2"]
+        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_2"],
+        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_3"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT"]
     log:

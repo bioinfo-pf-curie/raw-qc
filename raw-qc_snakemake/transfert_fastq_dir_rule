@@ -1,6 +1,6 @@
 rule transfert_fastq_dir:
     input:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["TRANSFERT_FASTQ_DIR_INPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["TRANSFERT_FASTQ_DIR_INPUT"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
     log:

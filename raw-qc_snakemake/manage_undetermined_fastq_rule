@@ -2,7 +2,7 @@ rule manage_undetermined_fastq:
     input:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_INPUT"]
     output:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
     log:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/manage_undetermined_fastq.log"
     params:
@@ -12,5 +12,5 @@ rule manage_undetermined_fastq:
     run:
         shell("""
         cp {wildcards.output_path}/{params.project}-{params.run}/bcl2fastq/Undetermined* {wildcards.output_path}/{params.project}-{params.run}/archive/. 2>> {log} &&
-        touch {wildcards.output_path}/{params.project}-{params.run}/archive/manage_undetermined_fastq_ok.txt 2>> {log}
+        touch {wildcards.output_path}/{params.project}-{params.run}/manage_undetermined_fastq_ok.txt 2>> {log}
         """)

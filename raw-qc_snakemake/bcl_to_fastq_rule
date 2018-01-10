@@ -1,6 +1,6 @@
 rule bcl2fastq:
     input:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["BCL2FASTQ_INPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["BCL2FASTQ_INPUT"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["BCL2FASTQ_OUTPUT"]
     log:
