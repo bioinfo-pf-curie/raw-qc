@@ -1,6 +1,6 @@
 rule manage_undetermined_fastq:
     input:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_INPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_INPUT"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
     log:
