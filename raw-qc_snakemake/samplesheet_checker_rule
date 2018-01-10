@@ -3,7 +3,7 @@ rule samplesheet_checker:
         i1=config["general_path"]["SAMPLESHEET_DIR"] + "/" + config["experience"]["ILLUMINA_REF"] + "/" + config["extension"]["SAMPLESHEET_CHECKER_INPUT_1"],
         i2=config["general_path"]["SAMPLESHEET_DIR"] + "/" + config["experience"]["ILLUMINA_REF"] + "/" + config["extension"]["SAMPLESHEET_CHECKER_INPUT_2"]
     output:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["SAMPLESHEET_CHECKER_OUTPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_CHECKER_OUTPUT"]
     log:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/samplesheet_checker.log"
     params:
@@ -23,11 +23,12 @@ rule samplesheet_checker:
         {{
             {params.samplesheet_checker_path}/samplesheet_checker_launcher.sh -i {input.i1} -l {log} -e {params.kdi_env} -p {params.project_samplesheet} -c {params.cluster_env} -m {params.project_type} -s {params.scope} &>> {log} &&
             exit_status=$? &&
-            echo "Script samplesheet_checker_launcher.sh : exit status $exit_status" &>> {log} &&
-            touch {wildcards.output_path}/{params.project}-{params.run}/samplesheet_checker_ok.txt 2>> {log}
+            echo "Script samplesheet_checker_launcher.sh : exit status ${{exit_status}}" &>> {log} &&
+            touch {wildcards.output_path}/{params.project}-{params.run}/samplesheet_checker_ok.txt 2>> {log} &&
+            cp {input.i1} {wildcards.output_path}/{params.project}-{params.run}/archive/. 2>> {log}
         }}||{{
             exit_status=$? &&
-            echo "Script samplesheet_checker_launcher.sh ERROR : non zero exit status '${{exit_status}}'" &>> {log} &&
+            echo "Script samplesheet_checker_launcher.sh ERROR: non zero exit status '${{exit_status}}'" &>> {log} &&
             exit $exit_status
         }}
         """)

@@ -2,7 +2,7 @@ rule check_fastq_length:
     input:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["CHECK_FASTQ_LENGTH_INPUT"]
     output:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/bcl2fastq/" + config["extension"]["CHECK_FASTQ_LENGTH_OUTPUT"]
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["CHECK_FASTQ_LENGTH_OUTPUT"]
     log:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/check_fastq_length.log"
     params:
@@ -14,5 +14,5 @@ rule check_fastq_length:
     run:
         shell("""
         {params.check_fastq_length_path}/check_fastq_length.sh -p {wildcards.output_path}/{params.project}-{params.run}/bcl2fastq/{params.project_samplesheet} -l {log} 2> {log} &&
-        touch {wildcards.output_path}/{params.project}-{params.run}/bcl2fastq/check_fastq_length_ok.txt 2>> {log}
+        touch {wildcards.output_path}/{params.project}-{params.run}/check_fastq_length_ok.txt 2>> {log}
         """)
