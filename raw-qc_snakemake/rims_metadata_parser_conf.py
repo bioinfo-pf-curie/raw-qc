@@ -23,16 +23,16 @@ def metadata_parsing(output_file, demand):
     exception = False
     bioinfoBedBool, speciesBool, sequencerBool, biologicalApplicationBool = False, False, False, False
     Team_leader = ""
-    metadata_dict = collections.OrderedDict([('biological_application',''),('analysis_type','')])
+    metadata_dict = collections.OrderedDict([('biological_application',''),('analysis_type',''),('species','')])
     dataset_list = []
     sep = "\t"
     team_leader_unit = []
     try:
-        rims_object = rimsHandler.demandWServiceRMS().findByCode(demand, ( 'biologicalApplication', 'typeOfAnalysis', 'otherBiologicalApplication'))
+        rims_object = rimsHandler.demandWServiceRMS().findByCode(demand, ( 'biologicalApplication', 'typeOfAnalysis', 'otherBiologicalApplication', 'species', 'otherSpecies'))
     except Exception as e:
         logger.exception("RIMS connection error")
         sys.exit(100)
-    fields_object = rims_object[0]
+    fields_object = rims_object["fields"]
     for i in fields_object[0]:
         if i["key"] == "typeOfAnalysis":
             if not i["value"]:
@@ -53,6 +53,21 @@ def metadata_parsing(output_file, demand):
                     metadata_dict['biological_application'] = "Unknown"
                 else:
                     metadata_dict['biological_application'] = i["value"]
+        if i["key"] == "species":
+            if not i["value"] == "other":
+                if not i["value"]:
+                    metadata_dict['species'] = "Unknown"
+                else:
+                    metadata_dict['species'] = i["value"]
+            elif i["value"] == "other":
+                speciesBool = True
+        if speciesBool:
+            if i["key"] == "otherSpecies":
+                if not i["value"]:
+                    metadata_dict['species'] = "Unknown"
+                else:
+                    metadata_dict['species'] = i["value"]
+
     for i in metadata_dict.items():
         output_file.write(i[0] + "\t" + i[1] + "\n")
     return exception

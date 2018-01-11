@@ -25,11 +25,11 @@ python_bin_dir="/bioinfo/local/build/Centos/python/python-2.7.13/bin/python2.7"
 
 # manage parameters #
 if [[ ${#} -eq 0 ]];then
-    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-p KDI_SPECIES] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
     exit 9
 fi
 
-while getopts ":c:r:e:i:s:d:k:p:t:o:m:y:a:u:" option
+while getopts ":c:r:e:i:s:d:k:t:o:m:y:a:u:" option
 do
     case "${option}" in
     c)    CONFIG_TEMPLATE=${OPTARG};;
@@ -39,21 +39,20 @@ do
     s)    ILLUMINA_SEQUENCER=${OPTARG};;
     d)    RIMS_ID=${OPTARG};;
     k)    KDI_PROJECT=${OPTARG};;
-    p)    KDI_SPECIES=${OPTARG};;
     t)    PROJECT_TYPE=${OPTARG};;
     o)    SCOPE=${OPTARG};;
     m)    DEMAND=${OPTARG};;
     y)    DATATYPE=${OPTARG};;
     a)    CONDA_PATH=${OPTARG};;
     u)    UNLOCK=${OPTARG};;
-    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-p KDI_SPECIES] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
           exit 10;;
     esac
     shift $((OPTIND-1)); OPTIND=1
 done
 
 # check parameters values #
-if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${KDI_SPECIES} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]]; then
+if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]]; then
     echo "ERROR : There is one or many empty argument(s)"
     exit 1
 fi
@@ -149,7 +148,6 @@ sed -i "s|{ILLUMINA_FILE}|${illumina_file}|g" ${config}
 sed -i "s|{SEQUENCER}|${SEQUENCER}|g" ${config}
 sed -i "s|{RIMS_ID}|${RIMS_ID:-}|g" ${config}
 sed -i "s|{KDI_PROJECT}|${KDI_PROJECT}|g" ${config}
-sed -i "s|{KDI_SPECIES}|${KDI_SPECIES}|g" ${config}
 sed -i "s|{PROJECT_TYPE}|${PROJECT_TYPE}|g" ${config}
 sed -i "s|{SCOPE}|${SCOPE}|g" ${config}
 sed -i "s|{DEMAND}|${DEMAND}|g" ${config}
@@ -170,7 +168,7 @@ then
     exit 1;
 fi
 
-echo "RAWQC_PATH:${RAWQC_PATH}; OUTPUT_PATH:${OUTPUT_PATH}; ENV:${ENV}; RUN:${RUN}; PROJECT:${PROJECT}; KDI:${KDI}; KDI_PROJECT:${KDI_PROJECT}; ILLUMINA_REF:${ILLUMINA_REF}; LOG:${LOG}; QUEUE:${QUEUE}; DEMULTIPLEXING:${DEMULTIPLEXING}; RIMS_ID:${RIMS_ID:-}; STEP:${STEP}; SCOPE:${SCOPE}; PROJECT_TYPE:${PROJECT_TYPE}; KDI_SPECIES=${KDI_SPECIES}; DEMAND:${DEMAND}; DATATYPE=${DATATYPE}; UNLOCK:${UNLOCK}; ILLUMINA_SEQUENCER:${ILLUMINA_SEQUENCER}; RESEARCH_FUNC_PATH:${RESEARCH_FUNC_PATH}" &>>${LOG}
+echo "RAWQC_PATH:${RAWQC_PATH}; OUTPUT_PATH:${OUTPUT_PATH}; ENV:${ENV}; RUN:${RUN}; PROJECT:${PROJECT}; KDI:${KDI}; KDI_PROJECT:${KDI_PROJECT}; ILLUMINA_REF:${ILLUMINA_REF}; LOG:${LOG}; QUEUE:${QUEUE}; DEMULTIPLEXING:${DEMULTIPLEXING}; RIMS_ID:${RIMS_ID:-}; STEP:${STEP}; SCOPE:${SCOPE}; PROJECT_TYPE:${PROJECT_TYPE}; DEMAND:${DEMAND}; DATATYPE=${DATATYPE}; UNLOCK:${UNLOCK}; ILLUMINA_SEQUENCER:${ILLUMINA_SEQUENCER}; RESEARCH_FUNC_PATH:${RESEARCH_FUNC_PATH}" &>>${LOG}
 
 
 # WORKFLOW LAUNCH #
@@ -180,17 +178,27 @@ echo "############################## NEW LAUNCH : ${date} ######################
 
 # launch rims metadata conf script
 rims_metadata_conf_command="${GAINGROUP} ${python_bin_dir} ${RAWQC_PATH}/raw-qc_snakemake/rims_metadata_parser_conf.py -o ${output_dir} -l ${LOG} -e ${ENV,,} -r ${RUN} --demand ${DEMAND} &>>${LOG}"
-echo ${rims_metadata_conf_command} &>> ${LOG}
-eval ${rims_metadata_conf_command}
+echo ${rims_metadata_conf_command} &>>${LOG}
+eval ${rims_metadata_conf_command} &>>${LOG}
 
 if [[ -f ${output_dir}/${RUN}-rims_metadata_conf.tsv ]]; then
-    biological_application=$(awk -F"(\t)" '{ if ($1 == "biological_application") print $2 }' ${output_dir}/${RUN}-rims_metadata_conf.tsv)
-    analysis_type=$(awk -F"(\t)" '{ if ($1 == "analysis_type") print $2 }' ${output_dir}/${RUN}-rims_metadata_conf.tsv)
+    biological_application=$(awk -F"(\t)" '{ if ($1 == "biological_application") print $2 }' ${output_dir}/${RUN}-rims_metadata_conf.tsv) &>>${LOG}
+    analysis_type=$(awk -F"(\t)" '{ if ($1 == "analysis_type") print $2 }' ${output_dir}/${RUN}-rims_metadata_conf.tsv) &>>${LOG}
+    kdi_species=$(awk -F"(\t)" '{ if ($1 == "species") print $2 }' ${output_dir}/${RUN}-rims_metadata_conf.tsv) &>>${LOG}
 else
     echo "ERROR: the file '${output_dir}/${RUN}-rims_metadata_conf.tsv' doesn't exist, the script '${RAWQC_PATH}/raw-qc_snakemake/rims_metadata_parser_conf.py' may be in error state" &>>${LOG}
     exit 1
 fi
 
+sed -i "s|{KDI_SPECIES}|${kdi_species}|g" ${config}
+
+# source workflow config file #
+{
+    source ${config}
+} || {
+    echo >&2 "ERROR: no such file: ${Config}"
+    exit 11
+}
 
 # set commands
 demultiplexCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";

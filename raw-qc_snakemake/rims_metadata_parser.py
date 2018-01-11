@@ -14,6 +14,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import argparse
+import collections
 from curie.ws import handler
 from curie.ws import wslib
 
@@ -21,186 +22,149 @@ from curie.ws import wslib
 def metadata_parsing(output_file, demand):
     exception = False
     bioinfoBedBool, speciesBool, sequencerBool, biologicalApplicationBool = False, False, False, False
-    projectId, code, creationDate, project, user, runs, species, build, sequencer, bioinfoBed, demandDescription, SampleNumber, Team_leader, StateUpdateDate, agentName, laneOrRunNumber, analysis_type, biologicalApplication = "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+    Team_leader = ""
+    metadata_dict = collections.OrderedDict([('demand_code',''),('project_name',''),('project_id',''),('analysis_type',''),('biological_application',''),('sample_number',''),('lane_number',''),('runs',''),('datasets',''),('sequencer',''),('species',''),('build',''),('bed',''),('creation_date',''),('state_update_date',''),('technical_contact',''),('team_leader|unit',''),('agent_name','')])
     dataset_list = []
     sep = "\t"
     team_leader_unit = []
     try:
-        rims_object = rimsHandler.demandWServiceRMS().findByCode(demand, ('project', 'projectId', 'code', 'contact:Team leader', 'user', 'runs', 'SampleNumber', 'creationDate', 'species', 'bioinfoVersionRG', 'sequencer', 'bioinfoTargetedPanelVersion', 'stateUpdateDate', 'laneOrRunNumber', 'biologicalApplication'))
-    except:
-        logger.critical("RIMS connection error")
+        rims_object = rimsHandler.demandWServiceRMS().findByCode(demand, ('project', 'projectId', 'code', 'contact:Team leader', 'user', 'runs', 'SampleNumber', 'creationDate', 'species', 'bioinfoVersionRG', 'sequencer', 'bioinfoTargetedPanelVersion', 'stateUpdateDate', 'laneOrRunNumber', 'biologicalApplication', 'otherSpecies', 'bioinfoBed', 'otherSequencer', 'otherBiologicalApplication'))
+    except Exception as e:
+        logger.exception("RIMS connection error")
         sys.exit(100)
-    output_file.write("demand_code\tproject\tproject_id\tanalysis_type\tbiological_application\tsample_number\tlane_number\truns\tdatasets\tsequencer\tspecies\tbuild\tbed\tcreation_date\tstate_update_date\ttechnical_contact\tteam_leader|unit\tagent_name\n")
     fields_object = rims_object[0]
     for i in fields_object[0]:
         if i["key"] == "projectId":
             if not i["value"]:
-                projectId = "Unknown"
+                metadata_dict['project_id'] = "Unknown"
             else:
-                projectId = i["value"]
-            logger.info(projectId)
+                metadata_dict['project_id'] = i["value"]
         if i["key"] == "code":
             if not i["value"]:
-                code = "Unknown"
+                metadata_dict['demand_code'] = "Unknown"
             else:
-                code = i["value"]
-            logger.info(code)
+                metadata_dict['demand_code'] = i["value"]
         if i["key"] == "creationDate":
             if not i["value"]:
-                creationDate = "Unknown"
+                metadata_dict['creation_date'] = "Unknown"
             else:
-                creationDate = i["value"]
-            logger.info(creationDate)
+                metadata_dict['creation_date'] = i["value"]
         if i["key"] == "project":
             if not i["value"]:
-                project = "Unknown"
+                metadata_dict['project_name'] = "Unknown"
             else:
-                project = i["value"]
-            logger.info(project)
+                metadata_dict['project_name'] = i["value"]
         if i["key"] == "user":
             if not i["value"]:
-                user = "Unknown"
+                metadata_dict['technical_contact'] = "Unknown"
             else:
-                user = i["value"]
-            logger.info(user)
+                metadata_dict['technical_contact'] = i["value"]
         if i["key"] == "runs":
             if not i["value"]:
-                runs = "Unknown"
+                metadata_dict['runs'] = "Unknown"
             else:
-                runs = i["value"]
-            logger.info(runs)
+                metadata_dict['runs'] = i["value"]
         if i["key"] == "species":
-            if not i["value"]:
-                species = "Unknown"
-            else:
-                species = i["value"]
-            logger.info(species)
-            if species == "other":
+            if not i["value"] == "other":
+                if not i["value"]:
+                    metadata_dict['species'] = "Unknown"
+                else:
+                    metadata_dict['species'] = i["value"]
+            elif i["value"] == "other":
                 speciesBool = True
+        if speciesBool:
+            if i["key"] == "otherSpecies":
+                if not i["value"]:
+                    metadata_dict['species'] = "Unknown"
+                else:
+                    metadata_dict['species'] = i["value"]
         if i["key"] == "bioinfoVersionRG":
             if not i["value"]:
-                build = "Unknown"
+                metadata_dict['build'] = "Unknown"
             else:
-                build = i["value"]
-            logger.info(build)
+                metadata_dict['build'] = i["value"]
         if i["key"] == "sequencer":
-            if not i["value"]:
-                sequencer = "Unknown"
-            else:
-                sequencer = i["value"]
-            logger.info(sequencer)
-            if i["value"] == "other":
+            if not i["value"] == "other":
+                if not i["value"]:
+                    metadata_dict['sequencer'] = "Unknown"
+                else:
+                    metadata_dict['sequencer'] = i["value"]
+            elif i["value"] == "other":
                 sequencerBool = True
+        if sequencerBool:
+            if i["key"] == "otherSequencer":
+                if not i["value"]:
+                    metadata_dict['sequencer'] = "Unknown"
+                else:
+                    metadata_dict['sequencer'] = i["value"]
         if i["key"] == "bioinfoTargetedPanelVersion":
-            if not i["value"]:
-                bioinfoBed = "Unknown"
-            else:
-                bioinfoBed = i["value"]
-            if i["value"] == "Other":
+            if not i["value"] == "other":
+                if not i["value"]:
+                    metadata_dict['bed'] = "Unknown"
+                else:
+                    metadata_dict['bed'] = i["value"]
+            elif i["value"] == "other":
                 bioinfoBedBool = True
-            logger.info(bioinfoBed)
-#        if i["key"] == "demandDescription":
-#            if not i["value"]:
-#                demandDescription = "Unknown"
-#            else:
-#                demandDescription = i["value"].replace('\n', ' ').replace('\r', ' ').replace('\n\r', ' ')
-#            logger.info(demandDescription)
+        if bioinfoBedBool:
+            if i["key"] == "bioinfoBed":
+                if not i["value"]:
+                    metadata_dict['bed'] = "Unknown"
+                else:
+                    metadata_dict['bed'] = i["value"]
         if i["key"] == "SampleNumber":
             if not i["value"]:
-                SampleNumber = "Unknown"
+                metadata_dict['sample_number'] = "Unknown"
             else:
-                SampleNumber = i["value"]
-            logger.info(SampleNumber)
+                metadata_dict['sample_number'] = i["value"]
         if i["key"] == "contact:Team leader":
             if not i["value"]:
                 Team_leader = "Unknown"
             else:
                 Team_leader = i["value"][1:len(i["value"])-1]
-            logger.info(Team_leader)
-#        if i["key"] == "contact:Scientific leader":
-#            if not i["value"]:
-#                Scientific_leader = "Unknown"
-#            else:
-#                Scientific_leader = i["value"][1:len(i["value"])-1]
-#            logger.info(Scientific_leader)
         if i["key"] == "stateUpdateDate":
             if not i["value"]:
-                stateUpdateDate = "Unknown"
+                metadata_dict['state_update_date'] = "Unknown"
             else:
-                stateUpdateDate = i["value"]
-            logger.info(stateUpdateDate)
+                metadata_dict['state_update_date'] = i["value"]
         if i["key"] == "laneOrRunNumber":
             if not i["value"]:
-                laneOrRunNumber = "Unknown"
+                metadata_dict['lane_number'] = "Unknown"
             else:
-                laneOrRunNumber = i["value"]
-            logger.info(laneOrRunNumber)
+                metadata_dict['lane_number'] = i["value"]
         if i["key"] == "typeOfAnalysis":
             if not i["value"]:
-                analysis_type = "Unknown"
+                metadata_dict['analysis_type'] = "Unknown"
             else:
-                analysis_type = i["value"]
-            logger.info(analysis_type)
+                metadata_dict['analysis_type'] = i["value"]
         if i["key"] == "biologicalApplication":
-            if not i["value"]:
-                biologicalApplication = "Unknown"
-            else:
-                biologicalApplication = i["value"]
-            if i["value"] == "Other":
+            if not i["value"] == "other":
+                if not i["value"]:
+                    metadata_dict['biological_application'] = "Unknown"
+                else:
+                    metadata_dict['biological_application'] = i["value"]
+            elif i["value"] == "other":
                 biologicalApplicationBool = True
-            logger.info(biologicalApplication)
+        if biologicalApplicationBool:
+            if i["key"] == "otherBiologicalApplication":
+                if not i["value"]:
+                    metadata_dict['biological_application'] = "Unknown"
+                else:
+                    metadata_dict['biological_application'] = i["value"]
     runs_object = rims_object[1]
     for i in runs_object[0]:
         dataset = ""
         if i["agentName"]:
-            agentName = i["agentName"]
-            logger.info(agentName)
+            metadata_dict['agent_name'] = i["agentName"]
+        else:
+            metadata_dict['agent_name'] = "Unknown"
         try:
            dataset = i["analysis"][0]["dataset"]
         except:
             logger.info("There is no dataset or analysis for the run '{0}'".format(i["code"]))
         if dataset:
             dataset_list.append(dataset)
-    if bioinfoBedBool:
-        rims_object_2 = rimsHandler.demandWServiceRMS().findByCode(demand, ('bioinfoBed'))
-        fields_object_2 = rims_object_2[0]
-        for i in fields_object_2[0]:
-            if i["key"] == "bioinfoBed":
-                if not i["value"]:
-                    bioinfoBed = "Unknown"
-                else:
-                    bioinfoBed = i["value"]
-                logger.info(bioinfoBed)
-    if speciesBool:
-        rims_object_3 = rimsHandler.demandWServiceRMS().findByCode(demand, ('otherSpecies'))
-        fields_object_3 = rims_object_3[0]
-        for i in fields_object_3[0]:
-            if i["key"] == "otherSpecies":
-                if not i["value"]:
-                    species = "Unknown"
-                else:
-                    species = i["value"]
-                logger.info(species)
-    if sequencerBool:
-        rims_object_4 = rimsHandler.demandWServiceRMS().findByCode(demand, ('otherSequencer'))
-        fields_object_4 = rims_object_4[0]
-        for i in fields_object_4[0]:
-            if i["key"] == "otherSequencer":
-                if not i["value"]:
-                    sequencer = "Unknown"
-                else:
-                    sequencer = i["value"]
-                logger.info(sequencer)
-    if biologicalApplicationBool:
-        rims_object_5 = rimsHandler.demandWServiceRMS().findByCode(demand, ('otherBiologicalApplication'))
-        fields_object_4 = rims_object_4[0]
-        for i in fields_object_4[0]:
-            if i["key"] == "otherBiologicalApplication":
-                if not i["value"]:
-                    biologicalApplication = "Unknown"
-                else:
-                    biologicalApplication = i["value"]
-                logger.info(biologicalApplication)
+    if dataset_list:
+        metadata_dict['datasets'] = str(dataset_list)[1:len(str(dataset_list))-1]
     team_leader_list = Team_leader.split(',')
     for i in team_leader_list:
         try:
@@ -208,16 +172,10 @@ def metadata_parsing(output_file, demand):
         except:
             team_leader_unit.append(i + " | Unknown")
             logging.info("Unknown mail adress in KDI : {0}".format(i))
-#    scientific_leader_list = Scientific_leader.split(',')
-#    for j in scientific_leader_list:
-#        try:
-#            scientific_leader_unit.append(j+"|"+kdiHandler.organisationWServiceKDI().findById(kdiHandler.userWServiceKDI().findByEmail('{0}'.format(j)).organisationId).name)
-#        except:
-#            scientific_leader_unit.append(j + "|Unknown")
-#            logging.info("Unknown mail adress in KDI : {0}".format(j))
     team_leader_str = ','.join([x.encode('UTF8') for x in team_leader_unit])
-#    scientific_leader_str = ','.join([x.encode('UTF8') for x in scientific_leader_unit])
-    output_file.write(str(code) + sep + str(project) + sep + str(projectId) + sep + str(analysis_type) + sep + str(biologicalApplication) + sep + str(SampleNumber) + sep + str(laneOrRunNumber) + sep + str(runs) + sep + str(dataset_list)[1:len(str(dataset_list))-1] + sep + str(demandDescription) + sep + str(sequencer) + sep + str(species) + sep + str(build) + sep + str(bioinfoBed) + sep + str(creationDate) + sep + str(stateUpdateDate) + sep + str(user) + sep + team_leader_str + sep + str(agentName) + "\n")
+    metadata_dict['team_leader|unit'] = team_leader_str
+    for i in metadata_dict.items():
+        output_file.write(i[0] + "\t" + i[1] + "\n")
     return exception
 
 if __name__ == "__main__":
