@@ -44,16 +44,19 @@ fi
 
 # add ID name in outputs, inputs and logs
 inputs=($INPUT)
-fastq_input=("${inputs[@]:0:2}")
 create_directory ${OUTPUT%/*}
 create_directory ${LOG%/*}
 
 # set some local variable
-basic_metrics_fastq=("-1" "${fastq_input[0]}")
+line=("${inputs[0]}")
 basic_metrics_json=("--json" "${inputs[1]}")
-if [[ ${#inputs[@]} -eq 3 ]]; then
-    basic_metrics_fastq+=("-2" "${fastq_input[1]}")
-    basic_metrics_json=("--json" "${inputs[2]}")
+IFS=',' read -r -a sample_array <<< "$line"
+sample_id=${sample_array[0]}
+sample_name=${sample_array[1]}
+raw_fastq=(${sample_array[@]:2:2})
+basic_metrics_fastq=(-1 ${raw_fastq[0]})
+if [[ ${#raw_fastq[@]} -eq 2 ]]; then
+    basic_metrics_fastq+=(-2 ${raw_fastq[1]})
 fi
 
 _fail=0 # variable to check if everything is ok
@@ -63,7 +66,8 @@ cmd="${basic_metrics_path}fastq_basic_metrics ${basic_metrics_option} \
                             ${basic_metrics_fastq[@]} \
                             ${basic_metrics_json[@]} \
                             -p ${OUTPUT} \
-                            -i $(basename ${OUTPUT%.*})"
+                            -i ${sample_id} \
+                            -s ${sample_name}"
 $cmd > ${LOG} 2>&1 || _fail=1
 
 exit ${_fail}

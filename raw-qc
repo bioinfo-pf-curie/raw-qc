@@ -178,8 +178,9 @@ fi
 process_qc(){
     local sample_array
     local cmd
+    local line=$1
 
-    IFS=',' read -r -a sample_array <<< "$1"
+    IFS=',' read -r -a sample_array <<< "$line"
     local sample_id=${sample_array[0]}
     local raw_fastq=$(printf '%s %s' "${sample_array[@]:2:2}")
     local outdir="${OUTDIR}${sample_id}"
@@ -222,7 +223,7 @@ process_qc(){
  
     # Basic metrics
     local basic_metrics_input=$(
-        printf '%s %s' "${raw_fastq}" \
+        printf '%s %s' "${line}" \
                        "${autotropos_prefix}.json"
     )
     local basic_metrics_output="${outdir}/basic_metrics/${sample_id}"
