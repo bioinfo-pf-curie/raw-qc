@@ -8,19 +8,19 @@
 ############################################################
 
 
+###INCLUDE RULES###
 # Path for KDI rules
 rule_path_kdi=config["general_path"]["RULE_PATH_KDI"]
 
-
-####### KDI rules
 if config["kdi"]["UNDECLARED"] == "FALSE":
     include: rule_path_kdi+"/KDI_create_dataset.rule"
     include: rule_path_kdi+"/KDI_start.rule"
 include: rule_path_kdi+"/KDI_conf_file_research_rule"
 include: rule_path_kdi+"/KDI_export.rule"
-####### KDI rules
+###INCLUDE RULES###
 
 
+###OUTPUTS RULES###
 #Create a KDI dataset
 create_dataset = expand(config["general_path"]["DATA_TMP_OUTPATH"]+ "/{project}-{run}/kdi_create_dataset_rule_ok.txt", project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
 
@@ -30,6 +30,7 @@ if config["kdi"]["UNDECLARED"] == "FALSE":
     kdi_conf_file_research=expand(config["general_path"]["DATA_TMP_OUTPATH"]+"/{project}-{run}/kdi_conf_files_research_rule_ok.txt",project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
 
     kdi_export=expand(config["general_path"]["DATA_TMP_OUTPATH"]+"/{project}-{run}/kdi_export_rule_ok.txt",project = config["experience"]["PROJECT"], run = config["run_information"]["RUN"])
+###OUTPUTS RULES###
 
 
 rule all:

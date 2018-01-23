@@ -29,7 +29,7 @@
     "multiqc":
     {
         "path": "",
-        "metadata": "",
+        "metadata": "{METADATA_FILE}",
         "options": "-f",
         "threads": 1,
         "memory": "8g",
