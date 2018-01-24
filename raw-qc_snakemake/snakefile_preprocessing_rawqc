@@ -5,7 +5,11 @@
 
 ############################################################
 
+
+###WORKING DIRECTORY###
 workdir: config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"]
+###WORKING DIRECTORY###
+
 
 ###INCLUDE RULES###
 general_rules_path=config["general_path"]["GENERAL_RULES_PATH"]
@@ -16,22 +20,11 @@ include: general_rules_path + "check_fastq_length_rule"
 include: general_rules_path + "transfert_fastq_dir_rule"
 include: general_rules_path + "manage_undetermined_fastq_rule"
 include: general_rules_path + "samplesheet_to_sampleplan.rule"
-include: general_rules_path + "rims_metadata_launcher.rule"
 include: general_rules_path + "samplesheet_to_sampledescription_rule"
 include: general_rules_path + "config_rawqc_copy.rule"
+include: general_rules_path + "rims_metadata_launcher.rule"
 ###INCLUDE RULES###
 
-###SAMPLES LIST###
-samplesheet_path = config["general_path"]["SAMPLESHEET_DIR"] + "/" + config["experience"]["ILLUMINA_REF"] + "/SampleSheet.csv"
-project_samplesheet=config["experience"]["PROJECT_SAMPLESHEET"]
-if config["experience"]["SEQUENCER"] == "hiseq":
-	bash_command = "cat {0} | grep -w {1} | cut -d ',' -f2 | sort -u | grep -v Sample_ID".format(samplesheet_path, project_samplesheet)
-else:
-	bash_command = "cat {0} | grep -w {1} | cut -d ',' -f1 | sort -u | grep -v Sample_ID".format(samplesheet_path, project_samplesheet)
-samples = subprocess.check_output(['bash', '-c', bash_command])
-samples_list = samples.decode("utf-8").rstrip('\n\r').split("\n")
-samples_list.sort()
-###SAMPLES LIST###
 
 ###OUTPUTS RULES###
 output_path=config["general_path"]["OUTPUT_PATH"]
@@ -42,10 +35,11 @@ check_fastq_length=output_path + "/" + config["experience"]["PROJECT"] + "-" + c
 transfert_fastq_dir=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["TRANSFERT_FASTQ_DIR_OUTPUT"]
 manage_undetermined_fastq=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
 samplesheet_to_sampleplan=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
-rims_metadata_launcher=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RIMS_METADATA_LAUNCHER_OUTPUT"]
 samplesheet_to_sampledescription=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT"]
-config_rawqc_copy=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT"]
+config_rawqc_copy=(output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_1"], output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_2"])
+rims_metadata_launcher=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RIMS_METADATA_LAUNCHER_OUTPUT"]
 ###OUTPUTS RULES###
+
 
 rule all:
     input:
@@ -55,8 +49,8 @@ rule all:
 #        transfert_fastq_dir,
 #        manage_undetermined_fastq,
 #        samplesheet_to_sampleplan,
-#        rims_metadata_launcher,
 #        samplesheet_to_sampledescription,
-        config_rawqc_copy,
+#        config_rawqc_copy,
+        rims_metadata_launcher,
     params:
-        cluster="-q batch -N snakemake_RAW-QC_demultiplexing_pipeline -l nodes=1:ppn=1,mem=1Gb"
+        cluster="-q batch -N snakemake_preprocessing_RAW-QC_pipeline -l nodes=1:ppn=1,mem=1Gb"

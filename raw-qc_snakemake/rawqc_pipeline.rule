@@ -1,7 +1,8 @@
 rule rawqc_pipeline:
     input:
         i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["RAW-QC_PIPELINE_INPUT_1"],
-        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["RAW-QC_PIPELINE_INPUT_2"]
+        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["RAW-QC_PIPELINE_INPUT_2"],
+        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RAW-QC_PIPELINE_INPUT_3"]
     output:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["RAW-QC_PIPELINE_OUTPUT"]
     log:

@@ -7,7 +7,7 @@
 ## Public License, either Version 2, June 1991 or Version 3, June 2007.
 
 
-### source du bashrc_bioinfo
+# source bashrc_bioinfo script #
 #source "/bioinfo/pipelines/dm-toolbox/prod/bashrc/bashrc_bioinfo"
 #if [[ ${?} -ne 0 ]]; then
 #    echo "Source failed for bashrc_bioinfo: /bioinfo/pipelines/dm-toolbox/prod/bashrc/bashrc_bioinfo"
@@ -16,7 +16,8 @@
 
 #set +x
 
-# set variables
+
+# set variables #
 state="begin"
 dataset_id="{DATASET_ID}"
 snakemake_bin_dir="/bioinfo/local/build/Centos/python/python-3.6.1/bin/snakemake"
@@ -51,6 +52,7 @@ do
     shift $((OPTIND-1)); OPTIND=1
 done
 
+
 # check parameters values #
 if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]]; then
     echo "ERROR : There is one or many empty argument(s)"
@@ -58,12 +60,15 @@ if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z
 fi
 
 
+# create RAWQC_PATH #
 filepath=$(realpath -s ${0})
 dirpath=$(dirname ${filepath})
-# on supprime le dernier dossier
+# delete last folder name of the path
 RAWQC_PATH=$(echo $dirpath | sed 's|/[^/]\+$|/|g')
 echo "RAWQC_PATH: ${RAWQC_PATH}"
 
+
+# check ILLUMINA_SEQUENCER value #
 if [[ ${ILLUMINA_SEQUENCER,,} == "miseq" ]]
 then
     illumina_file="CompletedJobInfo.xml"
@@ -78,6 +83,8 @@ else
     exit 1;
 fi
 
+
+# check ENV value #
 if [[ ${ENV,,} == "dev" ]]
 then
     export PYTHONPATH="/bioinfo/pipelines/SOAPclient/python/kdi_dev/instance"
@@ -95,28 +102,36 @@ else
     exit 1;
 fi
 
+
+# check DATATYPE value #
 if [[ ! ${DATATYPE^^} == "PE" ]] && [[ ! ${DATATYPE^^} == "SE" ]]; then
     echo "ERROR : Wrong value for 'DATATYPE' argument : '${DATATYPE}'. Values availables are 'SE' or 'PE'"
     exit 1;
 fi
 
+
+# check PROJECT value #
 source <(source ${CONFIG_TEMPLATE}; printf %s\\n "PROJECT=\"${PROJECT}\";OUTPUT_PATH=\"${OUTPUT_PATH}\"";)
 if [[ -z ${PROJECT} ]]; then
     echo "ERROR : Empty value for PROJECT argument: '${PROJECT}'"
     exit 1
 fi
+
+
+# check OUTPUT_PATH value #
 if [[ -z ${OUTPUT_PATH} ]]; then
     echo "ERROR : Empty value for PROJECT argument: '${OUTPUT_PATH}'"
     exit 1
 fi
 
+
 # create and check output folder #
-if [[ ! -d $OUTPUT_PATH ]] && [[ ! -z $OUTPUT_PATH ]]
+if [[ ! -d ${OUTPUT_PATH} ]] && [[ ! -z ${OUTPUT_PATH} ]]
 then
-    mkdir -p $OUTPUT_PATH
-elif [[ -z $OUTPUT_PATH ]]
+    mkdir -p ${OUTPUT_PATH}
+elif [[ -z ${OUTPUT_PATH} ]]
 then
-    echo "ERROR: empty variable OUTPUT_PATH: $OUTPUT_PATH"
+    echo "ERROR: empty variable OUTPUT_PATH: ${OUTPUT_PATH}"
     exit 1
 fi
 
@@ -154,6 +169,7 @@ sed -i "s|{DEMAND}|${DEMAND}|g" ${config}
 sed -i "s|{DATATYPE}|${DATATYPE^^}|g" ${config}
 sed -i "s|{CONDA_PATH}|${CONDA_PATH}|g" ${config}
 
+
 # source workflow config file #
 {
     source ${config}
@@ -162,21 +178,32 @@ sed -i "s|{CONDA_PATH}|${CONDA_PATH}|g" ${config}
     exit 11
 }
 
+
+# check QUEUE value #
 if [[ ! ${QUEUE,,} == "batch" ]] && [[ ! ${QUEUE,,} == "diag" ]]
 then
-    echo "ERROR : Wrong value for QUEUE argument : '${QUEUE}'. Values availables are 'diag' or 'batch'"
+    echo "ERROR : Wrong value for QUEUE argument : '${QUEUE}'. Values availables are 'diag' or 'batch'" &>>${LOG}
     exit 1;
 fi
 
+
+# check KDI value #
+if [[ ! ${KDI,,} == "yes" ]] && [[ ! ${KDI,,} == "no" ]]; then
+    echo "ERROR : Wrong value for KDI argument : '${KDI}'. Values availables are 'yes' or 'no'" &>>${LOG}
+    exit 1;
+fi
+
+
+# print variables #
 echo "RAWQC_PATH:${RAWQC_PATH}; OUTPUT_PATH:${OUTPUT_PATH}; ENV:${ENV}; RUN:${RUN}; PROJECT:${PROJECT}; KDI:${KDI}; KDI_PROJECT:${KDI_PROJECT}; ILLUMINA_REF:${ILLUMINA_REF}; LOG:${LOG}; QUEUE:${QUEUE}; DEMULTIPLEXING:${DEMULTIPLEXING}; RIMS_ID:${RIMS_ID:-}; STEP:${STEP}; SCOPE:${SCOPE}; PROJECT_TYPE:${PROJECT_TYPE}; DEMAND:${DEMAND}; DATATYPE=${DATATYPE}; UNLOCK:${UNLOCK}; ILLUMINA_SEQUENCER:${ILLUMINA_SEQUENCER}; RESEARCH_FUNC_PATH:${RESEARCH_FUNC_PATH}" &>>${LOG}
 
 
-# WORKFLOW LAUNCH #
+# workflow launch #
 date=$(date +'%d/%m/%y-%H:%M:%S')
 echo "############################## NEW LAUNCH : ${date} ##############################" &>>${LOG}
 
 
-# launch rims metadata conf script
+# launch rims metadata conf script #
 rims_metadata_conf_command="${GAINGROUP} ${python_bin_dir} ${RAWQC_PATH}/raw-qc_snakemake/rims_metadata_parser_conf.py -o ${output_dir} -l ${LOG} -e ${ENV,,} -r ${RUN} --demand ${DEMAND} &>>${LOG}"
 echo ${rims_metadata_conf_command} &>>${LOG}
 eval ${rims_metadata_conf_command} &>>${LOG}
@@ -192,6 +219,7 @@ fi
 
 sed -i "s|{KDI_SPECIES}|${kdi_species}|g" ${config}
 
+
 # source workflow config file #
 {
     source ${config}
@@ -200,7 +228,8 @@ sed -i "s|{KDI_SPECIES}|${kdi_species}|g" ${config}
     exit 11
 }
 
-# set commands
+
+# set commands #
 demultiplexCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
 snakemakeAnalysis="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>>${LOG}";
 snakemakeIntegration="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
@@ -212,7 +241,7 @@ fi
 
 
 # workflow conditions #
-# config management #
+# config management
 if [[ ! -f ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_rawqc_centos.yaml ]]; then
     echo "fillConfigCmd : ${fillConfigCmd}" &>>${LOG}
     eval ${fillConfigCmd}
@@ -226,13 +255,13 @@ else
 fi
 
 if [[ ${UNLOCK,,} == "yes" ]]; then
-    # UNLOCK MODE #
+    # unlock mode
     echo "INFO: UNLOCK MODE" &>>${LOG}
     echo "unlockCmd: ${unlockCmd}" &>>${LOG}
     eval ${unlockCmd}
     exit;
 elif [[ ${UNLOCK,,} == "no" ]]; then
-    # PIPELINE MODE #
+    # pipeline mode
     echo "INFO: PIPELINE MODE" &>>${LOG}
     if [[ ${STEP} == "analysis" ]]; then
         # demultiplex test & call
@@ -302,7 +331,7 @@ elif [[ ${UNLOCK,,} == "no" ]]; then
     fi
     if [[ ${KDI} == "yes" ]]; then
         if [[ ${STEP} == "integration" ]]; then
-            # snakemake integration step #
+            # snakemake integration step
             state="integration"
             echo "${state}: ${snakemakeIntegration}" &>>${LOG}
             eval ${snakemakeIntegration}

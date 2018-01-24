@@ -1,10 +1,10 @@
 rule config_rawqc_copy:
     input:
         i1=config["raw-qc_pipeline"]["PATH"] +  config["extension"]["CONFIG_RAWQC_COPY_INPUT_1"],
-        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_2"],
-        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_3"]
+        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_INPUT_2"]
     output:
-        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT"]
+        o1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_1"],
+        o2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_2"]
     log:
         "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/config_rawqc_copy.log"
     params:
@@ -14,6 +14,6 @@ rule config_rawqc_copy:
         project=config["experience"]["PROJECT"]
     run:
         shell("""
-        cp {input.i1} {wildcards.output_path}/{params.project}-{params.run}/archive/ &>> {log}
-        touch {output} &>> {log}
+        cp {input.i1} {wildcards.output_path}/{params.project}-{params.run}/archive/. &>> {log}
+        touch {output.o2} &>> {log}
         """)
