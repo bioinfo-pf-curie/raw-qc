@@ -55,8 +55,8 @@ fi
 _fail=0 # variable to check if everything is ok
 
 # generate raw_qc config for multiqc
-if [[ -f $metadata ]];then    
-    ${path}populate_multiqc.py -i metadata
+if [[ -f ${metadata} ]];then
+    ${path}populate_multiqc.py -i ${metadata}
 else
     ${path}populate_multiqc.py
 fi
