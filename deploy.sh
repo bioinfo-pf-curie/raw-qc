@@ -52,3 +52,5 @@ $deploy_exec -c pipeline.conf -e $env -u $USER -t $tag
 
 
 #echo $post_install_cmd | $vault_exec ssh -role ssh_"$pipeline_group"_"${env:0:1}" -mount-point sshapp -strict-host-key-checking=no w-"$pipeline_group"-u"${env:0:1}"@vpipelines.service.soa.curie.fr
+
+echo "cp -r /bioinfo/pipelines/ngsdm/dev/Procedures/conda ." | $vault_exec ssh -role ssh_"$pipeline_group"_"${env:0:1}" -mount-point sshapp -strict-host-key-checking=no w-"$pipeline_group"-u"${env:0:1}"@vpipelines.service.soa.curie.fr
