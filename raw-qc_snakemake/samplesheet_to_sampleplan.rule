@@ -1,0 +1,18 @@
+rule samplesheet_to_sampleplan:
+    input:
+        i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_INPUT_1"],
+        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_INPUT_2"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/samplesheet_to_sampleplan.log"
+    params:
+        cluster=config["samplesheet_to_sampleplan"]["CLUSTER"],
+        python_path=config["general_path"]["PYTHON_BIN_DIR"],
+        samplesheet_to_sampleplan_path=config["samplesheet_to_sampleplan"]["PATH"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"]
+    run:
+        shell("""
+        {params.python_path} {params.samplesheet_to_sampleplan_path}/samplesheet_to_sampleplan_converter.py -s {input.i2} -r {params.run} -o {wildcards.output_path}/{params.project}-{params.run}/archive/ -p {wildcards.output_path}/{params.project}-{params.run}/nobackup/ -l {log} &>> {log}
+        """)

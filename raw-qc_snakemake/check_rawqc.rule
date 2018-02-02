@@ -1,0 +1,22 @@
+rule check_rawqc:
+    input:
+        i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_INPUT_1"],
+        i2=config["check_raw-qc"]["PATH"] + "/" + config["extension"]["CHECK_RAW-QC_INPUT_2"],
+        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_INPUT_3"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CHECK_RAW-QC_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/check_raw-qc.log"
+    params:
+        cluster=config["check_raw-qc"]["CLUSTER"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"],
+        check_rawqc_path=config["check_raw-qc"]["PATH"],
+        check_rawqc_input_2 = config["extension"]["CHECK_RAW-QC_INPUT_2"],
+        check_time = config["workflow_parameters"]["CHECK_TIME"]
+    run:
+        shell("""
+        cp {input.i2} {wildcards.output_path}/{params.project}-{params.run}/{params.check_rawqc_input_2} &>>{log} &&
+        {params.check_rawqc_path}/check_rawqc.sh -o {wildcards.output_path}/{params.project}-{params.run}/{params.check_rawqc_input_2} -p {wildcards.output_path}/{params.project}-{params.run}/ -c {params.check_time} -l {log}  &>> {log}
+        touch {output} &>> {log}
+        """)

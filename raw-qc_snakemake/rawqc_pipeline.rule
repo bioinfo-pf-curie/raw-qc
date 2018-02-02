@@ -1,0 +1,22 @@
+rule rawqc_pipeline:
+    input:
+        i1="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["RAW-QC_PIPELINE_INPUT_1"],
+        i2="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["RAW-QC_PIPELINE_INPUT_2"],
+        i3="{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RAW-QC_PIPELINE_INPUT_3"]
+    output:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["RAW-QC_PIPELINE_OUTPUT"]
+    log:
+        "{output_path}" + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + "_logs/raw-qc_pipeline.log"
+    params:
+        cluster=config["raw-qc_pipeline"]["CLUSTER"],
+        conda_bin_dir=config["general_path"]["CONDA_BIN_DIR"],
+        rawqc_pipeline_path=config["raw-qc_pipeline"]["PATH"],
+        run=config["experience"]["RUN"],
+        project=config["experience"]["PROJECT"],
+        sampleplan_output=config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"],
+        rawqc_pipeline_output=config["extension"]["RAW-QC_PIPELINE_OUTPUT"]
+    shell:
+        """
+        {params.rawqc_pipeline_path}/raw-qc --config-file {input.i2} --sample-plan {wildcards.output_path}/{params.project}-{params.run}/archive/{params.run}{params.sampleplan_output} --output-dir {wildcards.output_path}/{params.project}-{params.run}/backup/ --cluster &>> {log} &&
+        touch {wildcards.output_path}/{params.project}-{params.run}/{params.run}{params.rawqc_pipeline_output} &>> {log}
+        """
