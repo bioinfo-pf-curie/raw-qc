@@ -1,4 +1,4 @@
-RNA-Seq Pipeline - Deploy procedure
+Raw-QC Pipeline - Deploy procedure
 <br/>#Update date : 02/02/2018
 
 1) Positionnement dans le répertoire local du pipeline (là où se trouve le script deploy)
