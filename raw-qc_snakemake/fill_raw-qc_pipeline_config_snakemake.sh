@@ -14,7 +14,7 @@ if [ ${#} -eq 0 ];then
     exit 9
 fi
 
-while getopts ":c:b:a:i:g:r:" option
+while getopts ":c:b:a:i:g:r:o:" option
 do
     case "${option}" in
     c)    CONFIG=${OPTARG};;
