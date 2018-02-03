@@ -136,6 +136,7 @@ if [[ ! -d ${output_dir}/ ]]; then
     exit 1
 fi
 
+LOG=${output_dir}/raw-qc-${RUN}.log
 
 # copy and fill the workflow config template #
 config_file=$(basename ${CONFIG_TEMPLATE})
