@@ -53,4 +53,4 @@ $deploy_exec -c pipeline.conf -e $env -u $USER -t $tag
 
 #echo $post_install_cmd | $vault_exec ssh -role ssh_"$pipeline_group"_"${env:0:1}" -mount-point sshapp -strict-host-key-checking=no w-"$pipeline_group"-u"${env:0:1}"@vpipelines.service.soa.curie.fr
 
-echo "/bioinfo/local/build/Centos/miniconda/miniconda3/bin/conda config --add channels conda-forge && /bioinfo/local/build/Centos/miniconda/miniconda3/bin/conda config --add channels bioconda && /bioinfo/local/build/Centos/miniconda/miniconda3/bin/conda create --name raw-qc --file requirements.txt" | $vault_exec ssh -role ssh_"$pipeline_group"_"${env:0:1}" -mount-point sshapp -strict-host-key-checking=no w-"$pipeline_group"-u"${env:0:1}"@vpipelines.service.soa.curie.fr
+echo "./install_env.sh" | $vault_exec ssh -role ssh_"$pipeline_group"_"${env:0:1}" -mount-point sshapp -strict-host-key-checking=no w-"$pipeline_group"-u"${env:0:1}"@vpipelines.service.soa.curie.fr
