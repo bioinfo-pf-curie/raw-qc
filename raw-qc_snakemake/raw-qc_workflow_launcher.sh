@@ -26,11 +26,11 @@ python_bin_dir="/bioinfo/local/build/Centos/python/python-2.7.13/bin/python2.7"
 
 # manage parameters #
 if [[ ${#} -eq 0 ]];then
-    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK] [-f OUTPUT_PATH]"
     exit 9
 fi
 
-while getopts ":c:r:e:i:s:d:k:t:o:m:y:a:u:" option
+while getopts ":c:r:e:i:s:d:k:t:o:m:y:a:u:f:" option
 do
     case "${option}" in
     c)    CONFIG_TEMPLATE=${OPTARG};;
@@ -46,7 +46,8 @@ do
     y)    DATATYPE=${OPTARG};;
     a)    CONDA_PATH=${OPTARG};;
     u)    UNLOCK=${OPTARG};;
-    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    f)    OUTPUT_PATH=${OPTARG};;
+    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK] [-f OUTPUT_PATH]"
           exit 10;;
     esac
     shift $((OPTIND-1)); OPTIND=1
@@ -54,7 +55,7 @@ done
 
 
 # check parameters values #
-if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]]; then
+if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]] || [[ -z ${OUTPUT_PATH} ]]; then
     echo "ERROR : There is one or many empty argument(s)"
     exit 1
 fi
@@ -111,16 +112,9 @@ fi
 
 
 # check PROJECT value #
-source <(source ${CONFIG_TEMPLATE}; printf %s\\n "PROJECT=\"${PROJECT}\";OUTPUT_PATH=\"${OUTPUT_PATH}\"";)
+source <(source ${CONFIG_TEMPLATE}; printf %s\\n "PROJECT=\"${PROJECT}\"";)
 if [[ -z ${PROJECT} ]]; then
     echo "ERROR : Empty value for PROJECT argument: '${PROJECT}'"
-    exit 1
-fi
-
-
-# check OUTPUT_PATH value #
-if [[ -z ${OUTPUT_PATH} ]]; then
-    echo "ERROR : Empty value for PROJECT argument: '${OUTPUT_PATH}'"
     exit 1
 fi
 
