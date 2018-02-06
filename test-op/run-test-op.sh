@@ -81,7 +81,7 @@ DIR_LOG="$DIR_TMP"/"$PROJECT"/"$RUN"/"$(date +"%Y-%m-%d_%H:%M:%S,%3N")"_"$RANDOM
 timeStampStart=$(date +%s)
 
 date="$(date +"%d-%m-%y")"
-DATASET_REF="2004695"
+DATASET_REF="2005488"
 GAINGROUP=w-ngsdm-g`echo ${ENV:0:1}`
 
 rm -rf ${OUTPUT_TEST}/RAW-QC-$RUN
@@ -153,11 +153,11 @@ echo "Dataset id: $DATASET_CURRENT" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${da
 
 cd /data/kdi_prod/dataset_all/$DATASET_REF/
 
-for i in $(find archive/ -type f); do if ! echo $i | grep -q -E "Log_Torque|Logs"; then echo "File to compare: $i"; diff -a /data/kdi_prod/dataset_all/$DATASET_REF/$i /data/kdi_$ENV/dataset_all/$DATASET_CURRENT/$i; fi; done > ${OUTPUT_TEST}/test_archive.txt
+#for i in $(find archive/ -type f); do if ! echo $i | grep -q -E "Log_Torque|Logs"; then echo "File to compare: $i"; diff -a /data/kdi_prod/dataset_all/$DATASET_REF/$i /data/kdi_$ENV/dataset_all/$DATASET_CURRENT/$i; fi; done > ${OUTPUT_TEST}/test_archive.txt
 
 #for i in $(find nobackup/ -type f); do if ! echo $i | grep -q -E "Log_Torque|Logs"; then echo "File to compare: $i"; diff -a /data/kdi_$ENV/dataset_all/$DATASET_REF/$i /data/kdi_$ENV/dataset_all/$DATASET_CURRENT/$i; fi; done > ${OUTPUT_TEST}/test_nobackup.txt
 
-for i in $(find backup/ -type f ! \( -iname '*\.log\.*' -o -iname '*\.conf\.*' -o -iname '*\.config\.*' -o -iname '*.xlsx' -o -iname '*_input_file.csv' -o -iname '*.pdf' -o -iname '*_list.txt' \)); do if ! echo $i | grep -q -E "Log_Torque|Logs"; then echo "File to compare: $i"; diff <( grep -Ev "^##fileDate=|##source=" /data/kdi_prod/dataset_all/$DATASET_REF/$i) <( grep -Ev "^##fileDate=|##source=" /data/kdi_$ENV/dataset_all/$DATASET_CURRENT/$i); fi; done > ${OUTPUT_TEST}/test_backup.txt
+#for i in $(find backup/ -type f ! \( -iname '*\.log\.*' -o -iname '*\.conf\.*' -o -iname '*\.config\.*' -o -iname '*.xlsx' -o -iname '*_input_file.csv' -o -iname '*.pdf' -o -iname '*_list.txt' \)); do if ! echo $i | grep -q -E "Log_Torque|Logs"; then echo "File to compare: $i"; diff <( grep -Ev "^##fileDate=|##source=" /data/kdi_prod/dataset_all/$DATASET_REF/$i) <( grep -Ev "^##fileDate=|##source=" /data/kdi_$ENV/dataset_all/$DATASET_CURRENT/$i); fi; done > ${OUTPUT_TEST}/test_backup.txt
 
 find export/user/ -type l > ${OUTPUT_TEST}/test_export_ref.txt
 
@@ -166,18 +166,19 @@ find export/user/ -type l > ${OUTPUT_TEST}/test_export_current.txt
 
 diff ${OUTPUT_TEST}/test_export_ref.txt ${OUTPUT_TEST}/test_export_current.txt > ${OUTPUT_TEST}/test_export.txt
 
-echo -e "test_archive: \n" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
-cat ${OUTPUT_TEST}/test_archive.txt >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
-echo -e "\n\ntest_backup: \n" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
-cat ${OUTPUT_TEST}/test_backup.txt >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
+#echo -e "test_archive: \n" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
+#cat ${OUTPUT_TEST}/test_archive.txt >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
+#echo -e "\n\ntest_backup: \n" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
+#cat ${OUTPUT_TEST}/test_backup.txt >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
 echo -e "\n\ntest_export: \n" >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
 cat ${OUTPUT_TEST}/test_export.txt >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
 
-sed '/^File\ to\ compare:/d' ${OUTPUT_TEST}/test_archive.txt > ${OUTPUT_TEST}/test_archive_diff.txt
-sed '/^File\ to\ compare:/d' ${OUTPUT_TEST}/test_backup.txt > ${OUTPUT_TEST}/test_backup_diff.txt
+#sed '/^File\ to\ compare:/d' ${OUTPUT_TEST}/test_archive.txt > ${OUTPUT_TEST}/test_archive_diff.txt
+#sed '/^File\ to\ compare:/d' ${OUTPUT_TEST}/test_backup.txt > ${OUTPUT_TEST}/test_backup_diff.txt
 sed '/^File\ to\ compare:/d' ${OUTPUT_TEST}/test_export.txt > ${OUTPUT_TEST}/test_export_diff.txt
 
-if [ -s ${OUTPUT_TEST}/test_archive_diff.txt ] || [ -s ${OUTPUT_TEST}/test_backup_diff.txt ] || [ -s ${OUTPUT_TEST}/test_export_diff.txt ];then
+#if [ -s ${OUTPUT_TEST}/test_archive_diff.txt ] || [ -s ${OUTPUT_TEST}/test_backup_diff.txt ] || [ -s ${OUTPUT_TEST}/test_export_diff.txt ];then
+if [ -s ${OUTPUT_TEST}/test_export_diff.txt ];then
     echo "Test Failed! " >> ${OUTPUT_TEST}/${RUN}-FunctionalTest-${date}.results
     exit 1
 else
