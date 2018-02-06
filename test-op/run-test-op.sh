@@ -66,7 +66,7 @@ set -u
 set -e
 
 ## source des varables d'environnement du pipeline
-source "/bioinfo/pipelines/safir_all/$ENV/pipeline.conf"
+source "/bioinfo/pipelines/rawqc/$ENV/pipeline.conf"
 
 ### variables de configuration
 RUN="A808"
