@@ -95,7 +95,7 @@ SCOPE=research
 DEMAND=NGS17-1118
 DATATYPE=PE
 CONDA_PATH=$PIPELINE_PATH/.conda/envs/raw-qc/bin/
-OUTPUT_PATH=/data/tmp_app/pipelines/rawqc/$ENV/
+OUTPUT_PATH=$OUTPUT_TEST
 RIMS_ID=
 
 echo "$PIPELINE_PATH/raw-qc_snakemake/raw-qc_workflow_launcher.sh -c $PIPELINE_PATH/raw-qc_snakemake/raw-qc_workflow.conf -r $RUN -e $ENV -i $ILLUMINA_DIR -s $SEQUENCER -k $KDI_PROJECT -t $PROJECT_TYPE -o $SCOPE -m $DEMAND -y $DATATYPE -a $CONDA_PATH -f $OUTPUT_PATH -u no -d" | qsub -q batch -N rawqc_master_Test-op -d $OUTPUT_PATH -l nodes=1:ppn=1,mem=1Gb
