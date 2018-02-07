@@ -72,10 +72,10 @@ source "/bioinfo/pipelines/rawqc/$ENV/pipeline.conf"
 RUN="A808"
 OUTPUT_TEST=/data/tmp_app/pipelines/rawqc/$ENV/RAW-QC_test-op
 
-PROJECT=$PIPELINE_NAME
+PROJECT=$pipeline_name
 DIR_PIPELINE="$pipeline_path/$ENV/"
 #DIR_TMP="$ngs_run_temp_diag/$ENV"
-DIR_LOG="$DIR_TMP"/"$PROJECT"/"$RUN"/"$(date +"%Y-%m-%d_%H:%M:%S,%3N")"_"$RANDOM"
+DIR_LOG=$OUTPUT_TEST/"$(date +"%Y-%m-%d_%H:%M:%S,%3N")"_"$RANDOM"
 
 
 timeStampStart=$(date +%s)
