@@ -26,11 +26,11 @@ python_bin_dir="/bioinfo/local/build/Centos/python/python-2.7.13/bin/python2.7"
 
 # manage parameters #
 if [[ ${#} -eq 0 ]];then
-    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    echo >&2 "ERROR: Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK] [-f OUTPUT_PATH]"
     exit 9
 fi
 
-while getopts ":c:r:e:i:s:d:k:t:o:m:y:a:u:" option
+while getopts ":c:r:e:i:s:d:k:t:o:m:y:a:u:f:" option
 do
     case "${option}" in
     c)    CONFIG_TEMPLATE=${OPTARG};;
@@ -46,7 +46,8 @@ do
     y)    DATATYPE=${OPTARG};;
     a)    CONDA_PATH=${OPTARG};;
     u)    UNLOCK=${OPTARG};;
-    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK]"
+    f)    OUTPUT_PATH=${OPTARG};;
+    \?)   echo >&2 "ERROR: '${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG_TEMPLATE] [-r RUN] [-e ENV] [-i ILLUMINA_DIR] [-s ILLUMINA_SEQUENCER] [-d RIMS_ID] [-k KDI_PROJECT] [-t PROJECT_TYPE] [-o SCOPE] [-m DEMAND] [-y DATATYPE] [-a CONDA_PATH] [-u UNLOCK] [-f OUTPUT_PATH]"
           exit 10;;
     esac
     shift $((OPTIND-1)); OPTIND=1
@@ -54,7 +55,7 @@ done
 
 
 # check parameters values #
-if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]]; then
+if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]] || [[ -z ${OUTPUT_PATH} ]]; then
     echo "ERROR : There is one or many empty argument(s)"
     exit 1
 fi
@@ -111,16 +112,9 @@ fi
 
 
 # check PROJECT value #
-source <(source ${CONFIG_TEMPLATE}; printf %s\\n "PROJECT=\"${PROJECT}\";OUTPUT_PATH=\"${OUTPUT_PATH}\"";)
+source <(source ${CONFIG_TEMPLATE}; printf %s\\n "PROJECT=\"${PROJECT}\"";)
 if [[ -z ${PROJECT} ]]; then
     echo "ERROR : Empty value for PROJECT argument: '${PROJECT}'"
-    exit 1
-fi
-
-
-# check OUTPUT_PATH value #
-if [[ -z ${OUTPUT_PATH} ]]; then
-    echo "ERROR : Empty value for PROJECT argument: '${OUTPUT_PATH}'"
     exit 1
 fi
 
@@ -142,6 +136,7 @@ if [[ ! -d ${output_dir}/ ]]; then
     exit 1
 fi
 
+LOG=${output_dir}/raw-qc-${RUN}.log
 
 # copy and fill the workflow config template #
 config_file=$(basename ${CONFIG_TEMPLATE})
@@ -233,7 +228,7 @@ sed -i "s|{KDI_SPECIES}|${kdi_species}|g" ${config}
 demultiplexCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
 snakemakeAnalysis="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_rawqc_pipeline --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --verbose --cluster 'qsub -V {params.cluster}' -j 59 &>>${LOG}";
 snakemakeIntegration="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_kdi_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --latency-wait 60 --max-jobs-per-second 2 --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
-fillConfigCmd="${RAWQC_PATH}/raw-qc_snakemake/fill_raw-qc_pipeline_config_snakemake.sh -c ${config} -b \"${biological_application}\" -a \"${analysis_type}\" -i ${ILLUMINA_FILE} -g ${GAINGROUP} -r ${RAWQC_PATH} &>>${LOG}";
+fillConfigCmd="${RAWQC_PATH}/raw-qc_snakemake/fill_raw-qc_pipeline_config_snakemake.sh -c ${config} -b \"${biological_application}\" -a \"${analysis_type}\" -i ${ILLUMINA_FILE} -g ${GAINGROUP} -r ${RAWQC_PATH} -o ${OUTPUT_PATH} &>>${LOG}";
 unlockCmd="${snakemake_bin_dir} -s ${RAWQC_PATH}/raw-qc_snakemake/snakefile_preprocessing_rawqc --configfile ${OUTPUT_PATH}/${PROJECT}-${RUN}/config_raw-qc.yaml --verbose --unlock --cluster 'qsub {params.cluster}' -j 59 &>>${LOG}";
 if [[ -n ${RIMS_ID:-} ]]; then
     graniCall="echo \"Calling grani services\" &>>${LOG} && cd /bioinfo/pipelines/grani/${ENV}/ && ./grani_create_run_final.pl -ir \"${RIMS_ID:-}\" -di \"${dataset_id}\" -rn \"${RUN}\" -pd \"${PATH}\" -lf \"${LOG}\" -ip \"/data/transfert/Illumina/${ILLUMINA_REF}\" -st \"${state}\" &>>${LOG}";

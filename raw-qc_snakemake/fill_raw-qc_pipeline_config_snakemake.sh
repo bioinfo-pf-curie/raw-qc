@@ -10,11 +10,11 @@ set +x
 
 
 if [ ${#} -eq 0 ];then
-    echo >&2 "ERROR: Usage: ${0} [-c CONFIG] [-b BIOLOGICAL_APPLICATION] [-a ANALYSIS_TYPE] [-i ILLUMINA_FILE] [-g GAINGROUP] [-r RAWQC_PATH]"
+    echo >&2 "ERROR: Usage: ${0} [-c CONFIG] [-b BIOLOGICAL_APPLICATION] [-a ANALYSIS_TYPE] [-i ILLUMINA_FILE] [-g GAINGROUP] [-r RAWQC_PATH] [-o OUTPUT_PATH]"
     exit 9
 fi
 
-while getopts ":c:b:a:i:g:r:" option
+while getopts ":c:b:a:i:g:r:o:" option
 do
     case "${option}" in
     c)    CONFIG=${OPTARG};;
@@ -23,7 +23,8 @@ do
     i)    ILLUMINA_FILE=${OPTARG};;
     g)    GAINGROUP=${OPTARG};;
     r)    RAWQC_PATH=${OPTARG};;
-    \?)   echo >&2 "ERROR: ${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG] [-b BIOLOGICAL_APPLICATION] [-a ANALYSIS_TYPE] [-i ILLUMINA_FILE] [-g GAINGROUP] [-r RAWQC_PATH]"
+    o)    OUTPUT_PATH=${OPTARG};;
+    \?)   echo >&2 "ERROR: ${OPTARG}': invalid argument. Usage: ${0} [-c CONFIG] [-b BIOLOGICAL_APPLICATION] [-a ANALYSIS_TYPE] [-i ILLUMINA_FILE] [-g GAINGROUP] [-r RAWQC_PATH] [-o OUTPUT_PATH]"
         exit 1;;
     esac
     shift $((OPTIND-1)); OPTIND=1
