@@ -17,6 +17,8 @@ from collections import OrderedDict
 
 import click
 
+from raw_qc.utils import get_package_location
+
 
 @click.command(
     context_settings={'help_option_names': ['-h', '--help']}
@@ -40,8 +42,7 @@ import click
 )
 def main(metadata, output):
     # get multiqc config
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    rawqc_dir = os.path.dirname(script_dir)
+    rawqc_dir = os.sep.join([get_package_location('raw_qc'), 'raw_qc'])
     yaml_conf = os.sep.join([rawqc_dir, 'config', 'multiqc_config.yaml'])
     multiqc_list = ["custom_logo: '{}'".format(os.sep.join([
         rawqc_dir, 'resources', 'images', 'institut_curie.jpg'
@@ -88,6 +89,3 @@ def main(metadata, output):
     with open(output, 'w') as fp:
         print(conf_string.format(**{'custom_content': custom_content}),
               file=fp)
-
-if __name__ == '__main__':
-    main()
