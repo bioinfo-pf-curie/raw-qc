@@ -183,6 +183,9 @@ class Atropos(object):
                 adj_base = adapter['adjacent_bases']
                 total = sum(adj_base.values())
                 for base, number in adj_base.items():
+                    # if adj_base is '', do nothing
+                    if not base:
+                        continue
                     ratio = number / total
                     # If base missing
                     if total > 20 and ratio >= 0.8:
