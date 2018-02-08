@@ -19,6 +19,7 @@ import os
 from collections import OrderedDict
 
 import click
+import pexpect
 
 from raw_qc import Atropos
 from raw_qc import logger
@@ -127,6 +128,14 @@ from raw_qc import logger
     help="5'/3 adapter to be removed from second read in a pair.(no)"
 )
 @click.option(
+    '-s', '--sub-size', 'sub_size',
+    type=int,
+    metavar='SIZE',
+    nargs=1,
+    default=500000,
+    help="The sub-sample size to detect adapters.(500 000 reads)"
+)
+@click.option(
     '-m', '--minimum-length', 'mlength',
     type=int,
     metavar='LENGTH',
@@ -210,7 +219,7 @@ from raw_qc import logger
     help="Debug mode if you have any problem"
 )
 def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
-         adapt_5p_r1, adapt_5p_r2, adapt_bp_r1, adapt_bp_r2, mlength,
+         adapt_5p_r1, adapt_5p_r2, adapt_bp_r1, adapt_bp_r2, sub_size, mlength,
          times, overlap, auto_detect, amplicon, nb_pass, threads, logfile,
          jsonfile, debug):
     """ Autotropos is a wrapper of Atropos to trim adapters with automatic
@@ -273,6 +282,11 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
+    # Create subsample with seqtk
+    # TODO
+    #logger.info("Create subsamples of {} reads...".format(sub_size))
+    #seqtk = "seqtk sample -s100 {} {} > {}"
+
     logger.info("Try to detect adapters...")
     detected_ad = atrps.guess_adapters()
     dict_adapt = OrderedDict({'-a': None, '-A': None})
@@ -322,7 +336,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         read2=paired_output,
     )
     # otherwise the logfile will be removed
-    trimmed._logfile = logfile
+    if logfile:
+        trimmed._logfile = logfile
     redetect = trimmed.guess_adapters()
     detect_flag = False
     for i, (opt, first, second) in enumerate(zip(dict_adapt.keys(),
