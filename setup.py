@@ -66,7 +66,7 @@ setup(
     # This is recursive include of data files
     exclude_package_data = {"": ["__pycache__"]},
     package_data = {
-        '': ['pipeline/*', 'pipeline/scripts/*']
+        '': ['pipeline/*', 'pipeline/scripts/*', 'config/*']
     },
     entry_points = {
         'console_scripts':[
