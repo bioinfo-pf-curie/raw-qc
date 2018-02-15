@@ -28,9 +28,9 @@ class TempFile(object):
         f.name
         f.delete() # alias to delete=False and close() calls
     """
-    def __init__(self, suffix='', dir=None):
+    def __init__(self, suffix='', directory=None):
         self.temp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False,
-                                                dir=dir)
+                                                directory=directory)
         self._name = self.temp.name
 
     def delete(self):

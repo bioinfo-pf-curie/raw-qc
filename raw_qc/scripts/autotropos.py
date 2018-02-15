@@ -16,6 +16,8 @@ of adapters.
 """
 import json
 import os
+import shutil
+import uuid
 from collections import OrderedDict
 
 import click
@@ -214,6 +216,14 @@ from raw_qc import logger
          "fastq_basic_metrics"
 )
 @click.option(
+    '--temp-dir', 'tmp',
+    type=click.Path(),
+    metavar='TMPDIR',
+    default='.',
+    help="Temporary directory where are write temporary files for the "
+         "auto-detection of adapters.(TMPDIR/tmp_autotropos)"
+)
+@click.option(
     '--debug',
     is_flag=True,
     help="Debug mode if you have any problem"
@@ -221,7 +231,7 @@ from raw_qc import logger
 def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
          adapt_5p_r1, adapt_5p_r2, adapt_bp_r1, adapt_bp_r2, sub_size, mlength,
          times, overlap, auto_detect, amplicon, nb_pass, threads, logfile,
-         jsonfile, debug):
+         jsonfile, tmp, debug):
     """ Autotropos is a wrapper of Atropos to trim adapters with automatic
     detection of adapters.
 
@@ -282,13 +292,26 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
-    # Create subsample with seqtk
-    # TODO
-    #logger.info("Create subsamples of {} reads...".format(sub_size))
-    #seqtk = "seqtk sample -s100 {} {} > {}"
+    # Create subsample with seqtk in temporary directory
+    tmp = tmp.rstrip('/') + os.sep + 'autotropos_' + uuid.uuid4().hex
+    os.mkdir(tmp)
+    logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
+    tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    seqtk = 'bash -c "seqtk sample -s100 {} {} > {}"'
+    pexpect.run(seqtk.format(read1, sub_size, tmp_r1))
+    if read2:
+        tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+        pexpect.run(seqtk.format(read2, sub_size, tmp_r2))
+    else:
+        tmp_r2 = None
 
     logger.info("Try to detect adapters...")
-    detected_ad = atrps.guess_adapters()
+    tmp_atrps = Atropos(tmp_r1, tmp_r2)
+    tmp_atrps.adapters = atrps.adapters
+    if logfile:
+        tmp_atrps._logfile = logfile
+
+    detected_ad = tmp_atrps.guess_adapters()
     dict_adapt = OrderedDict({'-a': None, '-A': None})
     for i, (opt, read) in enumerate(zip(dict_adapt.keys(), detected_ad)):
         if read is not None:
@@ -310,7 +333,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                 create_symlink(read2, paired_output)
             if jsonfile is not None:
                 trim_dict = {
-                    'mean_read_length': atrps.detection['derived']['mean_sequence_lengths'][0],
+                    'mean_read_length': tmp_atrps.detection['derived']['mean_sequence_lengths'][0],
                     'percent_trim': 0.0,
                     'percent_discard': 0.0
                 }
@@ -321,10 +344,12 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Run atropos trim with known adapters
     logger.info("Run the trimming with detected adapters...")
-    atrps.adapters = dict_adapt
-    atrps.remove_adapters(
-        output_r1=output,
-        output_r2=paired_output,
+    tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    tmp_atrps.adapters = dict_adapt
+    tmp_atrps.remove_adapters(
+        output_r1=tmp_r1_out,
+        output_r2=tmp_r2_out,
         options=options,
         threads=threads,
         amplicon=amplicon
@@ -332,8 +357,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     logger.info("Try to re-detect adapters...")
     trimmed = Atropos(
-        read1=output,
-        read2=paired_output,
+        read1=tmp_r1_out,
+        read2=tmp_r2_out,
     )
     # otherwise the logfile will be removed
     if logfile:
@@ -363,14 +388,26 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     # Rerun atropos trim with longest kmer
     if detect_flag:
         logger.info("Run the trimming with detected longest kmer...")
-        atrps.adapters = dict_adapt
-        atrps.remove_adapters(
+        tmp_atrps.adapters = dict_adapt
+        tmp_atrps.remove_adapters(
             output_r1=output,
             output_r2=paired_output,
             options=options,
             threads=threads,
             amplicon=amplicon
         )
+    logger.info("Clean the tmp dir.")
+    shutil.rmtree(tmp)
+
+    logger.info("Run trimming on the file.")
+    atrps.adapters = tmp_atrps.adapters
+    atrps.remove_adapters(
+        output_r1=output,
+        output_r2=paired_output,
+        options=options,
+        threads=threads,
+        amplicon=amplicon
+    )
     if jsonfile is not None:
         atrps.write_stats_json(jsonfile)
     logger.info("Autotropos finished !")
