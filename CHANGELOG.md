@@ -1,6 +1,6 @@
 # Raw-QC Version History
 
-## Raw-QC v0.2
+## Raw-QC v0.2dev
 
 ### News
 
