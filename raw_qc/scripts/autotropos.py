@@ -17,11 +17,11 @@ of adapters.
 import json
 import os
 import shutil
+import subprocess as sp
 import uuid
 from collections import OrderedDict
 
 import click
-import pexpect
 
 from raw_qc import Atropos
 from raw_qc import logger
@@ -297,13 +297,24 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     os.mkdir(tmp)
     logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
     tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    seqtk = 'bash -c "seqtk sample -s100 {} {} > {}"'
-    pexpect.run(seqtk.format(read1, sub_size, tmp_r1))
+    seqtk = "seqtk sample -s100 {} {}"
+    with open(tmp_r1, "w") as fout:
+        seqtk_proc = sp.Popen(seqtk.format(read1, sub_size).split(),
+                              stdout=fout)
+        seqtk_proc.communicate()
     if read2:
         tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-        pexpect.run(seqtk.format(read2, sub_size, tmp_r2))
+        with open(tmp_r2, "w") as fout:
+            seqtk_proc = sp.Popen(seqtk.format(read2, sub_size).split(),
+                                  stdout=fout)
+            seqtk_proc.communicate()
     else:
         tmp_r2 = None
+    
+    logger.debug('{}'.format(os.listdir(tmp)))
+    if debug:
+        for i in os.listdir(tmp):
+            logger.debug('{}'.format(os.path.getsize(tmp + os.sep + i)))
 
     logger.info("Try to detect adapters...")
     tmp_atrps = Atropos(tmp_r1, tmp_r2)
