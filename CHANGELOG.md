@@ -16,6 +16,7 @@
 
 - Fix bug when Autotropos found a remaining unknown base.
 - Fix error when no log file is provided.
+- Replace `-V` for `-v "PATH=$PATH"` to provide virtual environment on Torque.
 
 ## Raw-QC v0.1
 
