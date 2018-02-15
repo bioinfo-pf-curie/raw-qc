@@ -112,6 +112,8 @@ def main(read1, read2, prefix, sample_id, sample_name, jsonfile):
             stats = dict(stats, **json.load(fp))
     except json.decoder.JSONDecodeError:
         pass
+    except TypeError:
+        pass
 
     # sets the output name with extension recognised by MultiQC
     if prefix:

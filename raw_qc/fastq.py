@@ -29,7 +29,7 @@ class BasicStats(object):
     we'll able integrate this JSON in a basic statistics table in MultiQC
     report.
     """
-    def __init__(self, filename):
+    def __init__(self, filename, max_sample=500000):
         """.. rubric:: constructor
 
         :param str filename: FastQ filename of the R1 or single-ends.
@@ -40,6 +40,7 @@ class BasicStats(object):
             nucleotides.
         """
         self._filename = filename
+        self.max_sample = max_sample
         self._get_basic_stats()
 
     @property
@@ -64,24 +65,18 @@ class BasicStats(object):
                 l_list.append(l)
 
                 # Store GC content
-                g_count = record.sequence.count('G')
-                c_count = record.sequence.count('C')
-                if l > 0:
-                    gc_list.append(((g_count + c_count) / float(l)) * 100)
+                if i < self.max_sample:
+                    g_count = record.sequence.count('G')
+                    c_count = record.sequence.count('C')
+                    if l > 0:
+                        gc_list.append(((g_count + c_count) / float(l)) * 100)
 
                 # Store all quality
                 for q in record.qualities:
                     quali_dict[q] += 1
 
-                # Count the number of each base
-                stats['A'] += record.sequence.count('A')
-                stats['T'] += record.sequence.count('T')
-                stats['G'] += g_count
-                stats['C'] += c_count
-                stats['N'] += record.sequence.count('N')
         self.total_read = i
-        self.total_base = (stats['A'] + stats['T'] + stats['G'] + stats['C'] +
-                           stats['N'])
+        self.total_base = int(np.sum(l_list))
         self.mean_length = np.mean(l_list)
         self.gc_content = np.mean(gc_list)
         # q20 = bases higher than phred score + 33 (ascii int)
