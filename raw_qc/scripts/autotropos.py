@@ -293,7 +293,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
     # Create subsample with seqtk in temporary directory
-    tmp = tmp.rstrip('/') + os.sep + 'autotropos_' + uuid.uuid4().hex
+    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'autotropos_' + uuid.uuid4().hex
     os.mkdir(tmp)
     logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
     tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
