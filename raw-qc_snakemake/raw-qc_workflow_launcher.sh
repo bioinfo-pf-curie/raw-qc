@@ -190,16 +190,22 @@ fi
 
 
 # print variables #
-echo "RAWQC_PATH:${RAWQC_PATH}; OUTPUT_PATH:${OUTPUT_PATH}; ENV:${ENV}; RUN:${RUN}; PROJECT:${PROJECT}; KDI:${KDI}; KDI_PROJECT:${KDI_PROJECT}; ILLUMINA_REF:${ILLUMINA_REF}; LOG:${LOG}; QUEUE:${QUEUE}; DEMULTIPLEXING:${DEMULTIPLEXING}; RIMS_ID:${RIMS_ID:-}; STEP:${STEP}; SCOPE:${SCOPE}; PROJECT_TYPE:${PROJECT_TYPE}; DEMAND:${DEMAND}; DATATYPE=${DATATYPE}; UNLOCK:${UNLOCK}; ILLUMINA_SEQUENCER:${ILLUMINA_SEQUENCER}; RESEARCH_FUNC_PATH:${RESEARCH_FUNC_PATH}" &>>${LOG}
+echo "RAWQC_PATH:${RAWQC_PATH}; OUTPUT_PATH:${OUTPUT_PATH}; ENV:${ENV}; RUN:${RUN}; PROJECT:${PROJECT}; KDI:${KDI}; KDI_PROJECT:${KDI_PROJECT}; ILLUMINA_REF:${ILLUMINA_REF}; LOG:${LOG}; QUEUE:${QUEUE}; DEMULTIPLEXING:${DEMULTIPLEXING}; RIMS_ID:${RIMS_ID:-}; STEP:${STEP}; SCOPE:${SCOPE}; PROJECT_TYPE:${PROJECT_TYPE}; DEMAND:${DEMAND}; DATATYPE=${DATATYPE}; UNLOCK:${UNLOCK}; ILLUMINA_SEQUENCER:${ILLUMINA_SEQUENCER}; RESEARCH_RULES_PATH:${RESEARCH_RULES_PATH}" &>>${LOG}
 
 
 # workflow launch #
 date=$(date +'%d/%m/%y-%H:%M:%S')
 echo "############################## NEW LAUNCH : ${date} ##############################" &>>${LOG}
 
+# check RESEARCH_RULES_PATH value #
+source <(source ${CONFIG_TEMPLATE}; printf %s\\n "RESEARCH_RULES_PATH=\"${RESEARCH_RULES_PATH}\"";)
+if [[ -z ${RESEARCH_RULES_PATH} ]]; then
+    echo "ERROR : Empty value for PROJECT argument: '${RESEARCH_RULES_PATH}'"
+    exit 1
+fi
 
 # launch rims metadata conf script #
-rims_metadata_conf_command="${GAINGROUP} ${python_bin_dir} ${RAWQC_PATH}/raw-qc_snakemake/rims_metadata_parser_conf.py -o ${output_dir} -l ${LOG} -e ${ENV,,} -r ${RUN} --demand ${DEMAND} &>>${LOG}"
+rims_metadata_conf_command="${GAINGROUP} ${python_bin_dir} ${RESEARCH_RULES_PATH}/rims_metadata_parser_conf.py -o ${output_dir} -l ${LOG} -e ${ENV,,} -r ${RUN} --demand ${DEMAND} &>>${LOG}"
 echo ${rims_metadata_conf_command} &>>${LOG}
 eval ${rims_metadata_conf_command} &>>${LOG}
 
