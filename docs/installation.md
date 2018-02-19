@@ -7,14 +7,8 @@ Results are reported in a HTML report using [MultiQC](http://multiqc.info/).
 
 # Installing Raw-QC
 
-The installation is pretty simple, just download the repository by copying and pasting these commands:
-```
-git clone https://gitlab.curie.fr/ngs-research/raw-qc.git
-sudo ln -s $(realpath raw-qc/raw-qc) /usr/local/bin
-```
-If you do not have root right, create symbolic link in a local bin present in your `PATH`.
-
-Some dependencies need to be installed. We propose to use Anaconda with the Bioconda channel.
+The installation is pretty simple, but some dependencies need to be installed.
+We propose to use Anaconda with the Bioconda channel.
 
 You need to add `conda-forge` and `bioconda` channels:
 ```
@@ -22,12 +16,13 @@ conda config --add channels conda-forge
 conda config --add channels bioconda
 ```
 
-And then you can create your environment:
+And then just download the repository by copying and pasting these commands:
 ```
-conda create --name raw-qc --file raw-qc/requirements.txt
+git clone https://gitlab.curie.fr/ngs-research/raw-qc.git
+cd raw-qc
+conda create --name raw-qc --file requirements.txt
 source activate raw-qc
-git clone https://gitlab.curie.fr/data-analysis/autotropos.git
-cd autotropos
 python setup.py install
 ```
-By the way, if these tools are already available, you can just add their directory path in the config.json file.
+
+Now, you can [run Raw-QC](usage.md) !
