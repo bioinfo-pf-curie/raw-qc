@@ -39,12 +39,8 @@ create_directory $outdir
 create_directory ${log_output%/*}
 
 # Catch variable in json
-fastqc_path="$(get_json_entry ".fastqc.path" ${CONFIG})"
 fastqc_opt="$(get_json_entry ".fastqc.options" ${CONFIG})"
 fastqc_threads="$(get_json_entry ".fastqc.threads" ${CONFIG})"
-if [[ -n "${fastqc_path}" ]]; then
-    fastqc_path="${fastqc_path%/}/"
-fi
 
 # Set some local variable
 name=$(basename ${fastq[0]%.fastq*})
@@ -61,9 +57,9 @@ test -s ${fastq[0]} || exit 0
 
 # seems that fastqc rarely failed.
 _fail=0
-cmd="${fastqc_path}fastqc ${fastqc_opt} ${fastq[@]} \
-                          --threads ${fastqc_threads} \
-                          --outdir ${outdir}"
+cmd="fastqc ${fastqc_opt} ${fastq[@]} \
+            --threads ${fastqc_threads} \
+            --outdir ${outdir}"
 $cmd > ${log_output} 2>&1 || _fail=1
 
 # retry once in case of failure
