@@ -29,17 +29,12 @@
 path="${BASH_SOURCE[0]%/*}/"
 . "${path}"utils-bash.sh
 
-# Initiate variable of the wrapper ($INPUT, $OUTPUT, $PLAN, $CONFIG, $LOG)
+# Initiate variable of the wrapper ($INPUT, $OUTPUT, $CONFIG, $LOG)
 init_wrapper $@
 
 # Catch variable in json
-autotropos_path="$(get_json_entry ".autotropos.path" ${CONFIG})"
 autotropos_option="$(get_json_entry ".autotropos.options" ${CONFIG})"
 autotropos_threads="$(get_json_entry ".autotropos.threads" ${CONFIG})"
-
-if [[ -n "${autotropos_path}" ]]; then
-    autotropos_path="${autotropos_path%/}/"
-fi
 
 fastq_input=($INPUT)
 # Add ID name in outputs and logs
@@ -61,13 +56,21 @@ if [[ ${#fastq_input[@]} -eq 2 ]]; then
 fi
 _fail=0 # variable to check if everything is ok
 
+# get TMPDIR if it exist
+if [[ -n ${TMPDIR} ]]; then
+    autotropos_tmp=${TMPDIR}
+else
+    autotropos_tmp=$(cwd)
+fi
+
 # Command line:
-cmd="${autotropos_path}autotropos ${autotropos_option[@]} \
-                                  --threads ${autotropos_threads} \
-                                  ${autotropos_input[@]} \
-                                  ${autotropos_output[@]} \
-                                  --logs ${autotropos_utils[0]} \
-                                  --json ${autotropos_utils[1]}"
+cmd="rawqc_atropos ${autotropos_option[@]} \
+                   --threads ${autotropos_threads} \
+                   ${autotropos_input[@]} \
+                   ${autotropos_output[@]} \
+                   --logs ${autotropos_utils[0]} \
+                   --json ${autotropos_utils[1]} \
+                   --temp-dir ${autotropos_tmp}"
 echo $cmd > ${log_output}
 $cmd >> "${log_output}" 2>&1 || _fail=1
 

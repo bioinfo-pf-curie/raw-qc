@@ -1,0 +1,23 @@
+# Raw-QC Version History
+
+## Raw-QC v0.2dev
+
+### News
+
+- Raw-QC is now a package python to ease the installation.
+- Autotropos is embedded in Raw-QC.
+
+### Modification
+
+- Basic metrics computation is speed up using a subsampling for the GC percent.
+- Autotropos detection is speed up using a subsampling and the scratch directory.
+
+### Fixes
+
+- Fix bug when Autotropos found a remaining unknown base.
+- Fix error when no log file is provided.
+- Replace `-V` for `-v "PATH=$PATH"` to provide virtual environment on Torque.
+
+## Raw-QC v0.1
+
+The first version of Raw-QC in pure Bash.
