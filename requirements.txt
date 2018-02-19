@@ -4,3 +4,4 @@ fastqc>=0.11.5
 multiqc>=1.3
 pexpect
 python>=3.6
+seqtk
