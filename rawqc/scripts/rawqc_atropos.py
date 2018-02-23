@@ -11,20 +11,21 @@
 #  The full license is in the LICENSE file, distributed with this software.
 #
 ##############################################################################
-""" Autotropos: A wrapper of Atropos to trim adapters with automatic detection
-of adapters.
+""" rawqc_atropos: A wrapper of Atropos to trim adapters with automatic
+detection of adapters.
 """
 import json
 import os
 import shutil
 import subprocess as sp
+import tempfile
 import uuid
 from collections import OrderedDict
 
 import click
 
-from raw_qc import Atropos
-from raw_qc import logger
+from rawqc import Atropos
+from rawqc import logger
 
 
 @click.command(
@@ -173,10 +174,18 @@ from raw_qc import logger
          "For instance, it detects only 3' end adapters."
 )
 @click.option(
+    '--algorithm', 'algorithm',
+    type=click.Choice(['known', 'heuristic', 'khmer']),
+    default=None,
+    help="Which detector to use. Heuristic is the most sensible but have a "
+         "quadratic complexity and becomes too slow/memory-intensive when your"
+         " reads are taller than 150bp.(automatically choose)"
+)
+@click.option(
     '--amplicon',
     is_flag=True,
     help="Atropos warns about incomplete adapter sequences. "
-         "Autotropos cut remaining base and rerun Atropos with the "
+         "Rawqc_atropos cut remaining base and rerun Atropos with the "
          "missing base."
          "If your DNA fragments are not random, such as in amplicon "
          "sequencing, then this is to be expected and the warning "
@@ -219,9 +228,9 @@ from raw_qc import logger
     '--temp-dir', 'tmp',
     type=click.Path(),
     metavar='TMPDIR',
-    default='.',
+    default=tempfile.gettempdir(),
     help="Temporary directory where are write temporary files for the "
-         "auto-detection of adapters.(TMPDIR/tmp_autotropos)"
+         "auto-detection of adapters.(TMPDIR/tmp_rawqc_atrps)"
 )
 @click.option(
     '--debug',
@@ -230,9 +239,9 @@ from raw_qc import logger
 )
 def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
          adapt_5p_r1, adapt_5p_r2, adapt_bp_r1, adapt_bp_r2, sub_size, mlength,
-         times, overlap, auto_detect, amplicon, nb_pass, threads, logfile,
-         jsonfile, tmp, debug):
-    """ Autotropos is a wrapper of Atropos to trim adapters with automatic
+         times, overlap, auto_detect, algorithm, amplicon, nb_pass, threads,
+         logfile, jsonfile, tmp, debug):
+    """ Rawqc_atropos is a wrapper of Atropos to trim adapters with automatic
     detection of adapters.
 
     If you set --auto option, It searches which adapters are in the sample and
@@ -287,13 +296,13 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         )
         if jsonfile is not None:
             atrps.write_stats_json(jsonfile)
-        logger.info("Autotropos finished !")
+        logger.info("Rawqc_atropos finished !")
         return
 
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
     # Create subsample with seqtk in temporary directory
-    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'autotropos_' + uuid.uuid4().hex
+    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' + uuid.uuid4().hex
     os.mkdir(tmp)
     logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
     tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
@@ -310,11 +319,16 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             seqtk_proc.communicate()
     else:
         tmp_r2 = None
-    
-    logger.debug('{}'.format(os.listdir(tmp)))
-    if debug:
-        for i in os.listdir(tmp):
-            logger.debug('{}'.format(os.path.getsize(tmp + os.sep + i)))
+
+    if not algorithm:
+        from atropos.io.seqio import FastqReader
+        with FastqReader(tmp_r1) as filin:
+            read = next(iter(filin))
+            read_length = len(read)
+            algorithm = 'heuristic' if  49 < read_length < 152 else 'known'
+            kmer_size = 12
+            # algorithm = 'known' if len(read) > 150 else 'heuristic'
+            # kmer_size = 12 if len(read) > 49 else 10
 
     logger.info("Try to detect adapters...")
     tmp_atrps = Atropos(tmp_r1, tmp_r2)
@@ -322,7 +336,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     if logfile:
         tmp_atrps._logfile = logfile
 
-    detected_ad = tmp_atrps.guess_adapters()
+    detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
+                                           kmer_size=kmer_size)
     dict_adapt = OrderedDict({'-a': None, '-A': None})
     for i, (opt, read) in enumerate(zip(dict_adapt.keys(), detected_ad)):
         if read is not None:
@@ -350,13 +365,13 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                 }
                 with open(jsonfile, 'w') as fp:
                     json.dump(trim_dict, fp)
-            logger.info("Autotropos finished !")
+            logger.info("Rawqc_atropos finished !")
             return
 
     # Run atropos trim with known adapters
     logger.info("Run the trimming with detected adapters...")
     tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
     tmp_atrps.adapters = dict_adapt
     tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
@@ -374,18 +389,18 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     # otherwise the logfile will be removed
     if logfile:
         trimmed._logfile = logfile
-    redetect = trimmed.guess_adapters()
+    redetect = trimmed.guess_adapters(algorithm=algorithm, kmer_size=kmer_size)
     detect_flag = False
     for i, (opt, first, second) in enumerate(zip(dict_adapt.keys(),
                                                  detected_ad, redetect)):
         if second is not None:
             if first['known_sequence'] == second['known_sequence']:
-                logger.info("Adapters are not properly removed, the trimming "
-                            "will be done with the longest kmer.")
+                logger.warning("Adapters are not properly removed at the 3' "
+                               "end of R{}.".format(i + 1))
                 dict_adapt[opt] = first['longest_kmer']
                 detect_flag = True
             else:
-                logger.info(
+                logger.warning(
                     "Another sequence is detected at the 3' end of R{}:\n"
                     "{}".format(
                         i, "\n".join("   - {}: {}".format(k, v)
@@ -397,7 +412,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                         "sequence detected.".format(i + 1))
 
     # Rerun atropos trim with longest kmer
-    if detect_flag:
+    if detect_flag and algorithm == 'heuristic':
         logger.info("Run the trimming with detected longest kmer...")
         tmp_atrps.adapters = dict_adapt
         tmp_atrps.remove_adapters(
@@ -421,7 +436,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     )
     if jsonfile is not None:
         atrps.write_stats_json(jsonfile)
-    logger.info("Autotropos finished !")
+    logger.info("Rawqc_atropos finished !")
 
 
 def create_symlink(source, link_name):

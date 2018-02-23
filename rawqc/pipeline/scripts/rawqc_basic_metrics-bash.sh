@@ -34,8 +34,8 @@ path="${BASH_SOURCE[0]%/*}/"
 init_wrapper $@
 
 # Catch variable in json
-basic_metrics_option="$(get_json_entry ".basic_metrics.options" ${CONFIG})"
-basic_metrics_threads="$(get_json_entry ".basic_metrics.threads" ${CONFIG})"
+basic_metrics_option="$(get_json_entry ".rawqc_basic_metrics.options" ${CONFIG})"
+basic_metrics_threads="$(get_json_entry ".rawqc_basic_metrics.threads" ${CONFIG})"
 
 # add ID name in outputs, inputs and logs
 inputs=($INPUT)

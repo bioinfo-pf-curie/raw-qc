@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  This file is part of Autotropos software
+#  This file is part of rawqc software
 #
 #  Copyright (c) 2017 - Institut Curie
 #
@@ -17,9 +17,9 @@ import os
 import click
 import pexpect
 
-from raw_qc import logger
-from raw_qc.utils import get_package_location, copy_file
-RAWQC = os.sep.join([get_package_location('raw_qc'), 'raw_qc'])
+from rawqc import logger
+from rawqc.utils import get_package_location, copy_file
+RAWQC = os.sep.join([get_package_location('rawqc'), 'rawqc'])
 
 
 def get_config_file(ctx, param, value):

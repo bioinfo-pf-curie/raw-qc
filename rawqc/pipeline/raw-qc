@@ -199,7 +199,7 @@ process_qc(){
     # Autotropos
     
     # outputs are decomposed to ease connection between jobs
-    local autotropos_prefix="${outdir}/autotropos/${sample_id}"
+    local autotropos_prefix="${outdir}/atropos/${sample_id}"
     local autotropos_fastq_output="${autotropos_prefix}.R1.fastq.gz"
     if [[ -n "${sample_array[3]}" ]];then
         autotropos_fastq_output=$(
@@ -214,10 +214,10 @@ process_qc(){
     )
 
     cmd=$(
-        get_command_line --tool ${SCRIPTS_PATH}"autotropos-bash.sh" \
+        get_command_line --tool ${SCRIPTS_PATH}"rawqc_atropos-bash.sh" \
                          --input "${raw_fastq}" \
                          --output "${autotropos_output}" \
-                         --log-file "${log_path}.autotropos.log"
+                         --log-file "${log_path}.rawqc_atropos.log"
     )
     local pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
  
@@ -228,10 +228,10 @@ process_qc(){
     )
     local basic_metrics_output="${outdir}/basic_metrics/${sample_id}"
     cmd=$(
-        get_command_line --tool ${SCRIPTS_PATH}"basic_metrics-bash.sh" \
+        get_command_line --tool ${SCRIPTS_PATH}"rawqc_basic_metrics-bash.sh" \
                          --input "${basic_metrics_input}" \
                          --output "${basic_metrics_output}" \
-                         --log-file "${log_path}.basic_metrics.log"
+                         --log-file "${log_path}.rawqc_basic_metrics.log"
     )
     local pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG} ${pid_autotropos})
     

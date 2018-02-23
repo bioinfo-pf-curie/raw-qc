@@ -244,7 +244,7 @@ run_bash(){
     if [[ -n ${CLUSTER} ]]; then
         sleep ${LATENCY}
         local opt=$(get_cluster_resources ${tool} ${config})
-        opt=(-m ae -j oe -N "${task}" -q batch -l "${opt}" -d $CWD -v "PATH=$PATH")
+        opt=(-j oe -N "${task}" -q batch -l "${opt}" -d $CWD -v "PATH=$PATH")
         # Check if the PID is from a jobarray
         if [[ "${pid}" == *"[]"* ]]; then
             opt+=(-W depend=afterokarray:${pid})

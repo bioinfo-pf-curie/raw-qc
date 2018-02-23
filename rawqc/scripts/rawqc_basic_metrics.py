@@ -22,8 +22,8 @@ from os import path
 
 import click
 
-from raw_qc import fastq
-from raw_qc import logger
+from rawqc import fastq
+from rawqc import logger
 
 
 @click.command(
