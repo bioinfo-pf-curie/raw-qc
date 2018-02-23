@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 import click
 
-from raw_qc.utils import get_package_location
+from rawqc.utils import get_package_location
 
 
 @click.command(
@@ -42,7 +42,7 @@ from raw_qc.utils import get_package_location
 )
 def main(metadata, output):
     # get multiqc config
-    rawqc_dir = os.sep.join([get_package_location('raw_qc'), 'raw_qc'])
+    rawqc_dir = os.sep.join([get_package_location('rawqc'), 'rawqc'])
     yaml_conf = os.sep.join([rawqc_dir, 'config', 'multiqc_config.yaml'])
     multiqc_list = ["custom_logo: '{}'".format(os.sep.join([
         rawqc_dir, 'resources', 'images', 'institut_curie.jpg'

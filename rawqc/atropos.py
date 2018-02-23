@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  This file is part of Autotropos software
+#  This file is part of rawqc software.
 #
 #  Copyright (c) 2017 - Institut Curie
 #
@@ -18,7 +18,7 @@ import os
 import sys
 
 from atropos.commands import COMMANDS
-from raw_qc import logger
+from rawqc import logger
 
 __all__ = ['Atropos']
 
@@ -127,9 +127,9 @@ class Atropos(object):
         :param str output_r2: FastQ filename of trimmed R2.
         :param str options: options compatible with atropos trim.
         :param int threads: number of threads.
-        :param bool amplicon: if data is amplicon then autotropos will not
+        :param bool amplicon: if data is amplicon then rawqc_atropos will not
                               iterate on missing bases.
-        :param int iteration: number of iteration if autotropos detect a
+        :param int iteration: number of iteration if rawqc_atropos detect a
                               missing base in an adapter.
         """
         # Create the command line
@@ -213,7 +213,7 @@ class Atropos(object):
         self._trimming = summary
 
     def guess_adapters(self, adapter_file=None, default_contaminant=True,
-                       max_read=25000):
+                       algorithm='heuristic', kmer_size=12, max_read=25000):
         """ Method that wrap adapter detection of Atropos. The method uses
         a FASTA file that contains adapters sequence and Atropos will guess the
         correct adapter among the rest. If no file is requested, Atropos uses
@@ -232,7 +232,8 @@ class Atropos(object):
             - http://atropos.readthedocs.io/en/latest/guide.html#adapter-detection
         """
         # Create the command link_name
-        cmd = ['--quiet', '--max-read', str(max_read)]
+        cmd = ['--quiet', '--max-read', str(max_read), '--detector', algorithm,
+               '--kmer-size', str(kmer_size)]
         if not self.logfile.startswith('/dev/null'):
             cmd += ['--log-file', self.logfile]
         if self.r2:
@@ -294,7 +295,7 @@ class Atropos(object):
         return adapter_list
 
     def write_stats_json(self, filename):
-        """ Write json stats file of Autotropos.
+        """ Write json stats file of rawqc_atropos.
         This file is read by MultiQC to summarize results of the trimming.
         Use :meth:`Atropos.guess_adapters` to have information about adapters
         detection and :meth:`Atropos.remove_adapters` for adapters removal.

@@ -7,7 +7,7 @@ import glob
 
 
 _MAJOR               = 0
-_MINOR               = 1
+_MINOR               = 2
 _MICRO               = 0
 version              = '%d.%d.%d' % (_MAJOR, _MINOR, _MICRO)
 release              = '%d.%d' % (_MAJOR, _MINOR)
@@ -23,7 +23,7 @@ metainfo = {
     'url': ['https://gitlab.curie.fr/ddesvill/autotropos/'],
     'description':'A pipeline to control the quality and trim adapters of FastQ files.',
     'platforms' : ['Linux', 'Unix', 'MacOsX'],
-    'keywords': ['trimming', 'atropos', 'cutadapt', 'QC'],
+    'keywords': ['trimming', 'atropos', 'QC'],
     'classifiers' : [
           'Development Status :: 1 - Planning',
           'Intended Audience :: Developers',
@@ -43,7 +43,7 @@ with open('README.md') as f:
 from distutils.core import setup, Extension
 
 setup(
-    name             = 'raw_qc',
+    name             = 'rawqc',
     version          = version,
     maintainer       = metainfo['authors']['Desvillechabrol'][0],
     maintainer_email = metainfo['authors']['Desvillechabrol'][1],
@@ -61,25 +61,27 @@ setup(
     packages = find_packages(),
     scripts = [],
     install_requires = [ 
-        'click', 'atropos', 'numpy',
+        'atropos', 'click', 'numpy', 'pexpect',
     ],
     # This is recursive include of data files
     exclude_package_data = {"": ["__pycache__"]},
     package_data = {
-        '': ['pipeline/*', 'pipeline/scripts/*', 'config/*']
+        '': ['pipeline/*', 'pipeline/scripts/*', 'config/*'],
+        'rawqc.resources.images': ['*'],
+        'rawqc.resources.data': ['*'],
     },
     entry_points = {
         'console_scripts':[
-            'rawqc_atropos=raw_qc.scripts.autotropos:main',
-            'rawqc_basic_metrics=raw_qc.scripts.fastq_basic_metrics:main',
-            'raw-qc=raw_qc.scripts.raw_qc:main',
-            'rawqc_populate_multiqc=raw_qc.scripts.populate_multiqc:main',
+            'rawqc_atropos=rawqc.scripts.rawqc_atropos:main',
+            'rawqc_basic_metrics=rawqc.scripts.rawqc_basic_metrics:main',
+            'raw-qc=rawqc.scripts.rawqc:main',
+            'rawqc_populate_multiqc=rawqc.scripts.rawqc_populate_multiqc:main',
         ],
         'multiqc.modules.v1':[
-            'basic_metrics=raw_qc.multiqc.basic_metrics:MultiqcModule'
+            'basic_metrics=rawqc.multiqc.basic_metrics:MultiqcModule'
         ],
         'multiqc.hooks.v1':[
-            'before_config=raw_qc.multiqc:multiqc_autotropos_config'
+            'before_config=rawqc.multiqc:multiqc_autotropos_config'
         ],
     },
 )

@@ -8,9 +8,8 @@ raw-qc --get-config
 ```
 Raw-QC will copy the JSON configuration file to set your pipeline. It looks like:
 ```
-"autotropos":
+"rawqc_atropos":
 {
-    "path": "",
     "options": "--auto",
     "threads": 8,
     "memory": "16g",
@@ -19,7 +18,6 @@ Raw-QC will copy the JSON configuration file to set your pipeline. It looks like
 },
 ```
 There are several options:
-- path: the directory path of the executable
 - options: compatible options of the tool
 - threads: number of threads used by the tool and number of process requested to the cluster
 - memory: quantity of RAM necessary requested to the cluster

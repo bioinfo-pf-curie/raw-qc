@@ -67,29 +67,34 @@ class MultiqcModule(BaseMultiqcModule):
         """
         headers = OrderedDict()
         headers['sample_name'] = {
-            'title': 'BioSample',
+            'namespace': 'Rawqc_basic_metrics',
+            'title': "Biological name",
             'description': "Biological identifier"
         }
         headers['total_read'] = {
-            'title': 'Total reads',
+            'namespace': 'Rawqc_basic_metrics',
+            'title': "Total reads",
             'description': "Total number of read",
             'min': 0,
             'format': '{:,.0f}',
             'scale': 'YlGn'
         }
         headers['sample_representation'] = {
-                'title': 'Sample representation',
-                'description': 'Percentage of cluster',
-                'suffix': '%',
-                'scale': 'RdYlGn'
+            'namespace': 'Rawqc_basic_metrics',
+            'title': 'Sample representation',
+            'description': 'Percentage of cluster',
+            'suffix': '%',
+            'scale': 'RdYlGn'
         }
         headers['mean_length'] = {
+            'namespace': 'Rawqc_basic_metrics',
             'title': 'Mean length',
             'description': 'Read mean length',
             'suffix': 'bp',
             'scale': 'YlGn'
         }
         headers['total_base'] = {
+            'namespace': 'Rawqc_basic_metrics',
             'title': 'Total bases',
             'description': 'Total number of base',
             'suffix': 'bp',
@@ -97,6 +102,7 @@ class MultiqcModule(BaseMultiqcModule):
             'scale': 'YlGn'
         }
         headers['R1-Q20'] = {
+            'namespace': 'Rawqc_basic_metrics',
             'title': 'Q20 of R1',
             'description': 'Number of base > Q20 / Total of base',
             'max': 100,
@@ -104,20 +110,24 @@ class MultiqcModule(BaseMultiqcModule):
             'suffix': '%',
             'scale': 'RdYlGn'
         }
-        headers['R2-Q20'] = {
-            'title': 'Q20 of R2',
-            'description': 'Number of base > Q20 / Total of base',
-            'max': 100,
-            'min': 0,
-            'suffix': '%',
-            'scale': 'RdYlGn'
-        }
+        if next(iter(self.basicmet_data.values()))['R2-Q20'] != 'None':
+            headers['R2-Q20'] = {
+                'namespace': 'Rawqc_basic_metrics',
+                'title': 'Q20 of R2',
+                'description': 'Number of base > Q20 / Total of base',
+                'max': 100,
+                'min': 0,
+                'suffix': '%',
+                'scale': 'RdYlGn'
+            }
         headers['mean_read_length'] = {
+            'namespace': 'Atropos',
             'title': 'Trimmed mean length',
             'description': 'Read mean length after trimming',
             'scale': 'YlGn'
         }
         headers['percent_trim'] = {
+            'namespace': 'Atropos',
             'title': 'Trimmed reads',
             'description': 'Trimmed reads percentage',
             'max': 100,
@@ -126,6 +136,7 @@ class MultiqcModule(BaseMultiqcModule):
             'scale': 'YlGn'
         }
         headers['percent_discard'] = {
+            'namespace': 'Atropos',
             'title': 'Discarded reads',
             'description': 'Discarded reads percentage',
             'max': 100,

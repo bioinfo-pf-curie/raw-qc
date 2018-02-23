@@ -11,12 +11,13 @@
 #  The full license is in the LICENSE file, distributed with this software.
 #
 ##############################################################################
+import glob
 import os
 import shutil
 import tempfile
 import pkg_resources
 
-from raw_qc import logger
+from rawqc import logger
 
 
 __all__ = ['TempFile']
@@ -28,9 +29,9 @@ class TempFile(object):
         f.name
         f.delete() # alias to delete=False and close() calls
     """
-    def __init__(self, suffix='', directory=None):
+    def __init__(self, suffix='', dir=None):
         self.temp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False,
-                                                directory=directory)
+                                                dir=dir)
         self._name = self.temp.name
 
     def delete(self):
@@ -72,23 +73,25 @@ def get_package_location(package):
         raise
     return location
 
-def raw_qc_data(filename=None, where=None):
-    """ Return full path of an raw_qc resource data file.
+def rawqc_data(filename=None):
+    """Return full path of a raw-qc resource data file in `resources/data`.
 
-    :param str filename: a valid filename to be found.
-    :param str where: one of the registered data directory
+    :param str filename: a valid filename to be found in `resources/data`.
     :return: the path of file.
-
-    Type the function name with "*" parameter to get a list of
-    available files. Withe where argument set, the function returns a 
-    list of files. Without the where argument, a dictionary is returned where
-    keys correspond to the registered directories::
-
-        filenames = raw_qc_data('*', where='data')
-
-    .. note:: this does not handle wildcards. The * means retrieve all files.
-
     """
-    rawqc_path = get_package_location('raw_qc')
-    resources = os.sep.join([raw_qc_path, 'raw_qc', 'resources'])
-    directories = ['data', 'images']
+    rawqc_path = get_package_location('rawqc')
+    data_dir = os.sep.join([rawqc_path, 'rawqc', 'resources', 'data'])
+    if filename:
+        filename = os.sep.join([data_dir, filename])
+        if os.path.exists(filename):
+            return filename
+        raise Exception("Unknown data file {}. Type sequana_data() to get a "
+                        "list of valid names".format(filename))
+    else:
+        to_ignore = {'__init__.py', '__pycache__'}
+        found = [
+            filename
+            for filename in glob.glob(data_dir + os.sep + '*')
+            if not filename.endswith('.pyc') or filename not in to_ignore
+        ]
+        return found

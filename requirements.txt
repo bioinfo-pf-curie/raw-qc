@@ -1,4 +1,4 @@
-atropos>=1.1.10
+atropos>=1.1.16
 click>=6.7
 fastqc>=0.11.5
 multiqc>=1.3

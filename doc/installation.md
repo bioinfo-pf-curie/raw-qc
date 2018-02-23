@@ -1,8 +1,8 @@
 # Introduction
 
-This pipeline assess your [FastQ](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) with Fastqc before and after
-trimming. The triming is done with a wrapper of [Atropos](https://atropos.readthedocs.io/en/latest/) called
-[Autotropos](https://atropos.readthedocs.io/en/latest/). The wrapper detect and remove automatically 3'-end adapters.
+This pipeline assess your [FastQ](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) with Fastqc before and after trimming.
+The triming is done with [Atropos](https://atropos.readthedocs.io/en/latest/) that detects and removes
+automatically 3'-end adapters.
 Results are reported in a HTML report using [MultiQC](http://multiqc.info/).
 
 # Installing Raw-QC

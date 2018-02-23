@@ -7,7 +7,7 @@
         "nodes": 1,
         "time": "00:20:00"
     },
-    "autotropos":
+    "rawqc_atropos":
     {
         "options": "--auto",
         "threads": 8,
@@ -15,7 +15,7 @@
         "nodes": 1,
         "time": "02:00:00"
     },
-    "basic_metrics":
+    "rawqc_basic_metrics":
     {        
         "options": "",
         "threads": 2,
