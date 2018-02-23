@@ -69,7 +69,9 @@ class MultiqcModule(BaseMultiqcModule):
         headers['sample_name'] = {
             'namespace': 'Rawqc_basic_metrics',
             'title': "Biological name",
-            'description': "Biological identifier"
+            'description': "Biological identifier",
+            'format': None,
+            'scale': None
         }
         headers['total_read'] = {
             'namespace': 'Rawqc_basic_metrics',
@@ -90,14 +92,14 @@ class MultiqcModule(BaseMultiqcModule):
             'namespace': 'Rawqc_basic_metrics',
             'title': 'Mean length',
             'description': 'Read mean length',
-            'suffix': 'bp',
+            'suffix': ' bp',
             'scale': 'YlGn'
         }
         headers['total_base'] = {
             'namespace': 'Rawqc_basic_metrics',
             'title': 'Total bases',
             'description': 'Total number of base',
-            'suffix': 'bp',
+            'suffix': ' bp',
             'format': '{:,.0f}',
             'scale': 'YlGn'
         }
