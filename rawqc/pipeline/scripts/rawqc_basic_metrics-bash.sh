@@ -34,13 +34,8 @@ path="${BASH_SOURCE[0]%/*}/"
 init_wrapper $@
 
 # Catch variable in json
-basic_metrics_path="$(get_json_entry ".basic_metrics.path" ${CONFIG})"
-basic_metrics_option="$(get_json_entry ".basic_metrics.options" ${CONFIG})"
-basic_metrics_threads="$(get_json_entry ".basic_metrics.threads" ${CONFIG})"
-
-if [[ -n "${basic_metrics_path}" ]]; then
-    basic_metrics_path="${basic_metrics_path%/}/"
-fi
+basic_metrics_option="$(get_json_entry ".rawqc_basic_metrics.options" ${CONFIG})"
+basic_metrics_threads="$(get_json_entry ".rawqc_basic_metrics.threads" ${CONFIG})"
 
 # add ID name in outputs, inputs and logs
 inputs=($INPUT)
@@ -52,7 +47,11 @@ line=("${inputs[0]}")
 basic_metrics_json=("--json" "${inputs[1]}")
 IFS=',' read -r -a sample_array <<< "$line"
 sample_id=${sample_array[0]}
-sample_name=${sample_array[1]}
+if [[ -n ${sample_array[1]} ]]; then
+    sample_name=${sample_array[1]}
+else
+    sample_name=${sample_id}
+fi
 raw_fastq=(${sample_array[@]:2:2})
 basic_metrics_fastq=(-1 ${raw_fastq[0]})
 if [[ ${#raw_fastq[@]} -eq 2 ]]; then
@@ -62,12 +61,12 @@ fi
 _fail=0 # variable to check if everything is ok
 
 # Command line
-cmd="${basic_metrics_path}fastq_basic_metrics ${basic_metrics_option} \
-                            ${basic_metrics_fastq[@]} \
-                            ${basic_metrics_json[@]} \
-                            -p ${OUTPUT} \
-                            -i ${sample_id} \
-                            -s ${sample_name}"
+cmd="rawqc_basic_metrics ${basic_metrics_option} \
+                         ${basic_metrics_fastq[@]} \
+                         ${basic_metrics_json[@]} \
+                         -p ${OUTPUT} \
+                         -i ${sample_id} \
+                         -s ${sample_name}"
 $cmd > ${LOG} 2>&1 || _fail=1
 
 exit ${_fail}

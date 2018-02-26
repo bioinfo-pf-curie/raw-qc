@@ -14,10 +14,10 @@
 #- ---------------------------------------------------------------------------
 
 ## ---------------------------------------------------------------------------
-## Autotropos
+## Rawqc_atropos
 ##
-## Wrapper of Autotropos with many sanity check. It creates FASTQ
-## file(s) with adapters removed.
+## Wrapper of rawqc_atropos with many sanity check. It creates FASTQ
+## file(s) without adapters.
 ## Inputs:
 ##      - String $INPUT: Input FastQ file(s).
 ##      - String $OUTPUT: Output FastQ file(s), metrics file and json file.
@@ -29,17 +29,12 @@
 path="${BASH_SOURCE[0]%/*}/"
 . "${path}"utils-bash.sh
 
-# Initiate variable of the wrapper ($INPUT, $OUTPUT, $PLAN, $CONFIG, $LOG)
+# Initiate variable of the wrapper ($INPUT, $OUTPUT, $CONFIG, $LOG)
 init_wrapper $@
 
 # Catch variable in json
-autotropos_path="$(get_json_entry ".autotropos.path" ${CONFIG})"
-autotropos_option="$(get_json_entry ".autotropos.options" ${CONFIG})"
-autotropos_threads="$(get_json_entry ".autotropos.threads" ${CONFIG})"
-
-if [[ -n "${autotropos_path}" ]]; then
-    autotropos_path="${autotropos_path%/}/"
-fi
+autotropos_option="$(get_json_entry ".rawqc_atropos.options" ${CONFIG})"
+autotropos_threads="$(get_json_entry ".rawqc_atropos.threads" ${CONFIG})"
 
 fastq_input=($INPUT)
 # Add ID name in outputs and logs
@@ -62,12 +57,13 @@ fi
 _fail=0 # variable to check if everything is ok
 
 # Command line:
-cmd="${autotropos_path}autotropos ${autotropos_option[@]} \
-                                  --threads ${autotropos_threads} \
-                                  ${autotropos_input[@]} \
-                                  ${autotropos_output[@]} \
-                                  --logs ${autotropos_utils[0]} \
-                                  --json ${autotropos_utils[1]}"
+cmd="rawqc_atropos ${autotropos_option[@]} \
+                   --threads ${autotropos_threads} \
+                   ${autotropos_input[@]} \
+                   ${autotropos_output[@]} \
+                   --logs ${autotropos_utils[0]} \
+                   --json ${autotropos_utils[1]}"
+
 echo $cmd > ${log_output}
 $cmd >> "${log_output}" 2>&1 || _fail=1
 
