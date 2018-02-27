@@ -153,6 +153,6 @@ kdi_create_dataset:
 kdi_start:
   CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_start.err -N snakemake_raw-qc_KDI_start -l nodes=1:ppn=1,mem=1Gb"
 kdi_export:
-  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export_rnaseq.err -N snakemake_raw-qc_KDI_export -l nodes=1:ppn=1,mem=1Gb"
+  CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_export.err -N snakemake_raw-qc_KDI_export -l nodes=1:ppn=1,mem=1Gb"
 kdi_conf_file_research:
   CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_KDI_conf_file_research.err -N snakemake_raw-qc_KDI_conf_file_research -l nodes=1:ppn=1,mem=1Gb"
