@@ -64,7 +64,7 @@ extension:
     SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT: "_SAMPLEPLAN"
     SAMPLESHEET_TO_SAMPLEDESCRIPTION_INPUT: "_SAMPLEPLAN"
     SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT: ".sampleDescription.txt"
-    CONFIG_COPY_INPUT_1: "/config/rawqc_config.json"
+    CONFIG_COPY_INPUT_1: "/rawqc/config/rawqc_config.json"
     CONFIG_COPY_INPUT_2: ".sampleDescription.txt"
     CONFIG_COPY_OUTPUT_1: "rawqc_config.json"
     CONFIG_COPY_OUTPUT_2: "_config_copy_ok.txt"
@@ -135,11 +135,11 @@ samplesheet_to_sampledescription:
 
 config_copy:
     CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_config_copy.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_config_copy.err -N snakemake_config_copy -l nodes=1:ppn=1,mem=1Gb"
-    PATH: "{{RESEARCH_RULES_PATH}}"
+    PATH: "{{RAWQC_PATH}}"
 
 raw-qc_pipeline:
     CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_raw-qc_pipeline.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_raw-qc_pipeline.err -N snakemake_raw-qc_pipeline -l nodes=1:ppn=1,mem=1Gb"
-    PATH: "{{RAWQC_PATH}}/"
+    PATH: "{{RAWQC_PATH}}/rawqc/pipeline/"
 
 check_raw-qc:
     CLUSTER: "-q {{QUEUE}} -o {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_raw-qc.out -e {{OUTPUT_PATH}}/RAW-QC-{{RUN}}/snakemake_check_raw-qc.err -N snakemake_check_raw-qc -l nodes=1:ppn=1,mem=5Gb"
