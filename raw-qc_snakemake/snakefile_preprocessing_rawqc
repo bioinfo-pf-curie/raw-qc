@@ -12,17 +12,17 @@ workdir: config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PRO
 
 
 ###INCLUDE RULES###
-general_rules_path=config["general_path"]["GENERAL_RULES_PATH"]
+research_rules_path=config["general_path"]["RESEARCH_RULES_PATH"]
 
-include: general_rules_path + "samplesheet_checker_rule"
-include: general_rules_path + "bcl_to_fastq_rule"
-include: general_rules_path + "check_fastq_length_rule"
-include: general_rules_path + "transfert_fastq_dir_rule"
-include: general_rules_path + "manage_undetermined_fastq_rule"
-include: general_rules_path + "samplesheet_to_sampleplan.rule"
-include: general_rules_path + "samplesheet_to_sampledescription_rule"
-include: general_rules_path + "config_rawqc_copy.rule"
-include: general_rules_path + "rims_metadata_launcher.rule"
+include: research_rules_path + "samplesheet_checker_rule"
+include: research_rules_path + "bcl_to_fastq_rule"
+include: research_rules_path + "check_fastq_length_rule"
+include: research_rules_path + "transfert_fastq_dir_rule"
+include: research_rules_path + "manage_undetermined_fastq_rule"
+include: research_rules_path + "samplesheet_to_sampleplan.rule"
+include: research_rules_path + "samplesheet_to_sampledescription_rule"
+include: research_rules_path + "config_copy.rule"
+include: research_rules_path + "rims_metadata_launcher.rule"
 ###INCLUDE RULES###
 
 
@@ -36,7 +36,7 @@ transfert_fastq_dir=output_path + "/" + config["experience"]["PROJECT"] + "-" + 
 manage_undetermined_fastq=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["extension"]["MANAGE_UNDETERMINED_FASTQ_OUTPUT"]
 samplesheet_to_sampleplan=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEPLAN_OUTPUT"]
 samplesheet_to_sampledescription=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["SAMPLESHEET_TO_SAMPLEDESCRIPTION_OUTPUT"]
-config_rawqc_copy=(output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_1"], output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_RAWQC_COPY_OUTPUT_2"])
+config_copy=(output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["extension"]["CONFIG_COPY_OUTPUT_1"], output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/" + config["experience"]["RUN"] + config["extension"]["CONFIG_COPY_OUTPUT_2"])
 rims_metadata_launcher=output_path + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"] + "/archive/" + config["experience"]["RUN"] + config["extension"]["RIMS_METADATA_LAUNCHER_OUTPUT"]
 ###OUTPUTS RULES###
 
@@ -50,7 +50,7 @@ rule all:
 #        manage_undetermined_fastq,
 #        samplesheet_to_sampleplan,
 #        samplesheet_to_sampledescription,
-#        config_rawqc_copy,
+#        config_copy,
         rims_metadata_launcher,
     params:
         cluster="-q batch -N snakemake_preprocessing_RAW-QC_pipeline -l nodes=1:ppn=1,mem=1Gb"

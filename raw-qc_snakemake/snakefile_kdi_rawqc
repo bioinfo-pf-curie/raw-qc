@@ -8,6 +8,11 @@
 ############################################################
 
 
+###WORKING DIRECTORY###
+workdir: config["general_path"]["OUTPUT_PATH"] + "/" + config["experience"]["PROJECT"] + "-" + config["experience"]["RUN"]
+###WORKING DIRECTORY###
+
+
 ###INCLUDE RULES###
 # Path for KDI rules
 rule_path_kdi=config["general_path"]["RULE_PATH_KDI"]
