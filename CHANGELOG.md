@@ -12,6 +12,7 @@
 - Rawqc_basic_metrics computation is speed up using a subsampling for the GC percent.
 - Rawqc_atropos detection is speed up using a subsampling and the scratch directory.
 - Rawqc_atropos use a different detection algorithm when reads are taller than 150 bases.
+- Improve sensitivity of Rawqc_atropos detection
 
 ### Fixes
 
