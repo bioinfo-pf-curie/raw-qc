@@ -54,6 +54,7 @@ do
     shift $((OPTIND-1)); OPTIND=1
 done
 
+SPECIES=${SPECIES/_/ }
 
 # check parameters values #
 if [[ -z ${CONFIG_TEMPLATE} ]] || [[ -z ${UNLOCK} ]] || [[ -z ${RUN} ]] || [[ -z ${ENV} ]] || [[ -z ${ILLUMINA_DIR} ]] || [[ -z ${ILLUMINA_SEQUENCER} ]] || [[ -z ${KDI_PROJECT} ]] || [[ -z ${PROJECT_TYPE} ]] || [[ -z ${SCOPE} ]] || [[ -z ${DEMAND} ]] || [[ -z ${DATATYPE} ]] || [[ -z ${CONDA_PATH} ]] || [[ -z ${SPECIES} ]] || [[ -z ${OUTPUT_PATH} ]]; then
@@ -199,7 +200,7 @@ date=$(date +'%d/%m/%y-%H:%M:%S')
 echo "############################## NEW LAUNCH : ${date} ##############################" &>>${LOG}
 
 # check RESEARCH_RULES_PATH value #
-source <(source ${CONFIG_TEMPLATE}; printf %s\\n "RESEARCH_RULES_PATH=\"${RESEARCH_RULES_PATH}\"";)
+#source <(source ${CONFIG_TEMPLATE}; printf %s\\n "RESEARCH_RULES_PATH=\"${RESEARCH_RULES_PATH}\"";)
 if [[ -z ${RESEARCH_RULES_PATH} ]]; then
     echo "ERROR : Empty value for PROJECT argument: '${RESEARCH_RULES_PATH}'"
     exit 1
