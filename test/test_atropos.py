@@ -1,8 +1,8 @@
 import filecmp
 import os
 
-from raw_qc import Atropos
-from raw_qc.utils import TempFile, rawqc_data
+from rawqc import Atropos
+from rawqc.utils import TempFile, rawqc_data
 
 
 def test_atropos():
@@ -15,9 +15,9 @@ def test_atropos():
         'GATCGGAAGAGCACACGTCTGAACTCCAGTCACCTTGTAATCTCGTATGCCGTCTTCTGCTTG',
         'AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
     ]
-    guessed_seq = atrps.guess_adapters(max_read=10000)
+    guessed_seq = atrps.guess_adapters(max_read=1000, algorithm='heuristic')
     for known, guessed in zip(known_seq, guessed_seq):
-        assert known == guessed['known_sequence']
+        assert known == guessed['sequence']
 
 def test_atropos_remove_adapters():
     filout1 = TempFile('.fastq.gz')

@@ -175,11 +175,11 @@ from rawqc import logger
 )
 @click.option(
     '--algorithm', 'algorithm',
-    type=click.Choice(['known', 'heuristic', 'khmer']),
+    type=click.Choice(['known', 'heuristic']),
     default=None,
     help="Which detector to use. Heuristic is the most sensible but have a "
          "quadratic complexity and becomes too slow/memory-intensive when your"
-         " reads are taller than 150bp.(automatically choose)"
+         " reads are taller than 150bp.(automatically chosen)"
 )
 @click.option(
     '--amplicon',
@@ -302,7 +302,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
     # Create subsample with seqtk in temporary directory
-    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' + uuid.uuid4().hex
+    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
+        + uuid.uuid4().hex
     os.mkdir(tmp)
     logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
     tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
@@ -320,15 +321,12 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     else:
         tmp_r2 = None
 
-    if not algorithm:
-        from atropos.io.seqio import FastqReader
-        with FastqReader(tmp_r1) as filin:
-            read = next(iter(filin))
-            read_length = len(read)
-            algorithm = 'heuristic' if  49 < read_length < 152 else 'known'
-            kmer_size = 12
-            # algorithm = 'known' if len(read) > 150 else 'heuristic'
-            # kmer_size = 12 if len(read) > 49 else 10
+    auto_algo = True if algorithm is None else False
+    if algorithm == "heuristic":
+        max_read = 20000
+    else:
+        algorithm = "known"
+        max_read = 50000
 
     logger.info("Try to detect adapters...")
     tmp_atrps = Atropos(tmp_r1, tmp_r2)
@@ -337,17 +335,18 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         tmp_atrps._logfile = logfile
 
     detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
-                                           kmer_size=kmer_size)
+                                           max_read=max_read)
     dict_adapt = OrderedDict({'-a': None, '-A': None})
     for i, (opt, read) in enumerate(zip(dict_adapt.keys(), detected_ad)):
         if read is not None:
-            dict_adapt[opt] = read['known_sequence']
+            dict_adapt[opt] = read['sequence']
             logger.info(
                 "An adapter is detected at the 3' end of reads {}:\n"
                 "{}".format(
                     i + 1,
                     "\n".join(
                         "   - {}: {}".format(k, v) for k, v in read.items()
+                        if k != 'read'
                     )
                 )
             )
@@ -359,7 +358,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                 create_symlink(read2, paired_output)
             if jsonfile is not None:
                 trim_dict = {
-                    'mean_read_length': tmp_atrps.detection['derived']['mean_sequence_lengths'][0],
+                    'mean_read_length': tmp_atrps.detection['derived'][
+                        'mean_sequence_lengths'][0],
                     'percent_trim': 0.0,
                     'percent_discard': 0.0
                 }
@@ -370,8 +370,36 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Run atropos trim with known adapters
     logger.info("Run the trimming with detected adapters...")
+    # Some times atropos did a better job with reverse complement adapters
     tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
     tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
+    # Trim with detected adapters
+    tmp_atrps.adapters = dict_adapt
+    normal_trim = tmp_atrps.remove_adapters(
+        output_r1=tmp_r1_out,
+        output_r2=tmp_r2_out,
+        options=options,
+        threads=threads,
+        amplicon=amplicon
+    )
+    # Lets trim with reverse complement adapters
+    trans_tab = str.maketrans('ACGT', 'TGCA')
+    tmp_atrps.adapters = {
+        key: value.translate(trans_tab)[::-1]
+        for key, value in dict_adapt.items() if value is not None
+    }
+    reverse_trim = tmp_atrps.remove_adapters(
+        output_r1=tmp_r1_out,
+        output_r2=tmp_r2_out,
+        options=options,
+        threads=threads,
+        amplicon=amplicon
+    )
+    iter_trim = zip(dict_adapt.keys(), normal_trim.items(),
+                    reverse_trim.items())
+    for opt, normal, reverse in iter_trim:
+        dict_adapt[opt] = normal[0] if normal[1] > reverse[1] else reverse[0]
+    # Test with the best sens
     tmp_atrps.adapters = dict_adapt
     tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
@@ -384,17 +412,17 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     logger.info("Try to re-detect adapters...")
     trimmed = Atropos(
         read1=tmp_r1_out,
-        read2=tmp_r2_out,
+        read2=tmp_r2_out
     )
     # otherwise the logfile will be removed
     if logfile:
         trimmed._logfile = logfile
-    redetect = trimmed.guess_adapters(algorithm=algorithm, kmer_size=kmer_size)
+    redetect = trimmed.guess_adapters(algorithm=algorithm, max_read=max_read)
     detect_flag = False
     for i, (opt, first, second) in enumerate(zip(dict_adapt.keys(),
                                                  detected_ad, redetect)):
         if second is not None:
-            if first['known_sequence'] == second['known_sequence']:
+            if first['sequence'] == second['sequence']:
                 logger.warning("Adapters are not properly removed at the 3' "
                                "end of R{}.".format(i + 1))
                 dict_adapt[opt] = first['longest_kmer']
@@ -404,24 +432,41 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                     "Another sequence is detected at the 3' end of R{}:\n"
                     "{}".format(
                         i, "\n".join("   - {}: {}".format(k, v)
-                                     for k, v in second.items())
+                                     for k, v in second.items() if k != 'read')
                     )
                 )
         else:
             logger.info("Adapters for R{} are perfectly trimmed. No known "
                         "sequence detected.".format(i + 1))
 
+    if auto_algo:
+        from atropos.io.seqio import FastqReader
+        with FastqReader(tmp_r1) as filin:
+            read = next(iter(filin))
+            read_length = len(read)
+            algorithm = 'heuristic' if 49 < read_length < 152 else 'known'
+            max_read = 50000 if algorithm == 'known' else 20000
+
     # Rerun atropos trim with longest kmer
     if detect_flag and algorithm == 'heuristic':
+        detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
+                                               max_read=max_read)
         logger.info("Run the trimming with detected longest kmer...")
-        tmp_atrps.adapters = dict_adapt
-        tmp_atrps.remove_adapters(
-            output_r1=output,
-            output_r2=paired_output,
-            options=options,
-            threads=threads,
-            amplicon=amplicon
-        )
+        try:
+            tmp_atrps.adapters = {
+                opt: adapter['longest_kmer']
+                for opt, adapter in zip(dict_adapt.keys(), detected_ad)
+            }
+            tmp_atrps.remove_adapters(
+                output_r1=tmp_r1_out,
+                output_r2=tmp_r2_out,
+                options=options,
+                threads=threads,
+                amplicon=amplicon
+            )
+        except TypeError:
+            pass
+
     logger.info("Clean the tmp dir.")
     shutil.rmtree(tmp)
 

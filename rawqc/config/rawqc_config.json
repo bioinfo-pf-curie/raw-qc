@@ -9,7 +9,7 @@
     },
     "rawqc_atropos":
     {
-        "options": "--auto",
+        "options": "--auto --overlap 3 --times 3 --minimum-length 10",
         "threads": 8,
         "memory": "16g",
         "nodes": 1,
