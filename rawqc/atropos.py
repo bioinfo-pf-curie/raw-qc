@@ -16,6 +16,7 @@ This is a python wrapper to ease usage with detection tool.
 """
 import os
 import sys
+from collections import OrderedDict
 
 from atropos.commands import COMMANDS
 from rawqc import logger
@@ -133,14 +134,14 @@ class Atropos(object):
                               missing base in an adapter.
         """
         # Create the command line
-        cmd = ['--threads', str(threads)]
+        cmd = ['--threads', str(threads), '--process-timeout', '600']
         if not self.logfile.startswith('/dev/null'):
             cmd += ['--log-file', self.logfile]
         if options:
             cmd += options.split()
         if self.r2:
-            cmd += ['--aligner', 'insert', '-pe1', self.r1, '-pe2', self.r2,
-                    '-o', output_r1, '-p', output_r2]
+            cmd += ['-pe1', self.r1, '-pe2', self.r2, '-o', output_r1, '-p',
+                    output_r2]
             adapt_opt = ('-a', '-A', '-g', '-G', '-b', '-B')
         else:
             cmd += ['-se', self.r1, '-o', output_r1]
@@ -211,9 +212,16 @@ class Atropos(object):
             return self.remove_adapters(output_r1, output_r2, options,
                                         threads, amplicon, iteration)
         self._trimming = summary
+        result = summary['trim']['modifiers']['AdapterCutter'][
+            'fraction_records_with_adapters']
+        # Useful to evaluate the detection performance
+        return OrderedDict(
+                [(self._adapters[opt], r)
+                    for opt, r in zip(('-a', '-A'), result)]
+            )
 
     def guess_adapters(self, adapter_file=None, default_contaminant=True,
-                       algorithm='heuristic', kmer_size=12, max_read=25000):
+                       algorithm='known', kmer_size=12, max_read=25000):
         """ Method that wrap adapter detection of Atropos. The method uses
         a FASTA file that contains adapters sequence and Atropos will guess the
         correct adapter among the rest. If no file is requested, Atropos uses
@@ -274,9 +282,11 @@ class Atropos(object):
         detect_list = [
             {
                 'read': i,
-                'adapters_names': hit['known_names'][0],
-                'known_sequence': hit['known_seqs'][0],
-                'longest_kmer': hit['longest_kmer']
+                'adapter_name': hit['known_names'][0],
+                'sequence': hit['known_seqs'][0],
+                'longest_kmer': hit['longest_kmer'],
+                'kmer_freq': hit['kmer_freq'],
+                'match_fraction': hit['known_to_contaminant_match_frac']
             } if hit['is_known'] else None
             for i, data in enumerate(detected['matches']) for hit in data
         ]
@@ -289,6 +299,12 @@ class Atropos(object):
             try:
                 if adapter_list[adapter['read']] is None:
                     adapter_list[adapter['read']] = adapter
+                    best_score = adapter['kmer_freq'] * adapter['match_fraction']
+                else:
+                    cur_score = adapter['kmer_freq'] * adapter['match_fraction']
+                    if cur_score > best_score:
+                        best_score = cur_score
+                        adapter_list[adapter['read']] = adapter
             except TypeError:
                 pass
         self._detection = summary
