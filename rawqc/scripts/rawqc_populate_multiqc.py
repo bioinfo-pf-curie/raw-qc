@@ -72,7 +72,7 @@ def main(metadata, output):
         if 'ngs_contact' not in metadict:
             metadict['ngs_contact'] = 'ngs.lab@curie.fr'
         multiqc_list += [
-            "    - {}: '{}'".format(value, metadict[key])
+            '    - {}: "{}"'.format(value, metadict[key])
             for key, value in rims_dict.items() if key in metadict
         ]
     else:
