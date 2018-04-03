@@ -1,3 +1,7 @@
+version-1.1.1
+	
+	[BUGFIX] Correction au niveau du multiqc suite à un single quote dans le fichier de configuration des metadata de RIMS
+
 version-1.1.0
 	
 	[MODIF] Adaptation du pipeline à la nouvelle release de RIMS
