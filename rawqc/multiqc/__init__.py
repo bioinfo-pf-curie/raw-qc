@@ -5,11 +5,14 @@ from __future__ import absolute_import
 from multiqc import config
 
 
-def multiqc_autotropos_config():
+def multiqc_rawqc_config():
     """ Set up MultiQC config defaults for this package """
-    autotropos_search_patterns = {
-        'basic_metrics': {
-            'fn': '*_basicmet.json',
+    rawqc_search_patterns = {
+        "rawqc_metrics": {
+            "fn": "*_basicmet.json",
         },
+        "rawqc_trimming": {
+            "fn": "*.trim.json",
+        }
     }
-    config.update_dict(config.sp, autotropos_search_patterns)
+    config.update_dict(config.sp, rawqc_search_patterns)

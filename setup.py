@@ -78,10 +78,11 @@ setup(
             'rawqc_populate_multiqc=rawqc.scripts.rawqc_populate_multiqc:main',
         ],
         'multiqc.modules.v1':[
-            'basic_metrics=rawqc.multiqc.basic_metrics:MultiqcModule'
+            'rawqc_metrics=rawqc.multiqc.metrics:MultiqcModule',
+            'rawqc_trimming=rawqc.multiqc.trimming:MultiqcModule',
         ],
         'multiqc.hooks.v1':[
-            'before_config=rawqc.multiqc:multiqc_autotropos_config'
+            'before_config=rawqc.multiqc:multiqc_rawqc_config',
         ],
     },
 )
