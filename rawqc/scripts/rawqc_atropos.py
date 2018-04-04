@@ -1,19 +1,9 @@
 # coding: utf-8
-#
-#  This file is part of Autotropos software
-#
-#  Copyright (c) 2017 - Institut Curie
-#
-#  File author(s):
-#      Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>,
-#
-#  Distributed under the terms of the 3-clause BSD license.
-#  The full license is in the LICENSE file, distributed with this software.
-#
-##############################################################################
+
 """ rawqc_atropos: A wrapper of Atropos to trim adapters with automatic
 detection of adapters.
 """
+
 import json
 import os
 import shutil
@@ -301,6 +291,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
+
     # Create subsample with seqtk in temporary directory
     tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
         + uuid.uuid4().hex
@@ -321,6 +312,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     else:
         tmp_r2 = None
 
+    # Set detection algorithm
     auto_algo = True if algorithm is None else False
     if algorithm == "heuristic":
         max_read = 20000
@@ -328,6 +320,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         algorithm = "known"
         max_read = 50000
 
+    # Detect adapters in the subsample
     logger.info("Try to detect adapters...")
     tmp_atrps = Atropos(tmp_r1, tmp_r2)
     tmp_atrps.adapters = atrps.adapters
@@ -370,11 +363,12 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Run atropos trim with known adapters
     logger.info("Run the trimming with detected adapters...")
+
     # Some times atropos did a better job with reverse complement adapters
     tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
     tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
+
     # Trim with detected adapters
-    tmp_atrps.adapters = dict_adapt
     normal_trim = tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
         output_r2=tmp_r2_out,
@@ -382,6 +376,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         threads=threads,
         amplicon=amplicon
     )
+
     # Lets trim with reverse complement adapters
     trans_tab = str.maketrans('ACGT', 'TGCA')
     tmp_atrps.adapters = {
@@ -399,7 +394,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                     reverse_trim.items())
     for opt, normal, reverse in iter_trim:
         dict_adapt[opt] = normal[0] if normal[1] > reverse[1] else reverse[0]
-    # Test with the best sens
+
+    # Test with the best orientation
     tmp_atrps.adapters = dict_adapt
     tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
@@ -414,7 +410,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         read1=tmp_r1_out,
         read2=tmp_r2_out
     )
-    # otherwise the logfile will be removed
+    # Otherwise the logfile will be removed
     if logfile:
         trimmed._logfile = logfile
     redetect = trimmed.guess_adapters(algorithm=algorithm, max_read=max_read)
@@ -447,7 +443,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             algorithm = 'heuristic' if 49 < read_length < 152 else 'known'
             max_read = 50000 if algorithm == 'known' else 20000
 
-    # Rerun atropos trim with longest kmer
+    # Rerun atropos trim with longest kmer heuristic algorithm
     if detect_flag and algorithm == 'heuristic':
         detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
                                                max_read=max_read)

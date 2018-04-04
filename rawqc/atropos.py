@@ -1,16 +1,5 @@
 # coding: utf-8
-#
-#  This file is part of rawqc software.
-#
-#  Copyright (c) 2017 - Institut Curie
-#
-#  File author(s):
-#      Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>,
-#
-#  Distributed under the terms of the 3-clause BSD license.
-#  The full license is in the LICENSE file, distributed with this software.
-#
-##############################################################################
+
 """ Atropos is a NGS read trimming tool that is specific, sensitive and speedy.
 This is a python wrapper to ease usage with detection tool.
 """
@@ -277,7 +266,7 @@ class Atropos(object):
                     sys.exit(retcode)
             sys.stdout = orig_stdout
 
-        # Get detect summary information
+        # Get detected adapters
         detected = summary['detect']
         detect_list = [
             {
@@ -291,10 +280,9 @@ class Atropos(object):
             for i, data in enumerate(detected['matches']) for hit in data
         ]
 
-        adapter_list = [None, None]
-        if self.r2 is None:
-            adapter_list = [None]
+        adapter_list = [None] if self.r2 is None else [None, None]
 
+        # Get adapters with best score = frequence * match fraction
         for adapter in detect_list:
             try:
                 if adapter_list[adapter['read']] is None:
@@ -308,9 +296,19 @@ class Atropos(object):
             except TypeError:
                 pass
         self._detection = summary
+
+        # Add detected adapters
+        options = ('-a', '-A')
+        try:
+            self.adapters = {
+                opt: adapt['sequence'] for opt, adapt in zip(options, adapter_list)
+            }
+        except TypeError:
+            logger.info("No adapters detected.")
+            pass
         return adapter_list
 
-    def write_stats_json(self, filename):
+    def write_stats_json(self, basename):
         """ Write json stats file of rawqc_atropos.
         This file is read by MultiQC to summarize results of the trimming.
         Use :meth:`Atropos.guess_adapters` to have information about adapters
@@ -318,23 +316,43 @@ class Atropos(object):
 
         :param str filename: output JSON file name.
         """
+        # Check if trimming was run
+        if self.trimming is None:
+            logger.info("No trimming ran.")
+            return
+
+        # Get trimming basic metrics
+        trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
+        n = 1 if self.r2 is None else 2
+        formatters = self.trimming['trim']['formatters']
+        read_length = self.trimming['derived']['mean_sequence_lengths'][0]
+        read_trim = trimmed['total_records_with_adapters']
+        read_total = self.trimming['total_record_count']
+        percent_pass = formatters['fraction_records_written']
+
+        # Compute additionnal stats
+        stats_dict = {
+            'mean_read_length': formatters['total_bp_written'] / (
+                formatters['records_written'] * n),
+            'percent_trim': (read_trim / (read_total * n)) * 100,
+            'percent_discard': (1 - percent_pass) * 100,
+            'id': basename,
+        }
+        stats_dict = dict(stats_dict, **self.adapters)
+
+        # Trimming stats
+        # It is necessary to do the same plot than Cutadapt in MultiQC
+        fastqs = trimmed['adapters']
+        position_prob = [(1/4)**i for i in range(0, read_total)]
+        for i, fq in enumerate(fastqs):
+            fq_dict = stats_dict['trim_R{}'.format(i + 1)] = dict()
+            for n, adapter in fq.items():
+                fq_dict[adapter['sequence']] = OrderedDict(
+                    (pos, (count, position_prob[pos] * read_total))
+                    for pos, count in adapter['lengths_back'].items()
+                )
+
+        # Write it in a json file
         import json
-
-        # get values
-        stats_dict = dict()
-        if self.trimming is not None:
-            trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
-            n = 1 if self.r2 is None else 2
-            formatters = self.trimming['trim']['formatters']
-            read_trim = trimmed['total_records_with_adapters']
-            read_total = self.trimming['total_record_count']
-            percent_pass = formatters['fraction_records_written']
-
-            stats_dict = dict(stats_dict, **{
-                'mean_read_length': formatters['total_bp_written'] / (
-                    formatters['records_written'] * n),
-                'percent_trim': (read_trim / (read_total * n)) * 100,
-                'percent_discard': (1 - percent_pass) * 100
-            })
-        with open(filename, 'w') as fp:
+        with open(basename + ".trim.json", 'w') as fp:
             json.dump(stats_dict, fp)
