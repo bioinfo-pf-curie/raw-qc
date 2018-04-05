@@ -24,20 +24,52 @@ class MultiqcModule(BaseMultiqcModule):
                  " a list of adapters."
         )
 
+        # Init values
         self.trimming_data = dict()
+        self.plot_trimmed_length = dict()
+        self.plot_obsexp = dict()
+        self.adapter_table = dict()
+
         for f in self.find_log_files("rawqc_trimming", filehandles=True):
             self.parse_rawqc_trim_log(f)
 
-        if len(self.metrics_data) == 0:
+        if len(self.trimming_data) == 0:
             raise UserWarning
 
         self.add_section(plot=self.adapter_used_table())
 
+        self.trimming_length_plot()
+
     def parse_rawqc_trim_log(self, f):
         """ Parse the json file.
         """
+        # Get data of json file
         data = json.load(f['f'])
         self.trimming_data[data['id']] = data
+
+        # Create dict for table
+        self.adapter_table[data['id']] = data['adapters']
+
+        # Create dict for linegraph
+        try:
+            for fq, adapters in data['trim_metrics'].items():
+                fastq_id = "{}.{}".format(data['id'], fq)
+                self._fill_plot_metrics(fastq_id, adapters)
+        except AttributeError:
+            pass
+
+    def _fill_plot_metrics(self, fastq_id, adapters):
+        """ Fill dictionnary used to plot trimming metrics.
+        """
+        for seq, metrics in adapters.items(): 
+            adapter_id = "{} - {}".format(fastq_id, seq)
+            adapter_trim_length = self.plot_trimmed_length[adapter_id] = dict()
+            adapter_obsexp = self.plot_obsexp[adapter_id] = dict()
+            for pos, (observed, expected) in metrics.items():
+                # handle infinite values
+                obsexp = observed / expected if expected > 1e-5 else observed
+                adapter_trim_length[pos] = observed
+                adapter_obsexp[pos] = obsexp
 
     def adapter_used_table(self):
         """ Create a table with adapters used for each sample.
@@ -90,14 +122,34 @@ class MultiqcModule(BaseMultiqcModule):
             'table_title': 'Adapters removed',
             'save_file': True
         }
-        return table.plot(self.trimming_data, headers, config)
+        return table.plot(self.adapter_table, headers, config)
 
     def trimming_length_plot(self):
         """ Generate the trimming length plot.
         """
         description = (
           "This plot shows the number of reads with certain lengths of adapter"
-          " trimmed. Obs/Exp shows the raw counts divided by the number"
+          " trimmed.\n Obs/Exp shows the raw counts divided by the number"
           " expected due to sequencing errors. A defined peak may be related"
           " to adapter length."  
+        )
+        config = {
+                'id': "trimming_plot",
+                'title': "Trimming; Length of trimmed sequences",
+                'ylab': "Counts",
+                'xlab': "Length trimmed",
+                'xDecimals': False,
+                'ymin': 0,
+                'tt_label': "<b>{point.x} bp trimmed</b>: {point.y:.0f}",
+                'data_labels': [
+                    {'name': "Counts", 'ylab': "Counts"},
+                    {'name': "Obs/Exp", 'ylab': "Observed / Expected"},
+                ],
+        }
+        self.add_section(
+            description=description,
+            plot=linegraph.plot(
+                [self.plot_trimmed_length, self.plot_obsexp],
+                config
+            )
         )

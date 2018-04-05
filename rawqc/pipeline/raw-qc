@@ -196,35 +196,34 @@ process_qc(){
     )
     local pid_raw_fastqc=$(run_bash "${cmd}" ${CONFIG})
     
-    # Autotropos
+    # atropos
     
     # outputs are decomposed to ease connection between jobs
-    local autotropos_prefix="${outdir}/atropos/${sample_id}"
-    local autotropos_fastq_output="${autotropos_prefix}.R1.fastq.gz"
+    local atropos_prefix="${outdir}/atropos/${sample_id}"
+    local atropos_fastq_output="${atropos_prefix}.R1.fastq.gz"
     if [[ -n "${sample_array[3]}" ]];then
-        autotropos_fastq_output=$(
-            printf '%s %s' "${autotropos_fastq_output}" \
-                           "${autotropos_prefix}.R2.fastq.gz"
+        atropos_fastq_output=$(
+            printf '%s %s' "${atropos_fastq_output}" \
+                           "${atropos_prefix}.R2.fastq.gz"
         )
     fi
-    local autotropos_output=$(
-        printf '%s %s %s' "${autotropos_fastq_output}" \
-                          "${autotropos_prefix}.metrics" \
-                          "${autotropos_prefix}.json"
+    local atropos_output=$(
+        printf '%s %s %s' "${atropos_fastq_output}" \
+                          "${atropos_prefix}
     )
 
     cmd=$(
         get_command_line --tool ${SCRIPTS_PATH}"rawqc_atropos-bash.sh" \
                          --input "${raw_fastq}" \
-                         --output "${autotropos_output}" \
+                         --output "${atropos_output}" \
                          --log-file "${log_path}.rawqc_atropos.log"
     )
-    local pid_autotropos=$(run_bash "${cmd}" ${CONFIG})
+    local pid_atropos=$(run_bash "${cmd}" ${CONFIG})
  
     # Basic metrics
     local basic_metrics_input=$(
         printf '%s %s' "${line}" \
-                       "${autotropos_prefix}.json"
+                       "${atropos_prefix}.json"
     )
     local basic_metrics_output="${outdir}/basic_metrics/${sample_id}"
     cmd=$(
@@ -233,17 +232,17 @@ process_qc(){
                          --output "${basic_metrics_output}" \
                          --log-file "${log_path}.rawqc_basic_metrics.log"
     )
-    local pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG} ${pid_autotropos})
+    local pid_basic_metrics=$(run_bash "${cmd}" ${CONFIG} ${pid_atropos})
     
     # Fastqc
     local trim_outdir="${outdir}/fastqc_trim/"
     cmd=$(
         get_command_line --tool ${SCRIPTS_PATH}"fastqc-bash.sh" \
-                         --input "${autotropos_fastq_output}" \
+                         --input "${atropos_fastq_output}" \
                          --output "${trim_outdir}" \
                          --log-file "${log_path}.trim_fastqc.log"
     )
-    local pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_autotropos}")
+    local pid_trim_fastqc=$(run_bash "${cmd}" ${CONFIG} "${pid_atropos}")
     echo "${pid_basic_metrics}:${pid_trim_fastqc}"
 }
 

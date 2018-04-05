@@ -211,8 +211,8 @@ from rawqc import logger
     type=click.Path(),
     metavar='JSON',
     default=None,
-    help="JSON file with basic metrics of trimming. Usable with "
-         "fastq_basic_metrics"
+    help="JSON prefix file with basic metrics of trimming. Usable with"
+         " fastq_basic_metrics and MultiQC"
 )
 @click.option(
     '--temp-dir', 'tmp',
@@ -350,14 +350,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             if read2 is not None:
                 create_symlink(read2, paired_output)
             if jsonfile is not None:
-                trim_dict = {
-                    'mean_read_length': tmp_atrps.detection['derived'][
-                        'mean_sequence_lengths'][0],
-                    'percent_trim': 0.0,
-                    'percent_discard': 0.0
-                }
-                with open(jsonfile, 'w') as fp:
-                    json.dump(trim_dict, fp)
+                atrps.write_stats_json(jsonfile)
             logger.info("Rawqc_atropos finished !")
             return
 
@@ -413,6 +406,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     # Otherwise the logfile will be removed
     if logfile:
         trimmed._logfile = logfile
+
+    # Check if adapters are corectly removed
     redetect = trimmed.guess_adapters(algorithm=algorithm, max_read=max_read)
     detect_flag = False
     for i, (opt, first, second) in enumerate(zip(dict_adapt.keys(),

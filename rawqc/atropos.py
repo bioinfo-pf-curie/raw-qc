@@ -308,19 +308,29 @@ class Atropos(object):
             pass
         return adapter_list
 
-    def write_stats_json(self, basename):
+    def write_stats_json(self, prefixname):
         """ Write json stats file of rawqc_atropos.
         This file is read by MultiQC to summarize results of the trimming.
         Use :meth:`Atropos.guess_adapters` to have information about adapters
         detection and :meth:`Atropos.remove_adapters` for adapters removal.
 
-        :param str filename: output JSON file name.
+        :param str filename: output prefix name (without .json).
+        """
+        import json
+        stats_dict = self.get_trimming_stats()
+        stats_dict['id'] = os.path.basename(prefixname)
+        with open(prefixname + ".trim.json", 'w') as fp:
+            json.dump(stats_dict, fp)
+
+    def get_trimming_stats(self):
+        """ Return trimming stats in a dictionnary.
         """
         # Check if trimming was run
         if self.trimming is None:
-            logger.info("No trimming ran.")
-            return
-
+            logger.info(
+                "No trimming ran. Basic statistics are wrotte."
+            )
+            return self.get_basic_stats()
         # Get trimming basic metrics
         trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
         n = 1 if self.r2 is None else 2
@@ -336,23 +346,36 @@ class Atropos(object):
                 formatters['records_written'] * n),
             'percent_trim': (read_trim / (read_total * n)) * 100,
             'percent_discard': (1 - percent_pass) * 100,
-            'id': basename,
+            'adapters': {
+                k: "{}".format(v) for k, v in self.adapters.items()
+            },
         }
-        stats_dict = dict(stats_dict, **self.adapters)
 
         # Trimming stats
-        # It is necessary to do the same plot than Cutadapt in MultiQC
+        # I is necessary to do the same plot than Cutadapt in MultiQC
         fastqs = trimmed['adapters']
-        position_prob = [(1/4)**i for i in range(0, read_total)]
+        position_prob = [(1/4)**i for i in range(0, int(read_length))]
+        stats_dict['trim_metrics'] = dict()
         for i, fq in enumerate(fastqs):
-            fq_dict = stats_dict['trim_R{}'.format(i + 1)] = dict()
+            fq_dict = stats_dict['trim_metrics']['R{}'.format(i + 1)] = dict()
             for n, adapter in fq.items():
                 fq_dict[adapter['sequence']] = OrderedDict(
-                    (pos, (count, position_prob[pos] * read_total))
-                    for pos, count in adapter['lengths_back'].items()
+                    (pos, (adapter['lengths_back'].get(pos, 0), prob))
+                    for pos, prob in enumerate(position_prob)
                 )
+        return stats_dict
 
-        # Write it in a json file
-        import json
-        with open(basename + ".trim.json", 'w') as fp:
-            json.dump(stats_dict, fp)
+    def get_basic_stats(self):
+        """ Return statistics of detection if any adapters are found.
+        """
+        read_length = self.detection['derived']['mean_sequence_lengths'][0]
+        stats_dict = {
+            'mean_read_length': read_length,
+            'percent_trim': 0.0,
+            'percent_discard': 0.0,
+            'adapters': {
+                k: "{}".format(v) for k, v in self.adapters.items()
+            },
+            'trim_metrics': None
+        }
+        return stats_dict
