@@ -208,8 +208,8 @@ process_qc(){
         )
     fi
     local atropos_output=$(
-        printf '%s %s %s' "${atropos_fastq_output}" \
-                          "${atropos_prefix}
+        printf '%s %s' "${atropos_fastq_output}" \
+                          "${atropos_prefix}"
     )
 
     cmd=$(
@@ -223,7 +223,7 @@ process_qc(){
     # Basic metrics
     local basic_metrics_input=$(
         printf '%s %s' "${line}" \
-                       "${atropos_prefix}.json"
+                       "${atropos_prefix}.trim.json"
     )
     local basic_metrics_output="${outdir}/basic_metrics/${sample_id}"
     cmd=$(
@@ -258,7 +258,9 @@ qc_pid=$(join_by ":" "${qc_pid[@]}")
 multiqc_outdir="${OUTDIR}multiqc/"
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"multiqc-bash.sh" \
-                     --input "${OUTDIR}/*/basic_metrics/*.json ${OUTDIR}/*/fastqc_trim/*.zip" \
+                     --input "${OUTDIR}/*/basic_metrics/*.json" \ 
+                             "${OUTDIR}/*/fastqc_trim/*.zip" \
+                             "${OUTDIR}/*/atropos/*.trim.json" \
                      --output "${multiqc_outdir}" \
                      --log-file "${OUTDIR}common_logs/multiqc.log"
 )

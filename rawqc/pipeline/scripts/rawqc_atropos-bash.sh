@@ -45,7 +45,7 @@ create_directory ${log_output%/*}
 
 # set atropos prefix for logs and metrics
 sub_index=$((${#outputs[@]} - 1))
-atropos_prefix=(${outputs[@]:$sub_index:1})
+atropos_prefix=${outputs[$sub_index]}
 
 # Set some local variable
 atropos_input=("-1" "${fastq_input[0]}")
@@ -61,8 +61,8 @@ cmd="rawqc_atropos ${atropos_option[@]} \
                    --threads ${atropos_threads} \
                    ${atropos_input[@]} \
                    ${atropos_output[@]} \
-                   --logs ${atropos_metrics}.metrics \
-                   --json ${atropos_metrics}"
+                   --logs ${atropos_prefix}.metrics \
+                   --json ${atropos_prefix}"
 
 echo $cmd > ${log_output}
 $cmd >> "${log_output}" 2>&1 || _fail=1

@@ -335,7 +335,11 @@ class Atropos(object):
         trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
         n = 1 if self.r2 is None else 2
         formatters = self.trimming['trim']['formatters']
-        read_length = self.trimming['derived']['mean_sequence_lengths'][0]
+        try:
+            read_length = int(self.trimming['derived']['mean_sequence_lengths'][0])
+        except KeyError as e:
+            print(self.trimming)
+            raise e
         read_trim = trimmed['total_records_with_adapters']
         read_total = self.trimming['total_record_count']
         percent_pass = formatters['fraction_records_written']
@@ -354,7 +358,7 @@ class Atropos(object):
         # Trimming stats
         # I is necessary to do the same plot than Cutadapt in MultiQC
         fastqs = trimmed['adapters']
-        position_prob = [(1/4)**i for i in range(0, int(read_length))]
+        position_prob = [(1/4)**i for i in range(0, read_length)]
         stats_dict['trim_metrics'] = dict()
         for i, fq in enumerate(fastqs):
             fq_dict = stats_dict['trim_metrics']['R{}'.format(i + 1)] = dict()

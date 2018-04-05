@@ -350,7 +350,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             if read2 is not None:
                 create_symlink(read2, paired_output)
             if jsonfile is not None:
-                atrps.write_stats_json(jsonfile)
+                tmp_atrps.write_stats_json(jsonfile)
             logger.info("Rawqc_atropos finished !")
             return
 
