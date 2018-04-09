@@ -6,6 +6,7 @@
 
 - Raw-QC is now a package python to ease the installation.
 - Rawqc_atropos is embedded in Raw-QC.
+- Trimming section added in MultiQC report.
 
 ### Modification
 
@@ -20,6 +21,7 @@
 - Fix error when no log file is provided.
 - Fix error when reads are smaller than 50 bases.
 - Replace `-V` for `-v "PATH=$PATH"` to provide virtual environment on Torque.
+- Fix error when there are single quote in MultiQC configuration file.
 
 ## Raw-QC v0.1
 
