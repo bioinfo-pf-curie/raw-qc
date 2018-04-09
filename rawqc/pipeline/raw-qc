@@ -255,13 +255,17 @@ done < ${PLAN}
 # join pid
 qc_pid=$(join_by ":" "${qc_pid[@]}")
 # MultiQC
+multiqc_input=$(
+    printf '%s %s %s' "${OUTDIR}*/basic_metrics/*.json" \
+               "${OUTDIR}*/fastqc_trim/*.zip" \
+               "${OUTDIR}*/atropos/*.trim.json"
+)
 multiqc_outdir="${OUTDIR}multiqc/"
 cmd=$(
     get_command_line --tool ${SCRIPTS_PATH}"multiqc-bash.sh" \
-                     --input "${OUTDIR}/*/basic_metrics/*.json" \ 
-                             "${OUTDIR}/*/fastqc_trim/*.zip" \
-                             "${OUTDIR}/*/atropos/*.trim.json" \
+                     --input "${multiqc_input}" \
                      --output "${multiqc_outdir}" \
                      --log-file "${OUTDIR}common_logs/multiqc.log"
 )
+echo ${cmd}
 pid_multiqc=$(run_bash "${cmd}" ${CONFIG} ${qc_pid})

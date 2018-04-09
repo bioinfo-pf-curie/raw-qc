@@ -8,6 +8,8 @@ import sys
 from collections import OrderedDict
 
 from atropos.commands import COMMANDS
+
+from rawqc import fastq
 from rawqc import logger
 
 __all__ = ['Atropos']
@@ -25,6 +27,7 @@ class Atropos(object):
         """
         self._r1 = read1
         self._r2 = read2
+        self._lengths = None
         self.logfile = logfile
         self._adapters = {
             '-a': None, '-A': None,
@@ -45,6 +48,18 @@ class Atropos(object):
         """ Get the filename of R2.
         """
         return self._r2
+
+    @property
+    def lengths(self):
+        """ Get tuple with reads length of R1 and R2.
+        """
+        if self._lengths is None:
+            self._lengths = [fastq.get_read_length(self._r1)]
+            try:
+                self._lengths.append(fastq.get_read_length(self._r2))
+            except ValueError:
+                pass
+        return self._lengths
 
     @property
     def adapters(self):
@@ -335,11 +350,7 @@ class Atropos(object):
         trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
         n = 1 if self.r2 is None else 2
         formatters = self.trimming['trim']['formatters']
-        try:
-            read_length = int(self.trimming['derived']['mean_sequence_lengths'][0])
-        except KeyError as e:
-            print(self.trimming)
-            raise e
+        read_length = int(max(self.lengths))
         read_trim = trimmed['total_records_with_adapters']
         read_total = self.trimming['total_record_count']
         percent_pass = formatters['fraction_records_written']
@@ -364,7 +375,7 @@ class Atropos(object):
             fq_dict = stats_dict['trim_metrics']['R{}'.format(i + 1)] = dict()
             for n, adapter in fq.items():
                 fq_dict[adapter['sequence']] = OrderedDict(
-                    (pos, (adapter['lengths_back'].get(pos, 0), prob))
+                    (pos, (adapter['lengths_back'].get(pos, 0), prob * read_total))
                     for pos, prob in enumerate(position_prob)
                 )
         return stats_dict
@@ -372,9 +383,8 @@ class Atropos(object):
     def get_basic_stats(self):
         """ Return statistics of detection if any adapters are found.
         """
-        read_length = self.detection['derived']['mean_sequence_lengths'][0]
         stats_dict = {
-            'mean_read_length': read_length,
+            'mean_read_length': sum(self.lengths) / len(self.lengths),
             'percent_trim': 0.0,
             'percent_discard': 0.0,
             'adapters': {

@@ -95,3 +95,13 @@ class BasicStats(object):
             gc_content=self.gc_content
         )
         return basic_stats
+
+
+def get_read_length(filename):
+    """ Return the first read length of fastq file.
+
+    :param str filename: fastq file.
+    """
+    with FastqReader(filename) as filin:
+        read_len = len(next(iter(filin)))
+    return read_len

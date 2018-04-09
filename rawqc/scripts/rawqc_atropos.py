@@ -431,10 +431,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                         "sequence detected.".format(i + 1))
 
     if auto_algo:
-        from atropos.io.seqio import FastqReader
-        with FastqReader(tmp_r1) as filin:
-            read = next(iter(filin))
-            read_length = len(read)
+            read_length = atrps.lengths[0]
             algorithm = 'heuristic' if 49 < read_length < 152 else 'known'
             max_read = 50000 if algorithm == 'known' else 20000
 

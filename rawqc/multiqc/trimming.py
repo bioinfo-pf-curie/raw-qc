@@ -21,7 +21,9 @@ class MultiqcModule(BaseMultiqcModule):
             anchor="trimming",
             href="https://atropos.readthedocs.io/en/latest/",
             info="using Atropos, it detects and trims adapters from a list of"
-                 " a list of adapters."
+                 " adapters. You can find the list <a href='https://github.com"
+                 "/jdidion/atropos/blob/master/atropos/adapters/sequencing_ada"
+                 "pters.fa'>here</a>."
         )
 
         # Init values
@@ -67,7 +69,7 @@ class MultiqcModule(BaseMultiqcModule):
             adapter_obsexp = self.plot_obsexp[adapter_id] = dict()
             for pos, (observed, expected) in metrics.items():
                 # handle infinite values
-                obsexp = observed / expected if expected > 1e-5 else observed
+                obsexp = observed / expected if expected > 0.1 else observed
                 adapter_trim_length[pos] = observed
                 adapter_obsexp[pos] = obsexp
 
@@ -135,7 +137,7 @@ class MultiqcModule(BaseMultiqcModule):
         )
         config = {
                 'id': "trimming_plot",
-                'title': "Trimming; Length of trimmed sequences",
+                'title': "Length of trimmed sequences",
                 'ylab': "Counts",
                 'xlab': "Length trimmed",
                 'xDecimals': False,
@@ -147,6 +149,7 @@ class MultiqcModule(BaseMultiqcModule):
                 ],
         }
         self.add_section(
+            name="Trimming metrics",
             description=description,
             plot=linegraph.plot(
                 [self.plot_trimmed_length, self.plot_obsexp],

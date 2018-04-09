@@ -148,5 +148,13 @@ def main(config, outdir, sample_plan, cluster, read1, read2, prefix, latency,
     if latency:
         cmd += ['-w', latency]
     logger.info("Raw-QC is launching your jobs.")
-    pexpect.run(" ".join(cmd), timeout=None)
+    summary, retcode = pexpect.run(
+        " ".join(cmd),
+        timeout=None,
+        withexitstatus=True
+    )
+    if retcode != 0:
+        logger.error("An error occur.")
+        logger.error(summary.decode("utf-8"))
+        raise BaseException
     logger.info("Your jobs are running !")
