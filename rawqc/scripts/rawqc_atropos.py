@@ -4,7 +4,6 @@
 detection of adapters.
 """
 
-import json
 import os
 import shutil
 import subprocess as sp
@@ -16,6 +15,30 @@ import click
 
 from rawqc import Atropos
 from rawqc import logger
+
+
+def _create_tmp_fastq(r1, r2, sub_size, tmp):
+    """ Create temporary sub-fastq in tmp dir.
+    """
+    tmpdir = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
+        + uuid.uuid4().hex
+    os.mkdir(tmpdir)
+    logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
+    tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    seqtk = "seqtk sample -s100 {} {}"
+    with open(tmp_r1, "w") as fout:
+        seqtk_proc = sp.Popen(seqtk.format(r1, sub_size).split(),
+                              stdout=fout)
+        seqtk_proc.communicate()
+    if r2:
+        tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+        with open(tmp_r2, "w") as fout:
+            seqtk_proc = sp.Popen(seqtk.format(r2, sub_size).split(),
+                                  stdout=fout)
+            seqtk_proc.communicate()
+    else:
+        tmp_r2 = None
+    return (tmp_r1, tmp_r2, tmpdir)
 
 
 @click.command(
@@ -238,6 +261,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     remove them.
     """
     if debug:
+        logger.propagate = True
         logger.setLevel('DEBUG')
 
     # Init atropos class
@@ -293,24 +317,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     logger.info("Run the trimming with adapters auto-detections")
 
     # Create subsample with seqtk in temporary directory
-    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
-        + uuid.uuid4().hex
-    os.mkdir(tmp)
-    logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
-    tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    seqtk = "seqtk sample -s100 {} {}"
-    with open(tmp_r1, "w") as fout:
-        seqtk_proc = sp.Popen(seqtk.format(read1, sub_size).split(),
-                              stdout=fout)
-        seqtk_proc.communicate()
-    if read2:
-        tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-        with open(tmp_r2, "w") as fout:
-            seqtk_proc = sp.Popen(seqtk.format(read2, sub_size).split(),
-                                  stdout=fout)
-            seqtk_proc.communicate()
-    else:
-        tmp_r2 = None
+    tmp_r1, tmp_r2, tmp_dir = _create_tmp_fastq(read1, read2, sub_size, tmp)
 
     # Set detection algorithm
     auto_algo = True if algorithm is None else False
@@ -358,8 +365,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     logger.info("Run the trimming with detected adapters...")
 
     # Some times atropos did a better job with reverse complement adapters
-    tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
+    tmp_r1_out = tmp_dir + os.sep + uuid.uuid4().hex + '.fastq'
+    tmp_r2_out = tmp_dir + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
 
     # Trim with detected adapters
     normal_trim = tmp_atrps.remove_adapters(
@@ -439,12 +446,12 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     if detect_flag and algorithm == 'heuristic':
         detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
                                                max_read=max_read)
-        logger.info("Run the trimming with detected longest kmer...")
         try:
             tmp_atrps.adapters = {
                 opt: adapter['longest_kmer']
                 for opt, adapter in zip(dict_adapt.keys(), detected_ad)
             }
+            logger.info("Run the trimming with detected longest kmer...")
             tmp_atrps.remove_adapters(
                 output_r1=tmp_r1_out,
                 output_r2=tmp_r2_out,
@@ -456,7 +463,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             pass
 
     logger.info("Clean the tmp dir.")
-    shutil.rmtree(tmp)
+    shutil.rmtree(tmp_dir)
 
     logger.info("Run trimming on the file.")
     atrps.adapters = tmp_atrps.adapters

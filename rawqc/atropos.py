@@ -3,6 +3,7 @@
 """ Atropos is a NGS read trimming tool that is specific, sensitive and speedy.
 This is a python wrapper to ease usage with detection tool.
 """
+import io
 import os
 import sys
 from collections import OrderedDict
@@ -158,8 +159,7 @@ class Atropos(object):
         )
 
         # Run atropos trim
-        trimming = COMMANDS['trim']
-        retcode, summary = trimming.execute(cmd)
+        retcode, summary, stderr = self._run_atropos("trim", cmd)
 
         # Commands run seems to fail seldomly on the cluster of the Curie
         # Institute. Maybe because some nodes are slower than others
@@ -167,11 +167,10 @@ class Atropos(object):
             import time
 
             time.sleep(5)
-            retcode, summary = trimming.execute(cmd)
+            retcode, summary, stderr = self._run_atropos("trim", cmd)
             if retcode > 0:
-                logger.error(retcode)
                 logger.error("Atropos trim did not work.")
-                sys.exit(retcode)
+                raise Exception(stderr)
 
         warned = False
         map_type = {
@@ -262,24 +261,29 @@ class Atropos(object):
             "atropos detect {}".format(" ".join(cmd))
         )
 
+        # init adapter list
+        adapter_list = [None] if self.r2 is None else [None, None]
+
         # Run atropos detect command
-        with open(self.logfile, 'a') as fp:
-            orig_stdout = sys.stdout
-            sys.stdout = fp
-            detection = COMMANDS['detect']
-            retcode, summary = detection.execute(cmd)
+        retcode, summary, stderr = self._run_atropos("detect", cmd)
+        # Return an IndexError if no adapters are detected
+        if stderr.rfind("IndexError") != -1:
+            logger.info("Atropos does not find any adapters.")
+            return adapter_list
 
-            # Commands run seems to fail seldomly on the cluster of Curie
-            # Institute. Maybe because some nodes are slower than other
+        # Commands run seems to fail seldomly on the cluster of Curie
+        # Institute. Maybe because some nodes are slower than other
+        if retcode > 0:
+            import time
+
+            time.sleep(5)
+            retcode, summary, stderr = self._run_atropos("detect", cmd)
+            if stderr.rfind("IndexError"):
+                logger.info("Atropos does not find any adapters.")
+                return adapter_list
             if retcode > 0:
-                import time
-
-                time.sleep(5)
-                retcode, summary = detection.execute(cmd)
-                if retcode > 0:
-                    logger.error("Atropos detection did not work:")
-                    sys.exit(retcode)
-            sys.stdout = orig_stdout
+                logger.error("Atropos detection did not work:")
+                raise Exception(stderr)
 
         # Get detected adapters
         detected = summary['detect']
@@ -294,8 +298,6 @@ class Atropos(object):
             } if hit['is_known'] else None
             for i, data in enumerate(detected['matches']) for hit in data
         ]
-
-        adapter_list = [None] if self.r2 is None else [None, None]
 
         # Get adapters with best score = frequence * match fraction
         for adapter in detect_list:
@@ -322,6 +324,22 @@ class Atropos(object):
             logger.info("No adapters detected.")
             pass
         return adapter_list
+
+    def _run_atropos(self, command, options):
+        """ Run atropos commands and return retcode, summary and stderr.
+        """
+        atropos_cmd = COMMANDS[command]
+        with open(self.logfile, "a") as fout:
+            try:
+                orig_stdout = sys.stdout
+                sys.stdout = fout
+                orig_stderr = sys.stderr
+                sys.stderr = buf = io.StringIO()
+                retcode, summary = atropos_cmd.execute(options)
+            finally:
+                sys.stderr = orig_stderr
+                sys.stdout = orig_stdout
+        return retcode, summary, buf.getvalue()
 
     def write_stats_json(self, prefixname):
         """ Write json stats file of rawqc_atropos.
