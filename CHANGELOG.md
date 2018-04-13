@@ -1,12 +1,25 @@
 # Raw-QC Version History
 
-## Raw-QC v0.2dev
+## Raw-QC v0.3dev
+
+### News
+
+- Trimming section added in MultiQC report.
+
+### Modification
+
+- Get errors returned by atropos commands
+
+### Fixes
+
+- Fix error when Atropos detects no adapters
+
+## Raw-QC v0.2
 
 ### News
 
 - Raw-QC is now a package python to ease the installation.
 - Rawqc_atropos is embedded in Raw-QC.
-- Trimming section added in MultiQC report.
 
 ### Modification
 
