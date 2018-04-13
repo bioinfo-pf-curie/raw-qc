@@ -1,20 +1,9 @@
 # coding: utf-8
-#
-#  This file is part of Autotropos software
-#
-#  Copyright (c) 2017 - Institut Curie
-#
-#  File author(s):
-#      Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>,
-#
-#  Distributed under the terms of the 3-clause BSD license.
-#  The full license is in the LICENSE file, distributed with this software.
-#
-##############################################################################
+
 """ rawqc_atropos: A wrapper of Atropos to trim adapters with automatic
 detection of adapters.
 """
-import json
+
 import os
 import shutil
 import subprocess as sp
@@ -26,6 +15,30 @@ import click
 
 from rawqc import Atropos
 from rawqc import logger
+
+
+def _create_tmp_fastq(r1, r2, sub_size, tmp):
+    """ Create temporary sub-fastq in tmp dir.
+    """
+    tmpdir = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
+        + uuid.uuid4().hex
+    os.mkdir(tmpdir)
+    logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
+    tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+    seqtk = "seqtk sample -s100 {} {}"
+    with open(tmp_r1, "w") as fout:
+        seqtk_proc = sp.Popen(seqtk.format(r1, sub_size).split(),
+                              stdout=fout)
+        seqtk_proc.communicate()
+    if r2:
+        tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
+        with open(tmp_r2, "w") as fout:
+            seqtk_proc = sp.Popen(seqtk.format(r2, sub_size).split(),
+                                  stdout=fout)
+            seqtk_proc.communicate()
+    else:
+        tmp_r2 = None
+    return (tmp_r1, tmp_r2, tmpdir)
 
 
 @click.command(
@@ -221,8 +234,8 @@ from rawqc import logger
     type=click.Path(),
     metavar='JSON',
     default=None,
-    help="JSON file with basic metrics of trimming. Usable with "
-         "fastq_basic_metrics"
+    help="JSON prefix file with basic metrics of trimming. Usable with"
+         " fastq_basic_metrics and MultiQC"
 )
 @click.option(
     '--temp-dir', 'tmp',
@@ -248,6 +261,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
     remove them.
     """
     if debug:
+        logger.propagate = True
         logger.setLevel('DEBUG')
 
     # Init atropos class
@@ -301,26 +315,11 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
 
     # Detect adapters
     logger.info("Run the trimming with adapters auto-detections")
-    # Create subsample with seqtk in temporary directory
-    tmp = os.path.abspath(tmp.rstrip('/')) + os.sep + 'rawqc_atropos_' \
-        + uuid.uuid4().hex
-    os.mkdir(tmp)
-    logger.info("Create subsamples of {} reads in {}...".format(sub_size, tmp))
-    tmp_r1 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    seqtk = "seqtk sample -s100 {} {}"
-    with open(tmp_r1, "w") as fout:
-        seqtk_proc = sp.Popen(seqtk.format(read1, sub_size).split(),
-                              stdout=fout)
-        seqtk_proc.communicate()
-    if read2:
-        tmp_r2 = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-        with open(tmp_r2, "w") as fout:
-            seqtk_proc = sp.Popen(seqtk.format(read2, sub_size).split(),
-                                  stdout=fout)
-            seqtk_proc.communicate()
-    else:
-        tmp_r2 = None
 
+    # Create subsample with seqtk in temporary directory
+    tmp_r1, tmp_r2, tmp_dir = _create_tmp_fastq(read1, read2, sub_size, tmp)
+
+    # Set detection algorithm
     auto_algo = True if algorithm is None else False
     if algorithm == "heuristic":
         max_read = 20000
@@ -328,6 +327,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         algorithm = "known"
         max_read = 50000
 
+    # Detect adapters in the subsample
     logger.info("Try to detect adapters...")
     tmp_atrps = Atropos(tmp_r1, tmp_r2)
     tmp_atrps.adapters = atrps.adapters
@@ -357,24 +357,18 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             if read2 is not None:
                 create_symlink(read2, paired_output)
             if jsonfile is not None:
-                trim_dict = {
-                    'mean_read_length': tmp_atrps.detection['derived'][
-                        'mean_sequence_lengths'][0],
-                    'percent_trim': 0.0,
-                    'percent_discard': 0.0
-                }
-                with open(jsonfile, 'w') as fp:
-                    json.dump(trim_dict, fp)
+                tmp_atrps.write_stats_json(jsonfile)
             logger.info("Rawqc_atropos finished !")
             return
 
     # Run atropos trim with known adapters
     logger.info("Run the trimming with detected adapters...")
+
     # Some times atropos did a better job with reverse complement adapters
-    tmp_r1_out = tmp + os.sep + uuid.uuid4().hex + '.fastq'
-    tmp_r2_out = tmp + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
+    tmp_r1_out = tmp_dir + os.sep + uuid.uuid4().hex + '.fastq'
+    tmp_r2_out = tmp_dir + os.sep + uuid.uuid4().hex + '.fastq' if read2 else None
+
     # Trim with detected adapters
-    tmp_atrps.adapters = dict_adapt
     normal_trim = tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
         output_r2=tmp_r2_out,
@@ -382,6 +376,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         threads=threads,
         amplicon=amplicon
     )
+
     # Lets trim with reverse complement adapters
     trans_tab = str.maketrans('ACGT', 'TGCA')
     tmp_atrps.adapters = {
@@ -399,7 +394,8 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                     reverse_trim.items())
     for opt, normal, reverse in iter_trim:
         dict_adapt[opt] = normal[0] if normal[1] > reverse[1] else reverse[0]
-    # Test with the best sens
+
+    # Test with the best orientation
     tmp_atrps.adapters = dict_adapt
     tmp_atrps.remove_adapters(
         output_r1=tmp_r1_out,
@@ -414,9 +410,11 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
         read1=tmp_r1_out,
         read2=tmp_r2_out
     )
-    # otherwise the logfile will be removed
+    # Otherwise the logfile will be removed
     if logfile:
         trimmed._logfile = logfile
+
+    # Check if adapters are corectly removed
     redetect = trimmed.guess_adapters(algorithm=algorithm, max_read=max_read)
     detect_flag = False
     for i, (opt, first, second) in enumerate(zip(dict_adapt.keys(),
@@ -440,23 +438,20 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
                         "sequence detected.".format(i + 1))
 
     if auto_algo:
-        from atropos.io.seqio import FastqReader
-        with FastqReader(tmp_r1) as filin:
-            read = next(iter(filin))
-            read_length = len(read)
+            read_length = atrps.lengths[0]
             algorithm = 'heuristic' if 49 < read_length < 152 else 'known'
             max_read = 50000 if algorithm == 'known' else 20000
 
-    # Rerun atropos trim with longest kmer
+    # Rerun atropos trim with longest kmer heuristic algorithm
     if detect_flag and algorithm == 'heuristic':
         detected_ad = tmp_atrps.guess_adapters(algorithm=algorithm,
                                                max_read=max_read)
-        logger.info("Run the trimming with detected longest kmer...")
         try:
             tmp_atrps.adapters = {
                 opt: adapter['longest_kmer']
                 for opt, adapter in zip(dict_adapt.keys(), detected_ad)
             }
+            logger.info("Run the trimming with detected longest kmer...")
             tmp_atrps.remove_adapters(
                 output_r1=tmp_r1_out,
                 output_r2=tmp_r2_out,
@@ -468,7 +463,7 @@ def main(read1, read2, output, paired_output, adapt_3p_r1, adapt_3p_r2,
             pass
 
     logger.info("Clean the tmp dir.")
-    shutil.rmtree(tmp)
+    shutil.rmtree(tmp_dir)
 
     logger.info("Run trimming on the file.")
     atrps.adapters = tmp_atrps.adapters

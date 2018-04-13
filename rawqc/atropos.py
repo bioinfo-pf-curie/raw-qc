@@ -1,24 +1,16 @@
 # coding: utf-8
-#
-#  This file is part of rawqc software.
-#
-#  Copyright (c) 2017 - Institut Curie
-#
-#  File author(s):
-#      Dimitri Desvillechabrol <dimitri.desvillechabrol@curie.fr>,
-#
-#  Distributed under the terms of the 3-clause BSD license.
-#  The full license is in the LICENSE file, distributed with this software.
-#
-##############################################################################
+
 """ Atropos is a NGS read trimming tool that is specific, sensitive and speedy.
 This is a python wrapper to ease usage with detection tool.
 """
+import io
 import os
 import sys
 from collections import OrderedDict
 
 from atropos.commands import COMMANDS
+
+from rawqc import fastq
 from rawqc import logger
 
 __all__ = ['Atropos']
@@ -36,6 +28,7 @@ class Atropos(object):
         """
         self._r1 = read1
         self._r2 = read2
+        self._lengths = None
         self.logfile = logfile
         self._adapters = {
             '-a': None, '-A': None,
@@ -56,6 +49,18 @@ class Atropos(object):
         """ Get the filename of R2.
         """
         return self._r2
+
+    @property
+    def lengths(self):
+        """ Get tuple with reads length of R1 and R2.
+        """
+        if self._lengths is None:
+            self._lengths = [fastq.get_read_length(self._r1)]
+            try:
+                self._lengths.append(fastq.get_read_length(self._r2))
+            except ValueError:
+                pass
+        return self._lengths
 
     @property
     def adapters(self):
@@ -154,8 +159,7 @@ class Atropos(object):
         )
 
         # Run atropos trim
-        trimming = COMMANDS['trim']
-        retcode, summary = trimming.execute(cmd)
+        retcode, summary, stderr = self._run_atropos("trim", cmd)
 
         # Commands run seems to fail seldomly on the cluster of the Curie
         # Institute. Maybe because some nodes are slower than others
@@ -163,11 +167,10 @@ class Atropos(object):
             import time
 
             time.sleep(5)
-            retcode, summary = trimming.execute(cmd)
+            retcode, summary, stderr = self._run_atropos("trim", cmd)
             if retcode > 0:
-                logger.error(retcode)
                 logger.error("Atropos trim did not work.")
-                sys.exit(retcode)
+                raise Exception(stderr)
 
         warned = False
         map_type = {
@@ -258,26 +261,31 @@ class Atropos(object):
             "atropos detect {}".format(" ".join(cmd))
         )
 
+        # init adapter list
+        adapter_list = [None] if self.r2 is None else [None, None]
+
         # Run atropos detect command
-        with open(self.logfile, 'a') as fp:
-            orig_stdout = sys.stdout
-            sys.stdout = fp
-            detection = COMMANDS['detect']
-            retcode, summary = detection.execute(cmd)
+        retcode, summary, stderr = self._run_atropos("detect", cmd)
+        # Return an IndexError if no adapters are detected
+        if stderr.rfind("IndexError") != -1:
+            logger.info("Atropos does not find any adapters.")
+            return adapter_list
 
-            # Commands run seems to fail seldomly on the cluster of Curie
-            # Institute. Maybe because some nodes are slower than other
+        # Commands run seems to fail seldomly on the cluster of Curie
+        # Institute. Maybe because some nodes are slower than other
+        if retcode > 0:
+            import time
+
+            time.sleep(5)
+            retcode, summary, stderr = self._run_atropos("detect", cmd)
+            if stderr.rfind("IndexError"):
+                logger.info("Atropos does not find any adapters.")
+                return adapter_list
             if retcode > 0:
-                import time
+                logger.error("Atropos detection did not work:")
+                raise Exception(stderr)
 
-                time.sleep(5)
-                retcode, summary = detection.execute(cmd)
-                if retcode > 0:
-                    logger.error("Atropos detection did not work:")
-                    sys.exit(retcode)
-            sys.stdout = orig_stdout
-
-        # Get detect summary information
+        # Get detected adapters
         detected = summary['detect']
         detect_list = [
             {
@@ -291,10 +299,7 @@ class Atropos(object):
             for i, data in enumerate(detected['matches']) for hit in data
         ]
 
-        adapter_list = [None, None]
-        if self.r2 is None:
-            adapter_list = [None]
-
+        # Get adapters with best score = frequence * match fraction
         for adapter in detect_list:
             try:
                 if adapter_list[adapter['read']] is None:
@@ -308,33 +313,101 @@ class Atropos(object):
             except TypeError:
                 pass
         self._detection = summary
+
+        # Add detected adapters
+        options = ('-a', '-A')
+        try:
+            self.adapters = {
+                opt: adapt['sequence'] for opt, adapt in zip(options, adapter_list)
+            }
+        except TypeError:
+            logger.info("No adapters detected.")
+            pass
         return adapter_list
 
-    def write_stats_json(self, filename):
+    def _run_atropos(self, command, options):
+        """ Run atropos commands and return retcode, summary and stderr.
+        """
+        atropos_cmd = COMMANDS[command]
+        with open(self.logfile, "a") as fout:
+            try:
+                orig_stdout = sys.stdout
+                sys.stdout = fout
+                orig_stderr = sys.stderr
+                sys.stderr = buf = io.StringIO()
+                retcode, summary = atropos_cmd.execute(options)
+            finally:
+                sys.stderr = orig_stderr
+                sys.stdout = orig_stdout
+        return retcode, summary, buf.getvalue()
+
+    def write_stats_json(self, prefixname):
         """ Write json stats file of rawqc_atropos.
         This file is read by MultiQC to summarize results of the trimming.
         Use :meth:`Atropos.guess_adapters` to have information about adapters
         detection and :meth:`Atropos.remove_adapters` for adapters removal.
 
-        :param str filename: output JSON file name.
+        :param str filename: output prefix name (without .json).
         """
         import json
-
-        # get values
-        stats_dict = dict()
-        if self.trimming is not None:
-            trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
-            n = 1 if self.r2 is None else 2
-            formatters = self.trimming['trim']['formatters']
-            read_trim = trimmed['total_records_with_adapters']
-            read_total = self.trimming['total_record_count']
-            percent_pass = formatters['fraction_records_written']
-
-            stats_dict = dict(stats_dict, **{
-                'mean_read_length': formatters['total_bp_written'] / (
-                    formatters['records_written'] * n),
-                'percent_trim': (read_trim / (read_total * n)) * 100,
-                'percent_discard': (1 - percent_pass) * 100
-            })
-        with open(filename, 'w') as fp:
+        stats_dict = self.get_trimming_stats()
+        stats_dict['id'] = os.path.basename(prefixname)
+        with open(prefixname + ".trim.json", 'w') as fp:
             json.dump(stats_dict, fp)
+
+    def get_trimming_stats(self):
+        """ Return trimming stats in a dictionnary.
+        """
+        # Check if trimming was run
+        if self.trimming is None:
+            logger.info(
+                "No trimming ran. Basic statistics are wrotte."
+            )
+            return self.get_basic_stats()
+        # Get trimming basic metrics
+        trimmed = next(iter(self.trimming['trim']['modifiers'].values()))
+        n = 1 if self.r2 is None else 2
+        formatters = self.trimming['trim']['formatters']
+        read_length = int(max(self.lengths))
+        read_trim = trimmed['total_records_with_adapters']
+        read_total = self.trimming['total_record_count']
+        percent_pass = formatters['fraction_records_written']
+
+        # Compute additionnal stats
+        stats_dict = {
+            'mean_read_length': formatters['total_bp_written'] / (
+                formatters['records_written'] * n),
+            'percent_trim': (read_trim / (read_total * n)) * 100,
+            'percent_discard': (1 - percent_pass) * 100,
+            'adapters': {
+                k: "{}".format(v) for k, v in self.adapters.items()
+            },
+        }
+
+        # Trimming stats
+        # I is necessary to do the same plot than Cutadapt in MultiQC
+        fastqs = trimmed['adapters']
+        position_prob = [(1/4)**i for i in range(0, read_length)]
+        stats_dict['trim_metrics'] = dict()
+        for i, fq in enumerate(fastqs):
+            fq_dict = stats_dict['trim_metrics']['R{}'.format(i + 1)] = dict()
+            for n, adapter in fq.items():
+                fq_dict[adapter['sequence']] = OrderedDict(
+                    (pos, (adapter['lengths_back'].get(pos, 0), prob * read_total))
+                    for pos, prob in enumerate(position_prob)
+                )
+        return stats_dict
+
+    def get_basic_stats(self):
+        """ Return statistics of detection if any adapters are found.
+        """
+        stats_dict = {
+            'mean_read_length': sum(self.lengths) / len(self.lengths),
+            'percent_trim': 0.0,
+            'percent_discard': 0.0,
+            'adapters': {
+                k: "{}".format(v) for k, v in self.adapters.items()
+            },
+            'trim_metrics': None
+        }
+        return stats_dict

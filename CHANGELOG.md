@@ -1,6 +1,20 @@
 # Raw-QC Version History
 
-## Raw-QC v0.2dev
+## Raw-QC v0.3dev
+
+### News
+
+- Trimming section added in MultiQC report.
+
+### Modification
+
+- Get errors returned by atropos commands
+
+### Fixes
+
+- Fix error when Atropos detects no adapters
+
+## Raw-QC v0.2
 
 ### News
 
@@ -20,6 +34,7 @@
 - Fix error when no log file is provided.
 - Fix error when reads are smaller than 50 bases.
 - Replace `-V` for `-v "PATH=$PATH"` to provide virtual environment on Torque.
+- Fix error when there are single quote in MultiQC configuration file.
 
 ## Raw-QC v0.1
 
