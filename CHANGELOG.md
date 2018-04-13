@@ -1,26 +1,19 @@
-# Raw-QC Version History
+***********************************
+CHANGES IN VERSION 2.0.0
 
-## Raw-QC v0.2dev
+NEW FEATURES
 
-### News
+  o Add '-adapter' option to skip the detect step
 
-- Raw-QC is now a package python to ease the installation.
-- Rawqc_atropos is embedded in Raw-QC.
+  o Add options '--ntrim', '--two_colour', '--qualtrim', '--minlen'. Note that '--ntrim' does not work with fastp 
 
-### Modification
+  o Add preset for 3'seq protocol
 
-- Rawqc_basic_metrics computation is speed up using a subsampling for the GC percent.
-- Rawqc_atropos detection is speed up using a subsampling and the scratch directory.
-- Rawqc_atropos use a different detection algorithm when reads are taller than 150 bases.
-- Improve sensitivity of Rawqc_atropos detection
+  o Add preset for 'pico' protocol. Do not work for atropos
 
-### Fixes
+  o Add MultiQC report
 
-- Fix bug when rawqc_atropos found a remaining unknown base.
-- Fix error when no log file is provided.
-- Fix error when reads are smaller than 50 bases.
-- Replace `-V` for `-v "PATH=$PATH"` to provide virtual environment on Torque.
+  o Add support for Atropos, TrimGalore!, and fastp trimmers
 
-## Raw-QC v0.1
 
-The first version of Raw-QC in pure Bash.
+
