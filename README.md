@@ -22,4 +22,4 @@ The current workflow is based on the nf-core best practice. See the nf-core proj
 <!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
 ### Credits
-Institut Curie, Copyrigth 2019
+<!-- TODO add authors -->
