@@ -43,8 +43,12 @@ def helpMessage() {
     Options:
       --singleEnd                   Specifies that the input is single end reads
 
-    References                      If not specified in the configuration file or you wish to overwrite any of the references.
-      --fasta                       Path to Fasta reference
+    Trimming options
+      --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads)
+      --clip_r2 [int]               Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only)
+      --three_prime_clip_r1 [int]   Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed
+      --three_prime_clip_r2 [int]   Instructs Trim Galore to re move bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed
+
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -66,11 +70,7 @@ if (params.help){
 
 // TODO Add any reference files that are needed
 // Configurable reference genomes
-fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-if ( params.fasta ){
-    fasta = file(params.fasta)
-    if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
-}
+
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -78,6 +78,32 @@ custom_runName = params.name
 if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
+
+
+
+// Define regular variables so that they can be overwritten
+clip_r1 = params.clip_r1
+clip_r2 = params.clip_r2
+three_prime_clip_r1 = params.three_prime_clip_r1
+three_prime_clip_r2 = params.three_prime_clip_r2
+forward_stranded = params.forward_stranded
+reverse_stranded = params.reverse_stranded
+unstranded = params.unstranded
+
+// Preset trimming options
+if (params.pico){
+    clip_r1 = 3
+    clip_r2 = 0
+    three_prime_clip_r1 = 0
+    three_prime_clip_r2 = 3
+    forward_stranded = true
+    reverse_stranded = false
+    unstranded = false
+}
+
+
+
+
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
@@ -162,7 +188,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 /*
  * Parse software version numbers
- */
+ 
 process get_software_versions {
 
     output:
@@ -178,7 +204,7 @@ process get_software_versions {
     """
 }
 
-
+*/
 /*
  * STEP 1 - FastQC
  */
@@ -202,8 +228,66 @@ process fastqc {
 
 
 /*
- * STEP 2 - MultiQC
- */
+ * STEP 2 - Trim Galore!
+*/
+process trim_galore {
+    label 'low_memory'
+    tag "$name" 
+    publishDir "${params.outdir}/trim_galore", mode: 'copy',
+        saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+
+    input:
+    set val(name), file(reads) from read_files_trimming
+
+    output:
+    file "*fq.gz" into trimmed_reads
+    file "*trimming_report.txt" into trimgalore_results
+    file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
+
+
+    script:
+    c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
+    c_r2 = clip_r2 > 0 ? "--clip_r2 ${clip_r2}" : ''
+    tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 ${three_prime_clip_r1}" : ''
+    tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
+    if (params.singleEnd) {
+        """
+        trim_galore --fastqc --gzip $c_r1 $tpc_r1 $reads
+        """
+    } else {
+        """
+        trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $reads
+        """
+    }
+}
+
+
+
+/*
+ * STEP 3 - FastQC after Trim!
+*/
+process fastqc_afetr_trim{
+
+  tag "$name"
+    publishDir "${params.outdir}/fastqc_afetr_trim", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    input:
+    file reads from trimmed_reads
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_afetr_trim_results
+
+    script:
+    """
+    fastqc -q $reads
+    """
+}
+
+
+/*
+ * STEP 4 - MultiQC
+ 
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
@@ -227,10 +311,10 @@ process multiqc {
     """
 }
 
-
+*/
 /*
  * Completion e-mail notification
- */
+
 workflow.onComplete {
 
     // Set up the e-mail variables
@@ -304,3 +388,4 @@ workflow.onComplete {
 
     log.info "[nf-core/mypipeline] Pipeline Complete"
 }
+*/
