@@ -36,18 +36,25 @@ def helpMessage() {
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
-      --genome                      Name of iGenomes reference
       -profile                      Configuration profile to use. Can use multiple (comma separated)
                                     Available: conda, docker, singularity, awsbatch, test and more.
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
+      --trimtool		    Specifies adapter trimming tool. By default, pipline use Trim Galor but you can change it to Atropos.
+
 
     Trimming options
       --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads)
       --clip_r2 [int]               Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only)
       --three_prime_clip_r1 [int]   Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed
       --three_prime_clip_r2 [int]   Instructs Trim Galore to re move bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed
+
+    Atropos options
+      --overlap 		    Instructs Atropos to remove a minimum length of overlap.
+      --times    		    Instructs Atropos to remove bp several round.
+      --minimum_length  	    Instructs Atropos to remove reads shorter than bp bases.
+
 
 
     Other options:
@@ -80,27 +87,30 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 
+// Validate inputs 
+if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos'){
+    exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos'"
+} 
 
 // Define regular variables so that they can be overwritten
-clip_r1 = params.clip_r1
-clip_r2 = params.clip_r2
-three_prime_clip_r1 = params.three_prime_clip_r1
-three_prime_clip_r2 = params.three_prime_clip_r2
-forward_stranded = params.forward_stranded
-reverse_stranded = params.reverse_stranded
-unstranded = params.unstranded
-
-// Preset trimming options
-if (params.pico){
-    clip_r1 = 3
-    clip_r2 = 0
-    three_prime_clip_r1 = 0
-    three_prime_clip_r2 = 3
-    forward_stranded = true
-    reverse_stranded = false
-    unstranded = false
+if (params.trimtool == 'trimgalore'){
+    clip_r1 = params.clip_r1
+    clip_r2 = params.clip_r2
+    three_prime_clip_r1 = params.three_prime_clip_r1
+    three_prime_clip_r2 = params.three_prime_clip_r2
 }
 
+
+if (params.trimtool == 'atropos'){
+    overlap = params.overlap
+    times = params.times
+    minimum_length = params.minimum_length
+}
+
+
+//if (params.trimtool == 'atropos'){
+//ch_multiqc_config = Channel.fromPath(params.atropos_config)
+//}
 
 
 
@@ -108,10 +118,12 @@ if (params.pico){
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+ch_adaptor_file = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
 /*
  * CHANNELS
  */
+
 
 if(params.readPaths){
     if(params.singleEnd){
@@ -119,19 +131,19 @@ if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimming }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimming }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { read_files_fastqc; read_files_trimming }
+        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos}
 }
 
 
@@ -146,11 +158,15 @@ summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 // TODO : Report custom parameters here
 summary['Reads']        = params.reads
-summary['Fasta Ref']    = params.fasta
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
+if(params.trimtool == 'trimgalore'){
+    summary['Trimming'] = "Trim Galore ==>  5'R1: $clip_r1 / 5'R2: $clip_r2 / 3'R1: $three_prime_clip_r1 / 3'R2: $three_prime_clip_r2"
+}else if (params.trimtool == 'atropos'){
+    summary['Trimming'] = "Atropos ==>  overlap: $overlap / times: $times / minimum_length: $minimum_length"
+}
 summary['Output dir']   = params.outdir
 summary['Working dir']  = workflow.workDir
 summary['Container Engine'] = workflow.containerEngine
@@ -207,7 +223,7 @@ process get_software_versions {
 */
 /*
  * STEP 1 - FastQC
- */
+*/
 process fastqc {
     tag "$name"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
@@ -228,52 +244,94 @@ process fastqc {
 
 
 /*
- * STEP 2 - Trim Galore!
+ * STEP 2 - Trimming reads with Trim Galore!
 */
-process trim_galore {
-    label 'low_memory'
-    tag "$name" 
-    publishDir "${params.outdir}/trim_galore", mode: 'copy',
-        saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
-    input:
-    set val(name), file(reads) from read_files_trimming
+if(params.trimtool == 'trimgalore'){
+    process trim_galore {
+        label 'low_memory'
+        tag "$name" 
+        publishDir "${params.outdir}/trim_galore", mode: 'copy',
+           saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
-    output:
-    file "*fq.gz" into trimmed_reads
-    file "*trimming_report.txt" into trimgalore_results
-    file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
+        input:
+        set val(name), file(reads) from read_files_trimgalore
+
+        output:
+        file "*fq.gz" into trimgalore_reads
+        file "*trimming_report.txt" into trimgalore_results
+        file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
 
 
-    script:
-    c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
-    c_r2 = clip_r2 > 0 ? "--clip_r2 ${clip_r2}" : ''
-    tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 ${three_prime_clip_r1}" : ''
-    tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
-    if (params.singleEnd) {
-        """
-        trim_galore --fastqc --gzip $c_r1 $tpc_r1 $reads
-        """
-    } else {
-        """
-        trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $reads
-        """
+        script:
+        c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
+        c_r2 = clip_r2 > 0 ? "--clip_r2 ${clip_r2}" : ''
+        tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 ${three_prime_clip_r1}" : ''
+        tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
+        if (params.singleEnd) {
+            """
+            trim_galore --fastqc --gzip $c_r1 $tpc_r1 $reads
+            """
+        } else {
+            """
+            trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $reads
+            """
+        }
     }
 }
 
 
+/*
+ * STEP 2 - Trimming reads with Atropos! 
+*/ 
+
+if(params.trimtool == 'atropos'){
+    process atropos {
+        label 'low_memory'
+        tag "$name"
+
+	publishDir "${params.outdir}/atropos", mode: 'copy',
+           saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+
+        input:
+        set val(name), file(reads) from read_files_atropos
+        file sequences from ch_adaptor_file
+
+	output:
+        file "*.trimmed" into atropos_reads
+        
+	script:
+	overlap = overlap > 0 ? "--overlap ${overlap}" : ''
+        times = times > 0 ? "--times ${times}" : ''
+        minimum_length = minimum_length > 0 ? "--minimum_length ${minimum_length}" : ''
+
+        if (params.singleEnd) {
+    
+	    """
+	    atropos -a file:${sequences} -o ${reads.baseName}.trimmed -se ${reads} $overlap $times $minimum_length
+	    """
+	} else {
+	    """
+	    atropos -a file:${sequences} -o ${reads[0].baseName}.trimmed -p ${reads[1].baseName}.trimmed -pe1 ${reads[0]} -pe2 ${reads[1]} $overlap $times $minimum_length
+            """
+	}
+
+     }
+}
+
 
 /*
  * STEP 3 - FastQC after Trim!
-*/
+
 process fastqc_afetr_trim{
 
   tag "$name"
     publishDir "${params.outdir}/fastqc_afetr_trim", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
+    //TODO! should also be set for Atropos 
     input:
-    file reads from trimmed_reads
+    file reads from trimgalore_reads
 
     output:
     file "*_fastqc.{zip,html}" into fastqc_afetr_trim_results
@@ -284,7 +342,7 @@ process fastqc_afetr_trim{
     """
 }
 
-
+*/
 /*
  * STEP 4 - MultiQC
  
