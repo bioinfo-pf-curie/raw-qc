@@ -1,0 +1,9 @@
+#
+# Raw-QC config for MultiQC
+#
+#################################################################
+
+
+custom_logo_url: https://science.curie.fr/plateformes/sequencage-adn-haut-debit-ngs/
+custom_logo_title: Institut Curie
+output_fn_name: 'rawqc_report.html'

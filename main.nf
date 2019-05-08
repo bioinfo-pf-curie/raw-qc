@@ -226,6 +226,7 @@ process get_software_versions {
 */
 process fastqc {
     tag "$name"
+    //conda 'fastqc=0.11.8'
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -251,6 +252,7 @@ if(params.trimtool == 'trimgalore'){
     process trim_galore {
         label 'low_memory'
         tag "$name" 
+	conda 'trim-galore=0.5.0'
         publishDir "${params.outdir}/trim_galore", mode: 'copy',
            saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
@@ -259,7 +261,7 @@ if(params.trimtool == 'trimgalore'){
 
         output:
         file "*fq.gz" into trimgalore_reads
-        file "*trimming_report.txt" into trimgalore_results
+        file "*trimming_report.txt" into trim_results
         file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
 
 
@@ -289,7 +291,7 @@ if(params.trimtool == 'atropos'){
     process atropos {
         label 'low_memory'
         tag "$name"
-
+	//conda 'atropos=1.1.16'
 	publishDir "${params.outdir}/atropos", mode: 'copy',
            saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
@@ -298,7 +300,7 @@ if(params.trimtool == 'atropos'){
         file sequences from ch_adaptor_file
 
 	output:
-        file "*.trimmed" into atropos_reads
+        file "*.trimmed" into trim_results
         
 	script:
 	overlap = overlap > 0 ? "--overlap ${overlap}" : ''
@@ -345,31 +347,41 @@ process fastqc_afetr_trim{
 */
 /*
  * STEP 4 - MultiQC
- 
+*/
 process multiqc {
+    tag "${name.baseName -'_fastqc'}"
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
+    //conda 'multiqc'
 
     input:
     file multiqc_config from ch_multiqc_config
+    set val(name), file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+    set file ('trim/*') from trim_results.collect().ifEmpty([])
     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from fastqc_results.collect().ifEmpty([])
-    file ('software_versions/*') from software_versions_yaml
-    file workflow_summary from create_workflow_summary(summary)
+    //file ('software_versions/*') from software_versions_yaml
+    //file workflow_summary from create_workflow_summary(summary)
 
     output:
     file "*multiqc_report.html" into multiqc_report
     file "*_data"
 
     script:
+    custom_runName="${name.baseName - '_fastqc'}"
+    //custom_runName=custom_runName ?: workflow.runName
+    script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+
     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
+    echo '${rfilename}'
+    echo '$rtitle'
+    echo "$multiqc_config"
+    multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
     """
 }
 
-*/
+
 /*
  * Completion e-mail notification
 
