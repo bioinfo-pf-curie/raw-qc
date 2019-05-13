@@ -43,20 +43,6 @@ def helpMessage() {
       --singleEnd                   Specifies that the input is single end reads
       --trimtool		    Specifies adapter trimming tool. By default, pipline use Trim Galor but you can change it to Atropos.
 
-
-    Trimming options
-      --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads)
-      --clip_r2 [int]               Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only)
-      --three_prime_clip_r1 [int]   Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed
-      --three_prime_clip_r2 [int]   Instructs Trim Galore to re move bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed
-
-    Atropos options
-      --overlap 		    Instructs Atropos to remove a minimum length of overlap.
-      --times    		    Instructs Atropos to remove bp several round.
-      --minimum_length  	    Instructs Atropos to remove reads shorter than bp bases.
-
-
-
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -75,8 +61,6 @@ if (params.help){
     exit 0
 }
 
-// TODO Add any reference files that are needed
-// Configurable reference genomes
 
 
 // Has the run name been specified by the user?
@@ -92,27 +76,16 @@ if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos'){
     exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos'"
 } 
 
-// Define regular variables so that they can be overwritten
-if (params.trimtool == 'trimgalore'){
-    clip_r1 = params.clip_r1
-    clip_r2 = params.clip_r2
-    three_prime_clip_r1 = params.three_prime_clip_r1
-    three_prime_clip_r2 = params.three_prime_clip_r2
-}
 
+// Define regular variable so that they can be overwritten
 
 if (params.trimtool == 'atropos'){
-    overlap = params.overlap
-    times = params.times
-    minimum_length = params.minimum_length
+    trimming_opt = params.atropos_opts
 }
 
-
-//if (params.trimtool == 'atropos'){
-//ch_multiqc_config = Channel.fromPath(params.atropos_config)
-//}
-
-
+if (params.trimtool == 'trimgalore'){
+    trimming_opt = params.trimgalore_opts
+}
 
 
 // Stage config files
@@ -153,7 +126,7 @@ log.info """=======================================================
 mypipeline v${workflow.manifest.version}"
 ======================================================="""
 def summary = [:]
-summary['Pipeline Name']  = 'mypipeline'
+summary['Pipeline Name']  = 'rawqc'
 summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 // TODO : Report custom parameters here
@@ -163,9 +136,9 @@ summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
 if(params.trimtool == 'trimgalore'){
-    summary['Trimming'] = "Trim Galore ==>  5'R1: $clip_r1 / 5'R2: $clip_r2 / 3'R1: $three_prime_clip_r1 / 3'R2: $three_prime_clip_r2"
+    summary['Trimming'] = "Trim Galore" + " " + params.trimgalore_opts
 }else if (params.trimtool == 'atropos'){
-    summary['Trimming'] = "Atropos ==>  overlap: $overlap / times: $times / minimum_length: $minimum_length"
+    summary['Trimming'] = "Atropos" + " " + params.atropos_opts
 }
 summary['Output dir']   = params.outdir
 summary['Working dir']  = workflow.workDir
@@ -223,7 +196,7 @@ process get_software_versions {
 */
 /*
  * STEP 1 - FastQC
-*/
+
 process fastqc {
     tag "$name"
     //conda 'fastqc=0.11.8'
@@ -242,7 +215,7 @@ process fastqc {
     """
 }
 
-
+*/
 
 /*
  * STEP 2 - Trimming reads with Trim Galore!
@@ -252,7 +225,7 @@ if(params.trimtool == 'trimgalore'){
     process trim_galore {
         label 'low_memory'
         tag "$name" 
-	conda 'trim-galore=0.5.0'
+	//conda 'trim-galore=0.6.2'
         publishDir "${params.outdir}/trim_galore", mode: 'copy',
            saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
@@ -263,20 +236,25 @@ if(params.trimtool == 'trimgalore'){
         file "*fq.gz" into trimgalore_reads
         file "*trimming_report.txt" into trim_results
         file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
-
+       
 
         script:
-        c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
-        c_r2 = clip_r2 > 0 ? "--clip_r2 ${clip_r2}" : ''
-        tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 ${three_prime_clip_r1}" : ''
-        tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
+        // Validate trimgalore_opts & syntax in configfile.
+        if (trimming_opt.contains("0")) {
+            exit 1, "The clipping value for reads should have a sensible value (> 0 and < read length). Please check 'trimgalore_opts' in config file!"
+        }
+        if (!trimming_opt.contains("--") && (!trimming_opt.isEmpty)) {
+            exit 1, " Syntax error in config file!"
+        }
+ 
         if (params.singleEnd) {
+            trimming_opt_bis=trimming_opt.replaceAll('--clip_R2 [0-9]', '').replaceAll('--paired', '').replaceAll('--trim1', '').replaceAll('--retain_unpaired', '').replaceAll('-r1/--length_1', '').replaceAll('-r2/--length_2', '')
             """
-            trim_galore --fastqc --gzip $c_r1 $tpc_r1 $reads
+            trim_galore --fastqc --gzip $reads ${trimming_opt_bis}
             """
         } else {
             """
-            trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $reads
+            trim_galore --paired --fastqc --gzip $reads ${trimming_opt}
             """
         }
     }
@@ -285,7 +263,7 @@ if(params.trimtool == 'trimgalore'){
 
 /*
  * STEP 2 - Trimming reads with Atropos! 
-*/ 
+*/
 
 if(params.trimtool == 'atropos'){
     process atropos {
@@ -303,18 +281,15 @@ if(params.trimtool == 'atropos'){
         file "*.trimmed" into trim_results
         
 	script:
-	overlap = overlap > 0 ? "--overlap ${overlap}" : ''
-        times = times > 0 ? "--times ${times}" : ''
-        minimum_length = minimum_length > 0 ? "--minimum_length ${minimum_length}" : ''
-
+       // TODO: Validate atropos_opts & syntax in configfile. 
         if (params.singleEnd) {
     
 	    """
-	    atropos -a file:${sequences} -o ${reads.baseName}.trimmed -se ${reads} $overlap $times $minimum_length
+	    atropos -a file:${sequences} -o ${reads.baseName}.trimmed -se ${reads} ${trimming_opt}
 	    """
 	} else {
 	    """
-	    atropos -a file:${sequences} -o ${reads[0].baseName}.trimmed -p ${reads[1].baseName}.trimmed -pe1 ${reads[0]} -pe2 ${reads[1]} $overlap $times $minimum_length
+	    atropos -a file:${sequences} -o ${reads[0].baseName}.trimmed -p ${reads[1].baseName}.trimmed -pe1 ${reads[0]} -pe2 ${reads[1]} ${trimming_opt}
             """
 	}
 
@@ -347,16 +322,16 @@ process fastqc_afetr_trim{
 */
 /*
  * STEP 4 - MultiQC
-*/
+
 process multiqc {
-    tag "${name.baseName -'_fastqc'}"
+    //tag "${name.baseName -'_fastqc'}"
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
     //conda 'multiqc'
 
     input:
     file multiqc_config from ch_multiqc_config
-    set val(name), file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
-    set file ('trim/*') from trim_results.collect().ifEmpty([])
+    file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+    file ('trim/*') from trim_results.collect().ifEmpty([])
     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
     //file ('software_versions/*') from software_versions_yaml
     //file workflow_summary from create_workflow_summary(summary)
@@ -366,22 +341,19 @@ process multiqc {
     file "*_data"
 
     script:
-    custom_runName="${name.baseName - '_fastqc'}"
-    //custom_runName=custom_runName ?: workflow.runName
+    //custom_runName="${name.baseName - '_fastqc'}"
+    custom_runName=custom_runName ?: workflow.runName
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
 
     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
-    echo '${rfilename}'
-    echo '$rtitle'
-    echo "$multiqc_config"
     multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
     """
 }
 
-
+*/
 /*
  * Completion e-mail notification
 
