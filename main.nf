@@ -14,11 +14,11 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 /*
 ========================================================================================
-                         mypipeline
+                         Raw-QC
 ========================================================================================
- mypipeline Analysis Pipeline.
+ Raw QC Pipeline.
  #### Homepage / Documentation
- https://gitlab.curie.fr/mypipeline
+ https://gitlab.curie.fr/raw-qc
 ----------------------------------------------------------------------------------------
 */
 
@@ -27,12 +27,12 @@ def helpMessage() {
     // TODO: Add to this help message with new command line parameters
     log.info"""
     
-    mypipeline v${workflow.manifest.version}
+    raw-qc v${workflow.manifest.version}
     =======================================================
 
     Usage:
 
-    nextflow run nf-core/mypipeline --reads '*_R{1,2}.fastq.gz' -profile docker
+    nextflow run raw-qc --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
@@ -42,7 +42,6 @@ def helpMessage() {
     Options:
       --singleEnd                   Specifies that the input is single end reads
       --trimtool		    Specifies adapter trimming tool. By default, pipline use Trim Galor but you can change it to Atropos.
-
 
     Trimming options
       --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads)
@@ -54,8 +53,6 @@ def helpMessage() {
       --overlap 		    Instructs Atropos to remove a minimum length of overlap.
       --times    		    Instructs Atropos to remove bp several round.
       --minimum_length  	    Instructs Atropos to remove reads shorter than bp bases.
-
-
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -150,10 +147,10 @@ if(params.readPaths){
 // Header log info
 log.info """=======================================================
 
-mypipeline v${workflow.manifest.version}"
+raw-qc v${workflow.manifest.version}"
 ======================================================="""
 def summary = [:]
-summary['Pipeline Name']  = 'mypipeline'
+summary['Pipeline Name']  = 'Raw QC'
 summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
 // TODO : Report custom parameters here
@@ -187,10 +184,10 @@ log.info "========================================="
 def create_workflow_summary(summary) {
     def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
     yaml_file.text  = """
-    id: 'nf-core-mypipeline-summary'
+    id: 'raw-qc-summary'
     description: " - this information is collected when the pipeline is started."
-    section_name: 'nf-core/mypipeline Workflow Summary'
-    section_href: 'https://github.com/nf-core/mypipeline'
+    section_name: 'Raw-QC Workflow Summary'
+    section_href: 'https://github.com/raw-qc'
     plot_type: 'html'
     data: |
         <dl class=\"dl-horizontal\">
