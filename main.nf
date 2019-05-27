@@ -195,7 +195,7 @@ process get_software_versions {
 */
 /*
  * STEP 1 - FastQC
-
+*/
 process fastqc {
     tag "$name"
     //conda 'fastqc=0.11.8'
@@ -214,7 +214,7 @@ process fastqc {
     """
 }
 
-*/
+
 
 /*
  * STEP 2 - Trimming reads with Trim Galore!
@@ -225,17 +225,17 @@ if(params.trimtool == 'trimgalore'){
         label 'low_memory'
         tag "$name" 
 	//conda 'trim-galore=0.6.2'
-        publishDir "${params.outdir}/trim_galore", mode: 'copy',
+        publishDir "${params.outdir}/trim", mode: 'copy',
            saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
         input:
         set val(name), file(reads) from read_files_trimgalore
 
         output:
-        file "*fq.gz" into trimgalore_reads
+        file "*fq.gz" into trim_reads
         file "*trimming_report.txt" into trim_results
-        file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
-       
+        file "*_fastqc.{zip,html}" into trim_fastqc_results
+
 
         script:
         // Validate trimgalore_opts & syntax in configfile.
@@ -259,7 +259,6 @@ if(params.trimtool == 'trimgalore'){
     }
 }
 
-
 /*
  * STEP 2 - Trimming reads with Atropos! 
 */
@@ -269,7 +268,7 @@ if(params.trimtool == 'atropos'){
         label 'low_memory'
         tag "$name"
 	//conda 'atropos=1.1.16'
-	publishDir "${params.outdir}/atropos", mode: 'copy',
+	publishDir "${params.outdir}/trim", mode: 'copy',
            saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
         input:
@@ -277,18 +276,19 @@ if(params.trimtool == 'atropos'){
         file sequences from ch_adaptor_file
 
 	output:
-        file "*.trimmed" into trim_results
-        
+        file "*trimming_report.txt" into trim_results
+        file "*_trimmed.fq.gz" into trim_reads
+
 	script:
-       // TODO: Validate atropos_opts & syntax in configfile. 
+       // TODO: Validate atropos_opts & syntax in configfile as https://github.com/jdidion/atropos/blob/master/paper/workflow/rnaseq.nf
         if (params.singleEnd) {
-    
+     
 	    """
-	    atropos -a file:${sequences} -o ${reads.baseName}.trimmed -se ${reads} ${trimming_opt}
+	    atropos -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} --info-file ${reads.baseName}.trimming_report.txt --threads 0
 	    """
 	} else {
 	    """
-	    atropos -a file:${sequences} -o ${reads[0].baseName}.trimmed -p ${reads[1].baseName}.trimmed -pe1 ${reads[0]} -pe2 ${reads[1]} ${trimming_opt}
+	    atropos -a file:${sequences} -o ${reads[0].baseName}_trimmed.fq.gz -p ${reads[1].baseName}_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} ${trimming_opt} -info-file ${reads[0].baseName}.trimming_report.txt --threads 0
             """
 	}
 
@@ -298,30 +298,32 @@ if(params.trimtool == 'atropos'){
 
 /*
  * STEP 3 - FastQC after Trim!
+*/
 
-process fastqc_afetr_trim{
 
-  tag "$name"
-    publishDir "${params.outdir}/fastqc_afetr_trim", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+if(params.trimtool == 'atropos'){
+	process fastqc_afetr_trim{
 
-    //TODO! should also be set for Atropos 
-    input:
-    file reads from trimgalore_reads
+  	tag "$name"
+    	publishDir "${params.outdir}/trim/FASTQC", mode: 'copy',
+        	saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-    output:
-    file "*_fastqc.{zip,html}" into fastqc_afetr_trim_results
+    	input:
+    	file reads from trim_reads
 
-    script:
-    """
-    fastqc -q $reads
-    """
+    	output:
+    	file "*_fastqc.{zip,html}" into trim_fastqc_results
+    	script:
+    	"""
+    	fastqc -q $reads
+    	"""
+ 	 }
 }
 
-*/
+
 /*
  * STEP 4 - MultiQC
-
+*/
 process multiqc {
     //tag "${name.baseName -'_fastqc'}"
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
@@ -331,6 +333,8 @@ process multiqc {
     file multiqc_config from ch_multiqc_config
     file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
     file ('trim/*') from trim_results.collect().ifEmpty([])
+    file ('trim/FASTQC/*') from trim_fastqc_results.collect().ifEmpty([])
+    //file ('trim/*') from trimgalore_fastqc_reports.collect().ifEmpty([])
     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
     //file ('software_versions/*') from software_versions_yaml
     //file workflow_summary from create_workflow_summary(summary)
@@ -340,6 +344,7 @@ process multiqc {
     file "*_data"
 
     script:
+    //multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
     //custom_runName="${name.baseName - '_fastqc'}"
     custom_runName=custom_runName ?: workflow.runName
     script:
@@ -352,7 +357,7 @@ process multiqc {
     """
 }
 
-*/
+
 /*
  * Completion e-mail notification
 
