@@ -42,17 +42,6 @@ def helpMessage() {
       --singleEnd                   Specifies that the input is single end reads
       --trimtool		    Specifies adapter trimming tool. By default, pipline use Trim Galor but you can change it to Atropos.
 
-    Trimming options
-      --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads)
-      --clip_r2 [int]               Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only)
-      --three_prime_clip_r1 [int]   Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed
-      --three_prime_clip_r2 [int]   Instructs Trim Galore to re move bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed
-
-    Atropos options
-      --overlap 		    Instructs Atropos to remove a minimum length of overlap.
-      --times    		    Instructs Atropos to remove bp several round.
-      --minimum_length  	    Instructs Atropos to remove reads shorter than bp bases.
-
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
