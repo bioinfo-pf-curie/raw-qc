@@ -103,7 +103,7 @@ if(params.readPaths){
        .from(params.readPaths)
        .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
        .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect, read_files_atropos_detect }
+       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_detect }
   }
 } else {
   Channel
@@ -266,18 +266,23 @@ process atroposDetect {
   file sequences from ch_adaptor_file_detect
 
   script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+
   if ( params.singleEnd ){
   """
-  atropos detect --quiet --max_read 1000000 \
-  	  	 -se ${reads} -F ${sequences} -o ${reads.baseName}_detect.atropos \
-		 --no-default-contaminants --output-formats 'json' 'yaml'
+  atropos detect --quiet --max-read 25000 --detector 'known' \
+  	  	 -se ${reads} -F ${sequences} -o ${prefix}_detect.atropos \
+		--include-contaminants 'known' --output-formats 'json' 'yaml' 'fasta' \
+		--log-file ${prefix}_atropos.log
   """
   }else{
   """
-  atropos detect --quiet --max_read 1000000 \
+  atropos detect --quiet --max-read 25000 --detector 'known' \
                  -pe1 ${reads}[0] -pe2 ${reads}[1] -F ${sequences} \
-		 -o ${reads[0].baseName}_detect.atropos \
-                 --no-default-contaminants --output-formats 'json' 'yaml'
+		 -o ${prefix}_detect.atropos \
+                 --include-contaminants 'known' --output-formats 'json' 'yaml' 'fasta' \
+                 --log-file ${prefix}_atropos.log
+ 
   """
   }
 }
@@ -291,7 +296,7 @@ process atroposTrim {
     saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
   
   when:
-  params.trimtool == "atropos"
+  params.trimtool == "atroposss"
   
   input:
   set val(name), file(reads) from read_files_atropos_trim
@@ -304,7 +309,7 @@ process atroposTrim {
   script:
   if (params.singleEnd) {
   """
-  atropos -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} \
+  atropos trim -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} \
   	  --info-file ${reads.baseName}.trimming_report.txt --threads 0
   """
   } else {
