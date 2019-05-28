@@ -30,17 +30,16 @@ def helpMessage() {
     =======================================================
 
     Usage:
-
     nextflow run raw-qc --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
       -profile                      Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, awsbatch, test and more.
+                                    Available: conda, docker, singularity, test and curie.
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-      --trimtool		    Specifies adapter trimming tool. By default, pipline use Trim Galor but you can change it to Atropos.
+      --trimtool		    Specifies adapter trimming tool ['trimgalore', 'atropos']. Default is 'trimgalore'
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -60,8 +59,6 @@ if (params.help){
     exit 0
 }
 
-
-
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -69,15 +66,12 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
-
 // Validate inputs 
 if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos'){
     exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos'"
 } 
 
-
 // Define regular variable so that they can be overwritten
-
 if (params.trimtool == 'atropos'){
     trimming_opt = params.atropos_opts
 }
@@ -86,36 +80,36 @@ if (params.trimtool == 'trimgalore'){
     trimming_opt = params.trimgalore_opts
 }
 
-
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
-ch_adaptor_file = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+ch_adaptor_file_trim = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+
 
 /*
  * CHANNELS
  */
 
-
 if(params.readPaths){
-    if(params.singleEnd){
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos }
-    } else {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos }
-    }
-} else {
+  if(params.singleEnd){
     Channel
-        .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos}
+      .from(params.readPaths)
+      .map { row -> [ row[0], [file(row[1][0])]] }
+      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+      .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim }
+  } else {
+     Channel
+       .from(params.readPaths)
+       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect, read_files_atropos_detect }
+  }
+} else {
+  Channel
+    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
+    .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim }
 }
 
 
@@ -128,19 +122,17 @@ def summary = [:]
 summary['Pipeline Name']  = 'rawqc'
 summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
-// TODO : Report custom parameters here
 summary['Reads']        = params.reads
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
+summary['Trimming tool']= params.trimtool
+if(params.trimtool == 'trimgalore'){
+    summary['Trimming'] = params.trimgalore_opts
+}else if (params.trimtool == 'atropos'){
+    summary['Trimming'] = params.atropos_opts
+}
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
-if(params.trimtool == 'trimgalore'){
-    summary['Trimming'] = "Trim Galore" + " " + params.trimgalore_opts
-}else if (params.trimtool == 'atropos'){
-    summary['Trimming'] = "Atropos" + " " + params.atropos_opts
-}
-summary['Output dir']   = params.outdir
-summary['Working dir']  = workflow.workDir
 summary['Container Engine'] = workflow.containerEngine
 if(workflow.containerEngine) summary['Container'] = workflow.container
 summary['Current home']   = "$HOME"
@@ -197,7 +189,7 @@ process get_software_versions {
  * STEP 1 - FastQC
 */
 process fastqc {
-    tag "$name"
+    tag "$name (raw)"
     //conda 'fastqc=0.11.8'
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -217,82 +209,112 @@ process fastqc {
 
 
 /*
- * STEP 2 - Trimming reads with Trim Galore!
+ * STEP 2 - Reads Trimming
 */
 
-if(params.trimtool == 'trimgalore'){
-    process trim_galore {
-        label 'low_memory'
-        tag "$name" 
-	//conda 'trim-galore=0.6.2'
-        publishDir "${params.outdir}/trim", mode: 'copy',
-           saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+process trim_galore {
+  tag "$name" 
 
-        input:
-        set val(name), file(reads) from read_files_trimgalore
+  //conda 'trim-galore=0.6.2'
+  publishDir "${params.outdir}/trim", mode: 'copy',
+    saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
 
-        output:
-        file "*fq.gz" into trim_reads
-        file "*trimming_report.txt" into trim_results
-        file "*_fastqc.{zip,html}" into trim_fastqc_results
+  when:
+  params.trimtool == "trimgalore"
 
+  input:
+  set val(name), file(reads) from read_files_trimgalore
 
-        script:
-        // Validate trimgalore_opts & syntax in configfile.
-        if (trimming_opt.contains("0")) {
-            exit 1, "The clipping value for reads should have a sensible value (> 0 and < read length). Please check 'trimgalore_opts' in config file!"
-        }
-        if (!trimming_opt.contains("--") && (!trimming_opt.isEmpty)) {
-            exit 1, " Syntax error in config file!"
-        }
+  output:
+  file "*fq.gz" into trim_reads_trimgalore
+  file "*trimming_report.txt" into trim_results_trimgalore
+
+  script:
+
+  // Validate trimgalore_opts & syntax in configfile.
+  if (trimming_opt.contains("0")) {
+    exit 1, "The clipping value for reads should have a sensible value (> 0 and < read length). Please check 'trimgalore_opts' in config file!"
+  }
+  if (!trimming_opt.contains("--") && (!trimming_opt.isEmpty)) {
+    exit 1, " Syntax error in config file!"
+  }
  
-        if (params.singleEnd) {
-            trimming_opt_bis=trimming_opt.replaceAll('--clip_R2 [0-9]', '').replaceAll('--paired', '').replaceAll('--trim1', '').replaceAll('--retain_unpaired', '').replaceAll('-r1/--length_1', '').replaceAll('-r2/--length_2', '')
-            """
-            trim_galore --fastqc --gzip $reads ${trimming_opt_bis}
-            """
-        } else {
-            """
-            trim_galore --paired --fastqc --gzip $reads ${trimming_opt}
-            """
-        }
-    }
+  if (params.singleEnd) {
+    """
+    trim_galore --gzip $reads ${trimming_opt_bis}
+    """
+    }else {
+    """
+    trim_galore --paired --gzip $reads ${trimming_opt}
+    """
+  }
 }
+
 
 /*
  * STEP 2 - Trimming reads with Atropos! 
 */
 
-if(params.trimtool == 'atropos'){
-    process atropos {
-        label 'low_memory'
-        tag "$name"
-	//conda 'atropos=1.1.16'
-	publishDir "${params.outdir}/trim", mode: 'copy',
-           saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+process atroposDetect {
+  tag "$name"
 
-        input:
-        set val(name), file(reads) from read_files_atropos
-        file sequences from ch_adaptor_file
+  when:
+  params.trimtool =="atropos"
 
-	output:
-        file "*trimming_report.txt" into trim_results
-        file "*_trimmed.fq.gz" into trim_reads
+  input:
+  set val(name), file(reads) from read_files_atropos_detect
+  file sequences from ch_adaptor_file_detect
 
-	script:
-       // TODO: Validate atropos_opts & syntax in configfile as https://github.com/jdidion/atropos/blob/master/paper/workflow/rnaseq.nf
-        if (params.singleEnd) {
-     
-	    """
-	    atropos -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} --info-file ${reads.baseName}.trimming_report.txt --threads 0
-	    """
-	} else {
-	    """
-	    atropos -a file:${sequences} -o ${reads[0].baseName}_trimmed.fq.gz -p ${reads[1].baseName}_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} ${trimming_opt} -info-file ${reads[0].baseName}.trimming_report.txt --threads 0
-            """
-	}
+  script:
+  if ( params.singleEnd ){
+  """
+  atropos detect --quiet --max_read 1000000 \
+  	  	 -se ${reads} -F ${sequences} -o ${reads.baseName}_detect.atropos \
+		 --no-default-contaminants --output-formats 'json' 'yaml'
+  """
+  }else{
+  """
+  atropos detect --quiet --max_read 1000000 \
+                 -pe1 ${reads}[0] -pe2 ${reads}[1] -F ${sequences} \
+		 -o ${reads[0].baseName}_detect.atropos \
+                 --no-default-contaminants --output-formats 'json' 'yaml'
+  """
+  }
+}
 
-     }
+
+process atroposTrim {
+  tag "$name"
+
+  //conda 'atropos=1.1.16'
+  publishDir "${params.outdir}/trim", mode: 'copy',
+    saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+  
+  when:
+  params.trimtool == "atropos"
+  
+  input:
+  set val(name), file(reads) from read_files_atropos_trim
+  file sequences from ch_adaptor_file_trim
+
+  output:
+  file "*trimming_report.txt" into trim_results_atropos
+  file "*_trimmed.fq.gz" into trim_reads_atropos
+
+  script:
+  if (params.singleEnd) {
+  """
+  atropos -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} \
+  	  --info-file ${reads.baseName}.trimming_report.txt --threads 0
+  """
+  } else {
+  """
+  atropos trim -a file:${sequences} -o ${reads[0].baseName}_trimmed.fq.gz \
+  	  -p ${reads[1].baseName}_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+	  --threads ${task.cpus} -report-file ${reads[0].baseName}.trimming_report.txt \
+	  -report-formats 'json' 'yaml' --stats 'both'
+  """
+  }
 }
 
 
@@ -300,61 +322,74 @@ if(params.trimtool == 'atropos'){
  * STEP 3 - FastQC after Trim!
 */
 
+if(params.trimtool == "atropos"){
+  trim_reads = trim_reads_atropos
+}else{
+  trim_reads = trim_reads_trimgalore
+}
 
-if(params.trimtool == 'atropos'){
-	process fastqc_afetr_trim{
+process fastqc_after_trim{
+  tag "$name (trimmed reads)"
 
-  	tag "$name"
-    	publishDir "${params.outdir}/trim/FASTQC", mode: 'copy',
+  publishDir "${params.outdir}/trim/FASTQC", mode: 'copy',
         	saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-    	input:
-    	file reads from trim_reads
+  input:
+  file reads from trim_reads
 
-    	output:
-    	file "*_fastqc.{zip,html}" into trim_fastqc_results
-    	script:
-    	"""
-    	fastqc -q $reads
-    	"""
- 	 }
+  output:
+  file "*_fastqc.{zip,html}" into trim_fastqc_results
+  script:
+  """
+  fastqc -q $reads
+  """
 }
 
 
 /*
  * STEP 4 - MultiQC
 */
+
+if(params.trimtool == "atropos"){
+  trim_reads = trim_reads_atropos
+}else{
+  trim_reads = trim_reads_trimgalore
+}
+
+
 process multiqc {
-    //tag "${name.baseName -'_fastqc'}"
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
-    //conda 'multiqc'
+  //tag "${name.baseName -'_fastqc'}"
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+  //conda 'multiqc'
 
-    input:
-    file multiqc_config from ch_multiqc_config
-    file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
-    file ('trim/*') from trim_results.collect().ifEmpty([])
-    file ('trim/FASTQC/*') from trim_fastqc_results.collect().ifEmpty([])
-    //file ('trim/*') from trimgalore_fastqc_reports.collect().ifEmpty([])
-    // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    //file ('software_versions/*') from software_versions_yaml
-    //file workflow_summary from create_workflow_summary(summary)
+  input:
+  file multiqc_config from ch_multiqc_config
+  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
+  file ('fastqc_trimmed/*') from trim_fastqc_results.collect().ifEmpty([])
 
-    output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
+  //file ('trim/*') from trimgalore_fastqc_reports.collect().ifEmpty([])
+  // TODO nf-core: Add in log files from your new processes for MultiQC to find!
+  //file ('software_versions/*') from software_versions_yaml
+  //file workflow_summary from create_workflow_summary(summary)
 
-    script:
-    //multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
-    //custom_runName="${name.baseName - '_fastqc'}"
-    custom_runName=custom_runName ?: workflow.runName
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+  output:
+  file "*multiqc_report.html" into multiqc_report
+  file "*_data"
 
-    // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
-    """
-    multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
-    """
+  script:
+  //multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
+  //custom_runName="${name.baseName - '_fastqc'}"
+  custom_runName=custom_runName ?: workflow.runName
+  script:
+  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+
+  // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
+  """
+  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
+  """
 }
 
 
