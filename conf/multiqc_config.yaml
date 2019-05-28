@@ -9,16 +9,23 @@ custom_logo_title: Institut Curie
 output_fn_name: 'rawqc_report.html'
 module_order:
     - fastqc:
-        name: 'FastQC (trimmed)'
-        info: 'This section of the report shows FastQC results after adapter trimming.'
+        name: 'FastQC (raw)'
+        info: 'This section of the report shows FastQC results before adapter trimming.'
         target: ''
         path_filters:
-            - '*_trimmed_fastqc.zip'
-    - cutadapt
-    - fastqc:
-        name: 'FastQC (raw)'
-        path_filters:
             - '*_fastqc.zip'
+        path_filters_exclude:
+            - '*_trimmed_fastqc.zip'
+    - cutadapt:
+        name: 'Trimming metrics (TrimGalore!)'
+    - fastp:
+        name: 'Trimming metrics (fastp)'
+    - custom_content
+    - fastqc:
+        name: 'FastQC (trimmed)'
+        info: 'This section of the report shows FastQC results after adapter trimming.'
+        path_filters:
+            - '*_trimmed_fastqc.zip'
 
 table_cond_formatting_colours:
     - blue: '#337ab7'
@@ -29,8 +36,8 @@ table_cond_formatting_colours:
 
 
 report_header_info:
-    - Contact E-mail: 'phil.ewels@scilifelab.se'
-    - Application Type: 'RNA-seq'
+    - Contact E-mail: 'ngs-lab@curie.fr'
+    - Application Type: 'NGS'
     - Project Type: 'Application'
     - Sequencing Platform: 'HiSeq 2500 High Output V4'
     - Sequencing Setup: '2x125'

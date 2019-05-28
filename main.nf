@@ -25,23 +25,32 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 def helpMessage() {
     log.info"""
-    
     raw-qc v${workflow.manifest.version}
     =======================================================
 
     Usage:
-    nextflow run raw-qc --reads '*_R{1,2}.fastq.gz' -profile docker
+    nextflow run raw-qc --reads '*_R{1,2}.fastq.gz' -profile test
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
       -profile                      Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, test and curie.
+                                    Available: conda, docker, singularity, test and curie
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-      --trimtool		    Specifies adapter trimming tool ['trimgalore', 'atropos']. Default is 'trimgalore'
+      --trimtool		    Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
+
+    Trimming options:
+      --adapter                     Type of adapter to trim ['illumina', 'nextera', 'smallrna', 'auto']. Default is 'auto'
+      --qualtrim                    Minimum mapping quality for trimming. Default is '0', ie. no quality trimming
+      --ntrim                       Trim 'N' bases from either side of the reads
+      --2colors                     Trimming for NextSeq/NovaSeq sequencers
+      --minlen                      Minimum length of trimmed sequences
 
     Other options:
+      --skip_fastqc_raw             Skip FastQC on raw sequencing reads
+      --skip_trimming               Skip trimming step
+      --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
@@ -67,18 +76,9 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 // Validate inputs 
-if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos'){
-    exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos'"
+if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
+    exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
 } 
-
-// Define regular variable so that they can be overwritten
-if (params.trimtool == 'atropos'){
-    trimming_opt = params.atropos_opts
-}
-
-if (params.trimtool == 'trimgalore'){
-    trimming_opt = params.trimgalore_opts
-}
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
@@ -97,19 +97,19 @@ if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim }
+      .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp }
   } else {
      Channel
        .from(params.readPaths)
        .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
        .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_detect }
+       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_detect; read_files_fastp }
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim }
+    .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp }
 }
 
 
@@ -175,7 +175,6 @@ process get_software_versions {
     file 'software_versions_mqc.yaml' into software_versions_yaml
 
     script:
-    // TODO : Get all tools to print their version number here
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
@@ -194,6 +193,9 @@ process fastqc {
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
+    when:
+    !params.skip_fastqc_raw
+
     input:
     set val(name), file(reads) from read_files_fastqc
 
@@ -202,7 +204,7 @@ process fastqc {
 
     script:
     """
-    fastqc -q $reads
+    fastqc -q $reads -t ${task.cpus}
     """
 }
 
@@ -212,15 +214,14 @@ process fastqc {
  * STEP 2 - Reads Trimming
 */
 
-process trim_galore {
+process trimGalore {
   tag "$name" 
 
   //conda 'trim-galore=0.6.2'
-  publishDir "${params.outdir}/trim", mode: 'copy',
-    saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
-
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   when:
-  params.trimtool == "trimgalore"
+  params.trimtool == "trimgalore" && !params.skip_trimming
 
   input:
   set val(name), file(reads) from read_files_trimgalore
@@ -230,59 +231,53 @@ process trim_galore {
   file "*trimming_report.txt" into trim_results_trimgalore
 
   script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
 
-  // Validate trimgalore_opts & syntax in configfile.
-  if (trimming_opt.contains("0")) {
-    exit 1, "The clipping value for reads should have a sensible value (> 0 and < read length). Please check 'trimgalore_opts' in config file!"
-  }
-  if (!trimming_opt.contains("--") && (!trimming_opt.isEmpty)) {
-    exit 1, " Syntax error in config file!"
-  }
- 
   if (params.singleEnd) {
     """
-    trim_galore --gzip $reads ${trimming_opt_bis}
+    trim_galore --gzip $reads --basename ${prefix} --cores ${task.cpus}
     """
     }else {
     """
-    trim_galore --paired --gzip $reads ${trimming_opt}
+    trim_galore --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     """
   }
 }
 
-
-/*
- * STEP 2 - Trimming reads with Atropos! 
-*/
-
 process atroposDetect {
   tag "$name"
 
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
   when:
-  params.trimtool =="atropos"
+  params.trimtool =="atropos" && !params.skip_trimming
 
   input:
   set val(name), file(reads) from read_files_atropos_detect
   file sequences from ch_adaptor_file_detect
+
+  output:
+  file "*.fasta" into detected_adapters_atropos
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
 
   if ( params.singleEnd ){
   """
-  atropos detect --quiet --max-read 25000 --detector 'known' \
-  	  	 -se ${reads} -F ${sequences} -o ${prefix}_detect.atropos \
-		--include-contaminants 'known' --output-formats 'json' 'yaml' 'fasta' \
-		--log-file ${prefix}_atropos.log
+  atropos detect --max-read 100000 --detector 'known' \
+  	  	 -se ${reads} \
+		 -F ${sequences} -o ${prefix}_detect \
+		 --include-contaminants 'known' --output-formats 'fasta' \
+		 --log-file ${prefix}_atropos.log
   """
   }else{
   """
-  atropos detect --quiet --max-read 25000 --detector 'known' \
-                 -pe1 ${reads}[0] -pe2 ${reads}[1] -F ${sequences} \
-		 -o ${prefix}_detect.atropos \
-                 --include-contaminants 'known' --output-formats 'json' 'yaml' 'fasta' \
+  atropos detect --max-read 100000 --detector 'known' \
+                 -pe1 ${reads}[0] -pe2 ${reads}[1] \
+		 -F ${sequences} -o ${prefix}_detect \
+                 --include-contaminants 'known' --output-formats 'fasta' \
                  --log-file ${prefix}_atropos.log
- 
   """
   }
 }
@@ -292,32 +287,75 @@ process atroposTrim {
   tag "$name"
 
   //conda 'atropos=1.1.16'
-  publishDir "${params.outdir}/trim", mode: 'copy',
-    saveAs: {filename -> filename.indexOf("_fastqc") > 0 ? "FASTQC/$filename" : "$filename"}
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   
   when:
-  params.trimtool == "atroposss"
+  params.trimtool == "atropos" && !params.skip_trimming
   
   input:
   set val(name), file(reads) from read_files_atropos_trim
-  file sequences from ch_adaptor_file_trim
+  file adapters from detected_adapters_atropos
 
   output:
-  file "*trimming_report.txt" into trim_results_atropos
+  file "*trimming_report*" into trim_results_atropos
   file "*_trimmed.fq.gz" into trim_reads_atropos
 
   script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
   """
-  atropos trim -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} ${trimming_opt} \
-  	  --info-file ${reads.baseName}.trimming_report.txt --threads 0
+  atropos trim -a file:${adapters} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
+  	  --threads ${task.cpus} \
+	  --report-file ${prefix}_trimming_report.txt \
+  	  --info-file ${prefix}_trimming_info.txt \
+  	  --report-formats 'json' 'yaml' --stats 'both'
   """
   } else {
   """
-  atropos trim -a file:${sequences} -o ${reads[0].baseName}_trimmed.fq.gz \
-  	  -p ${reads[1].baseName}_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
-	  --threads ${task.cpus} -report-file ${reads[0].baseName}.trimming_report.txt \
-	  -report-formats 'json' 'yaml' --stats 'both'
+  atropos trim -a file:${adapters} -o ${prefix}_R1_trimmed.fq.gz \
+  	  -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+	  --threads ${task.cpus} \
+	  --report-file ${prefix}_trimming_report \
+	  --info-file ${prefix}_trimming_info.txt \
+	  --report-formats 'json' 'yaml' --stats 'both'
+  """
+  }
+}
+
+process fastp {
+  tag "$name"
+
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  params.trimtool == "fastp" && !params.skip_trimming
+  
+  input:
+  set val(name), file(reads) from read_files_fastp
+  
+  output:
+  file "*_trimmed.fastq.gz" into trim_reads_fastp
+  file "*.json" into trim_results_fastp
+  file "*.log" into trim_log_fastp
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+  """
+  fastp -i ${reads} \
+  -o ${prefix}_R1_trimmed.fastq.gz \
+  -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
+  --thread ${task.cpus} 2> ${prefix}_fasp.log
+  """
+  } else {
+  """
+  fastp -i ${reads}[0] -I ${reads}[1] \
+  -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
+  --detect_adapter_for_pe \
+  -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
+  --thread ${task.cpus} 2> ${prefix}_fasp.log
   """
   }
 }
@@ -329,16 +367,21 @@ process atroposTrim {
 
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos
-}else{
+}else if (params.trimtool == "trimgalore"){
   trim_reads = trim_reads_trimgalore
+}else{
+  trim_reads = trim_reads_fastp
 }
 
-process fastqc_after_trim{
+process fastqcTrimmed{
   tag "$name (trimmed reads)"
 
-  publishDir "${params.outdir}/trim/FASTQC", mode: 'copy',
-        	saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+  publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
+  when:
+  !params.skip_fastqc_trim
+ 
   input:
   file reads from trim_reads
 
@@ -346,7 +389,7 @@ process fastqc_after_trim{
   file "*_fastqc.{zip,html}" into trim_fastqc_results
   script:
   """
-  fastqc -q $reads
+  fastqc -q $reads -t ${task.cpus}
   """
 }
 
@@ -357,13 +400,14 @@ process fastqc_after_trim{
 
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos
+}else if (params.trimtool == "" ) {
+  trim_reads = trim_reads_fastp
 }else{
   trim_reads = trim_reads_trimgalore
 }
 
 
 process multiqc {
-  //tag "${name.baseName -'_fastqc'}"
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
   //conda 'multiqc'
 
@@ -372,28 +416,18 @@ process multiqc {
   file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
   file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
   file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
-  file ('fastqc_trimmed/*') from trim_fastqc_results.collect().ifEmpty([])
-
-  //file ('trim/*') from trimgalore_fastqc_reports.collect().ifEmpty([])
-  // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-  //file ('software_versions/*') from software_versions_yaml
-  //file workflow_summary from create_workflow_summary(summary)
+  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
+  file (fastqc:'fastqc_trimmed/*') from trim_fastqc_results.collect().ifEmpty([])
 
   output:
-  file "*multiqc_report.html" into multiqc_report
+  file "rawqc_report.html" into multiqc_report
   file "*_data"
 
   script:
-  //multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
-  //custom_runName="${name.baseName - '_fastqc'}"
-  custom_runName=custom_runName ?: workflow.runName
-  script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-
-  // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
   """
-  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc
+  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
   """
 }
 
