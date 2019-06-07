@@ -75,6 +75,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
+
 // Validate inputs 
 if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
     exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
@@ -97,19 +98,19 @@ if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp }
+      .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
   } else {
      Channel
        .from(params.readPaths)
        .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
        .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_detect; read_files_fastp }
+       .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp }
+    .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
 }
 
 
@@ -209,7 +210,6 @@ process fastqc {
 }
 
 
-
 /*
  * STEP 2 - Reads Trimming
 */
@@ -253,9 +253,10 @@ process atroposDetect {
   when:
   params.trimtool =="atropos" && !params.skip_trimming
 
+  
   input:
   set val(name), file(reads) from read_files_atropos_detect
-  file sequences from ch_adaptor_file_detect
+  //file sequences from ch_adaptor_file_detect
 
   output:
   file "*.fasta" into detected_adapters_atropos
@@ -267,21 +268,21 @@ process atroposDetect {
   """
   atropos detect --max-read 100000 --detector 'known' \
   	  	 -se ${reads} \
-		 -F ${sequences} -o ${prefix}_detect \
+		 -F /data/users/talaeita/git/raw-qc/assets/sequencing_adapters.fa -o ${prefix}_detect \
 		 --include-contaminants 'known' --output-formats 'fasta' \
 		 --log-file ${prefix}_atropos.log
   """
   }else{
   """
   atropos detect --max-read 100000 --detector 'known' \
-                 -pe1 ${reads}[0] -pe2 ${reads}[1] \
+                 -pe1 ${reads[0]} -pe2 ${reads[1]} \
 		 -F ${sequences} -o ${prefix}_detect \
                  --include-contaminants 'known' --output-formats 'fasta' \
                  --log-file ${prefix}_atropos.log
   """
   }
-}
 
+}
 
 process atroposTrim {
   tag "$name"
@@ -313,7 +314,7 @@ process atroposTrim {
   """
   } else {
   """
-  atropos trim -a file:${adapters} -o ${prefix}_R1_trimmed.fq.gz \
+  atropos trim -a file:${adapters[0]} -A file:${adapters[1]} -o ${prefix}_R1_trimmed.fq.gz \
   	  -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
 	  --threads ${task.cpus} \
 	  --report-file ${prefix}_trimming_report \
@@ -322,6 +323,40 @@ process atroposTrim {
   """
   }
 }
+
+
+process trimReport {
+
+  tag "$name"
+
+  //conda 'python=3.6'
+  publishDir "${params.outdir}/trimReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  params.trimtool == "atropos" && !params.skip_trimming
+
+  input:
+  set val(name), file(reads) from read_files_trimreport
+  file trims from trim_reads_atropos.collect().ifEmpty([])
+
+  output:
+  file "*_Basic_Metrics.trim.txt" into trim_report
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+  """
+  TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+  """
+  } else {
+  """
+  TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
+  """
+  }
+
+}
+
 
 process fastp {
   tag "$name"
@@ -363,7 +398,7 @@ process fastp {
 
 /*
  * STEP 3 - FastQC after Trim!
-*/
+
 
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos
@@ -393,6 +428,7 @@ process fastqcTrimmed{
   """
 }
 
+*/
 
 /*
  * STEP 4 - MultiQC
@@ -411,18 +447,21 @@ process multiqc {
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
   //conda 'multiqc'
 
+
   input:
   file multiqc_config from ch_multiqc_config
   file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
   file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
   file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
-  file (fastqc:'fastqc_trimmed/*') from trim_fastqc_results.collect().ifEmpty([])
-
+  //file (fastqc:'fastqc_trimmed/*') from trim_fastqc_results.collect().ifEmpty([])
+  file ('trimReport/*') from trim_report.collect().ifEmpty([])
+  
   output:
-  file "rawqc_report.html" into multiqc_report
+  file "*rawqc_report.html" into multiqc_report
   file "*_data"
 
+  custom_runName=custom_runName ?: workflow.runName
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
@@ -430,7 +469,6 @@ process multiqc {
   multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
   """
 }
-
 
 /*
  * Completion e-mail notification

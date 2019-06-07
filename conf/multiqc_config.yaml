@@ -8,6 +8,7 @@ custom_logo_url: https://science.curie.fr/plateformes/sequencage-adn-haut-debit-
 custom_logo_title: Institut Curie
 output_fn_name: 'rawqc_report.html'
 module_order:
+    - custom_content
     - fastqc:
         name: 'FastQC (raw)'
         info: 'This section of the report shows FastQC results before adapter trimming.'
@@ -20,12 +21,32 @@ module_order:
         name: 'Trimming metrics (TrimGalore!)'
     - fastp:
         name: 'Trimming metrics (fastp)'
-    - custom_content
     - fastqc:
         name: 'FastQC (trimmed)'
         info: 'This section of the report shows FastQC results after adapter trimming.'
         path_filters:
             - '*_trimmed_fastqc.zip'
+
+
+
+custom_data:
+    example_files:
+           file_format: 'tsv'
+           section_name: 'Basic Metrics'
+           description: 'Calculated basic metric for the raw-qc pipeline'
+           plot_type: 'table'
+           pconfig:
+              id: 'stats'
+              title: 'Basic Metrics'
+              scale: 'RdYlBu'
+              format: '{:,.0f}'             
+              save_file: true
+
+sp:
+    example_files:
+        fn: '*_Basic_Metrics.*'
+
+
 
 table_cond_formatting_colours:
     - blue: '#337ab7'
@@ -42,4 +63,5 @@ report_header_info:
     - Sequencing Platform: 'HiSeq 2500 High Output V4'
     - Sequencing Setup: '2x125'
 
-skip_generalstats: false
+skip_generalstats:  true
+
