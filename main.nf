@@ -268,7 +268,7 @@ process atroposDetect {
   """
   atropos detect --max-read 100000 --detector 'known' \
   	  	 -se ${reads} \
-		 -F /data/users/talaeita/git/raw-qc/assets/sequencing_adapters.fa -o ${prefix}_detect \
+		 -F $baseDir/assets/sequencing_adapters.fa -o ${prefix}_detect \
 		 --include-contaminants 'known' --output-formats 'fasta' \
 		 --log-file ${prefix}_atropos.log
   """
@@ -276,7 +276,7 @@ process atroposDetect {
   """
   atropos detect --max-read 100000 --detector 'known' \
                  -pe1 ${reads[0]} -pe2 ${reads[1]} \
-		 -F ${sequences} -o ${prefix}_detect \
+		 -F $baseDir/assets/sequencing_adapters.fa -o ${prefix}_detect \
                  --include-contaminants 'known' --output-formats 'fasta' \
                  --log-file ${prefix}_atropos.log
   """
