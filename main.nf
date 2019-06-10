@@ -85,8 +85,7 @@ if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos' && params.tri
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
-ch_adaptor_file_trim = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
-
+ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
 /*
  * CHANNELS
@@ -256,7 +255,7 @@ process atroposDetect {
   
   input:
   set val(name), file(reads) from read_files_atropos_detect
-  //file sequences from ch_adaptor_file_detect
+  file sequences from ch_adaptor_file_detect.collect()
 
   output:
   file "*.fasta" into detected_adapters_atropos
@@ -268,7 +267,7 @@ process atroposDetect {
   """
   atropos detect --max-read 100000 --detector 'known' \
   	  	 -se ${reads} \
-		 -F $baseDir/assets/sequencing_adapters.fa -o ${prefix}_detect \
+		 -F ${sequences} -o ${prefix}_detect \
 		 --include-contaminants 'known' --output-formats 'fasta' \
 		 --log-file ${prefix}_atropos.log
   """
@@ -276,13 +275,14 @@ process atroposDetect {
   """
   atropos detect --max-read 100000 --detector 'known' \
                  -pe1 ${reads[0]} -pe2 ${reads[1]} \
-		 -F $baseDir/assets/sequencing_adapters.fa -o ${prefix}_detect \
+		 -F ${sequences} -o ${prefix}_detect \
                  --include-contaminants 'known' --output-formats 'fasta' \
                  --log-file ${prefix}_atropos.log
   """
   }
 
 }
+
 
 process atroposTrim {
   tag "$name"
@@ -297,37 +297,83 @@ process atroposTrim {
   input:
   set val(name), file(reads) from read_files_atropos_trim
   file adapters from detected_adapters_atropos
+  file sequences from ch_adaptor_file_defult.collect()
+ 
 
   output:
   file "*trimming_report*" into trim_results_atropos
   file "*_trimmed.fq.gz" into trim_reads_atropos
 
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
-  """
-  atropos trim -a file:${adapters} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
-  	  --threads ${task.cpus} \
-	  --report-file ${prefix}_trimming_report.txt \
-  	  --info-file ${prefix}_trimming_info.txt \
-  	  --report-formats 'json' 'yaml' --stats 'both'
-  """
-  } else {
-  """
-  atropos trim -a file:${adapters[0]} -A file:${adapters[1]} -o ${prefix}_R1_trimmed.fq.gz \
-  	  -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
-	  --threads ${task.cpus} \
-	  --report-file ${prefix}_trimming_report \
-	  --info-file ${prefix}_trimming_info.txt \
-	  --report-formats 'json' 'yaml' --stats 'both'
-  """
-  }
+   script:
+   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+
+   if (params.singleEnd) {
+   """
+       readcount=`cat ${prefix}_detect.0.fasta|wc -l`
+       if [ \$readcount= != '0']
+       then
+           atropos trim -a file:${prefix}_detect.0.fasta -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
+            --threads ${task.cpus} \
+            --report-file ${prefix}_trimming_report.txt 
+            --info-file ${prefix}_trimming_info.txt \
+            --report-formats 'json' 'yaml' --stats 'both'
+       else
+           atropos trim -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
+             --threads ${task.cpus} \
+             --report-file ${prefix}_trimming_report.txt \
+             --info-file ${prefix}_trimming_info.txt \
+             --report-formats 'json' 'yaml' --stats 'both'
+       fi
+   """
+   } else {
+
+   """
+       readcount0==`cat ${prefix}_detect.0.fasta|wc -l`
+       if [ \$readcount0= != '0']
+       then
+           readcount1==`cat ${prefix}_detect.1.fasta|wc -l`
+           if [ \$readcount1= != '0']
+           then 
+              atropos trim -a file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
+	        -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+                --threads ${task.cpus} \
+	        --report-file ${prefix}_trimming_report \
+	        --info-file ${prefix}_trimming_info.txt \
+	        --report-formats 'json' 'yaml' --stats 'both'
+           else
+               atropos trim -a file:${prefix}_detect.0.fasta -A file:${sequences} -o ${prefix}_R1_trimmed.fq.gz \
+                -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+                --threads ${task.cpus} \
+                --report-file ${prefix}_trimming_report \
+                --info-file ${prefix}_trimming_info.txt \
+                --report-formats 'json' 'yaml' --stats 'both'
+           fi
+       else
+           readcount1==`cat ${prefix}_detect.1.fasta|wc -l`
+           if [ \$readcount1= != '0']
+           then
+              atropos trim -a file:${sequences} -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
+               -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+               --threads ${task.cpus} \
+               --report-file ${prefix}_trimming_report \
+               --info-file ${prefix}_trimming_info.txt \
+               --report-formats 'json' 'yaml' --stats 'both'
+           else
+              atropos trim -a file:${sequences} -A file:${sequences} -o ${prefix}_R1_trimmed.fq.gz \
+               -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
+               --threads ${task.cpus} \
+               --report-file ${prefix}_trimming_report \
+               --info-file ${prefix}_trimming_info.txt \
+               --report-formats 'json' 'yaml' --stats 'both'
+           fi      
+       fi
+   """
+   }
 }
 
 
 process trimReport {
 
-  tag "$name"
 
   //conda 'python=3.6'
   publishDir "${params.outdir}/trimReport", mode: 'copy',
@@ -338,8 +384,7 @@ process trimReport {
 
   input:
   set val(name), file(reads) from read_files_trimreport
-  file trims from trim_reads_atropos.collect().ifEmpty([])
-
+  file trims from trim_reads_atropos
   output:
   file "*_Basic_Metrics.trim.txt" into trim_report
 
@@ -356,7 +401,6 @@ process trimReport {
   }
 
 }
-
 
 process fastp {
   tag "$name"

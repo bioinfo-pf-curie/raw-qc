@@ -63,5 +63,5 @@ report_header_info:
     - Sequencing Platform: 'HiSeq 2500 High Output V4'
     - Sequencing Setup: '2x125'
 
-skip_generalstats:  true
+skip_generalstats: true
 
