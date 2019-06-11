@@ -310,29 +310,27 @@ process atroposTrim {
    if (params.singleEnd) {
    """
        readcount=`cat ${prefix}_detect.0.fasta|wc -l`
-       if [ \$readcount != '0']
+       if [ \$readcount != '0' ]
        then
            atropos trim -a file:${prefix}_detect.0.fasta -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
             --threads ${task.cpus} \
-            --report-file ${prefix}_trimming_report.txt 
+            --report-file ${prefix}_trimming_report.txt \
             --info-file ${prefix}_trimming_info.txt \
             --report-formats 'json' 'yaml' --stats 'both'
        else
-           atropos trim -a file:${sequences} -o ${reads.baseName}_trimmed.fq.gz -se ${reads} \
-             --threads ${task.cpus} \
-             --report-file ${prefix}_trimming_report.txt \
-             --info-file ${prefix}_trimming_info.txt \
-             --report-formats 'json' 'yaml' --stats 'both'
+            cp ${reads} ${reads.baseName}_trimmed.fq.gz
+            touch ${prefix}_trimming_report.txt.json
+            touch ${prefix}_trimming_report.txt.yaml
        fi
    """
    } else {
 
    """
        readcount0=`cat ${prefix}_detect.0.fasta|wc -l`
-       if [ \$readcount0 != '0']
+       if [ \$readcount0 != '0' ]
        then
            readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
-           if [ \$readcount1 != '0']
+           if [ \$readcount1 != '0' ]
            then 
               atropos trim -a file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
 	        -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
@@ -341,30 +339,30 @@ process atroposTrim {
 	        --info-file ${prefix}_trimming_info.txt \
 	        --report-formats 'json' 'yaml' --stats 'both'
            else
-               atropos trim -a file:${prefix}_detect.0.fasta -A file:${sequences} -o ${prefix}_R1_trimmed.fq.gz \
-                -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
-                --threads ${task.cpus} \
-                --report-file ${prefix}_trimming_report \
-                --info-file ${prefix}_trimming_info.txt \
-                --report-formats 'json' 'yaml' --stats 'both'
+
+              cp ${reads[0]} ${prefix}_R1_trimmed.fq.gz 
+              cp ${reads[1]} ${prefix}_R2_trimmed.fq.gz
+              touch ${prefix}_trimming_report.txt.json
+              touch ${prefix}_trimming_report.txt.yaml
+
            fi
        else
+
            readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
-           if [ \$readcount1 != '0']
+           if [ \$readcount1 != '0' ]
            then
-              atropos trim -a file:${sequences} -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
-               -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
-               --threads ${task.cpus} \
-               --report-file ${prefix}_trimming_report \
-               --info-file ${prefix}_trimming_info.txt \
-               --report-formats 'json' 'yaml' --stats 'both'
+
+              cp ${reads[0]} ${prefix}_R1_trimmed.fq.gz 
+              cp ${reads[1]} ${prefix}_R2_trimmed.fq.gz 
+              touch ${prefix}_trimming_report.txt.json
+              touch ${prefix}_trimming_report.txt.yaml
+
            else
-              atropos trim -a file:${sequences} -A file:${sequences} -o ${prefix}_R1_trimmed.fq.gz \
-               -p ${prefix}_R2_trimmed.fq.gz -pe1 ${reads[0]} -pe2 ${reads[1]} \
-               --threads ${task.cpus} \
-               --report-file ${prefix}_trimming_report \
-               --info-file ${prefix}_trimming_info.txt \
-               --report-formats 'json' 'yaml' --stats 'both'
+
+              cp ${reads[0]} ${prefix}_R1_trimmed.fq.gz 
+              cp ${reads[1]} ${prefix}_R2_trimmed.fq.gz 
+              touch ${prefix}_trimming_report.txt.json
+              touch ${prefix}_trimming_report.txt.yaml
            fi      
        fi
    """
@@ -372,35 +370,6 @@ process atroposTrim {
 }
 
 
-process trimReport {
-
-
-  //conda 'python=3.6'
-  publishDir "${params.outdir}/trimReport", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
-
-  when:
-  params.trimtool == "atropos" && !params.skip_trimming
-
-  input:
-  set val(name), file(reads) from read_files_trimreport
-  file trims from trim_reads_atropos
-  output:
-  file "*_Basic_Metrics.trim.txt" into trim_report
-
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
-  """
-  TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
-  """
-  } else {
-  """
-  TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
-  """
-  }
-
-}
 
 process fastp {
   tag "$name"
@@ -438,6 +407,49 @@ process fastp {
   """
   }
 }
+
+
+process trimReport {
+
+if(params.trimtool == "atropos"){
+  trim_reads = trim_reads_atropos
+}else if (params.trimtool == "trimgalore"){
+  trim_reads = trim_reads_trimgalore
+}else{
+  trim_reads = trim_reads_fastp
+}
+
+
+  //conda 'python=3.6'
+  publishDir "${params.outdir}/trimReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  !params.skip_trimming
+
+  input:
+  set val(name), file(reads) from read_files_trimreport
+  file trims from trim_reads
+  output:
+  file "*_Basic_Metrics.trim.txt" into trim_report
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+  """
+  TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+  """
+  } else {
+  """
+  TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
+  """
+  }
+
+}
+
+
+
+
 
 
 /*
