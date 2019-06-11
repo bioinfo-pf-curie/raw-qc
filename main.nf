@@ -296,8 +296,8 @@ process atroposTrim {
   
   input:
   set val(name), file(reads) from read_files_atropos_trim
-  file adapters from detected_adapters_atropos
-  file sequences from ch_adaptor_file_defult
+  file adapters from detected_adapters_atropos.collect()
+  file sequences from ch_adaptor_file_defult.collect()
  
 
   output:
@@ -328,10 +328,10 @@ process atroposTrim {
    } else {
 
    """
-       readcount0 =`cat ${prefix}_detect.0.fasta|wc -l`
+       readcount0=`cat ${prefix}_detect.0.fasta|wc -l`
        if [ \$readcount0 != '0']
        then
-           readcount1 =`cat ${prefix}_detect.1.fasta|wc -l`
+           readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
            if [ \$readcount1 != '0']
            then 
               atropos trim -a file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
@@ -349,7 +349,7 @@ process atroposTrim {
                 --report-formats 'json' 'yaml' --stats 'both'
            fi
        else
-           readcount1 =`cat ${prefix}_detect.1.fasta|wc -l`
+           readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
            if [ \$readcount1 != '0']
            then
               atropos trim -a file:${sequences} -A file:${prefix}_detect.1.fasta -o ${prefix}_R1_trimmed.fq.gz \
