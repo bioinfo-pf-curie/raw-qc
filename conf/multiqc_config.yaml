@@ -25,9 +25,7 @@ module_order:
         name: 'FastQC (trimmed)'
         info: 'This section of the report shows FastQC results after adapter trimming.'
         path_filters:
-            - '*_trimmed_fastqc.zip'
-
-
+              - '*_trimmed_fastqc.zip'
 
 custom_data:
     example_files:
