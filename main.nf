@@ -18,7 +18,7 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 ========================================================================================
  Raw QC Pipeline.
  #### Homepage / Documentation
- https://gitlab.curie.fr/raw-qc
+ https://gitlab.curie.fr/data-analysis/raw-qc
 ----------------------------------------------------------------------------------------
 */
 
@@ -56,9 +56,10 @@ def helpMessage() {
       --skip_fastqc_raw             Skip FastQC on raw sequencing reads
       --skip_trimming               Skip trimming step
       --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
-      --outdir                      The output directory where the results will be saved
-      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+      --outdir 'PATH'               The output directory where the results will be saved
+      --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+      -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+      --metadata 'FILE'             Add metadata file for multiQC report
 
     """.stripIndent()
 }
@@ -193,6 +194,13 @@ if (params.samplePlan){
    }
 }
 
+if ( params.metadata ){
+   Channel
+       .fromPath( params.metadata )
+       .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
+       .set { ch_metadata }
+}
+
 
 // Header log info
 log.info """=======================================================
@@ -203,6 +211,7 @@ def summary = [:]
 summary['Pipeline Name']  = 'rawqc'
 summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
+summary['Metadata']     = params.metadata
 if (params.samplePlan) {
    summary['SamplePlan']   = params.samplePlan
 }else{
@@ -327,7 +336,7 @@ process atroposDetect {
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
   when:
-  params.trimtool =="atropos" && params.adapter == 'auto' && !params.skip_trimming
+  params.trimtool =="atropos" && !params.skip_trimming
  
   input:
   set val(name), file(reads) from read_files_atropos_detect
@@ -338,31 +347,52 @@ process atroposDetect {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-
-  // see here for options: vi /data/kdi_prod/project_result/1408/01.00/svn/analyse/script/scripts/atropos_script_2003528.sh
-  // see here for results: /data/kdi_prod/project_result/1408/01.00/svn/analyse/script/PLASMA-NIVO/atropos/A705L12_detect
   if ( params.singleEnd ){
-  """
-  atropos detect --max-read 100000 \
-                 --detector 'known' \
-  	  	 -se ${reads} \
-		 -F ${sequences} \
-                 -o ${prefix}_detect \
-		 --include-contaminants 'known' \
-                 --output-formats 'fasta' \
-		 --log-file ${prefix}_atropos.log
-  """
+    if (params.adapter == 'auto'){
+    """
+    atropos detect --max-read 100000 \
+                   --detector 'known' \
+                   -se ${reads} \
+		   -F ${sequences} \
+                   -o ${prefix}_detect \
+		   --include-contaminants 'known' \
+                   --output-formats 'fasta' \
+		   --log-file ${prefix}_atropos.log
+    """
+    }else{
+    """
+    if [ "${params.adapter}" == "truseq" ]; then
+      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+    elif [ "${params.adapter}" == "nextera" ]; then
+      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+    elif [ "${params.adapter}" == "smallrna" ]; then
+      echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
+    fi
+    """
+    }
   }else{
-  """
-  atropos detect --max-read 100000 \
-                 --detector 'known' \
-                 -pe1 ${reads[0]} -pe2 ${reads[1]} \
-		 -F ${sequences} \
-                 -o ${prefix}_detect \
-                 --include-contaminants 'known' \
-                 --output-formats 'fasta' \
-                 --log-file ${prefix}_atropos.log
-  """
+    if (params.adapter == 'auto'){
+    """
+    atropos detect --max-read 100000 \
+                   --detector 'known' \
+                   -pe1 ${reads[0]} -pe2 ${reads[1]} \
+	           -F ${sequences} \
+                   -o ${prefix}_detect \
+                   --include-contaminants 'known' \
+                   --output-formats 'fasta' \
+                   --log-file ${prefix}_atropos.log
+    """
+    }else{
+    """
+    if [ "${params.adapter}" == "truseq" ]; then
+      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+      echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
+    elif [ "${params.adapter}" == "nextera" ]
+      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+      echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
+    fi
+    """
+    }
   }
 }
 
@@ -392,49 +422,35 @@ process atroposTrim {
    adapter=""
 
    if (params.singleEnd) {
-     if (params.adapter == 'truseq'){
-       adapter ="--adapter ${params.truseq_r1}"
-     }else if (params.adapter == 'nextera'){
-       adapter ="--adapter ${params.nextera_r1}"
-     }else if (params.adapter == 'smallrna'){
-       adapter ="--adapter ${params.smallrna_r1}"
-     }else if (params.adapter == 'auto'){
-       adapter="--adapter file:${prefix}_detect.0.fasta"
-     }
      """
      readcount=`cat ${prefix}_detect.0.fasta|wc -l`
      if [ \$readcount != '0' ]
      then
-       atropos trim -se ${reads} ${adapter} \
+       atropos trim -se ${reads} \
+         --adapter file:${prefix}_detect.0.fasta \
          --minimum-length ${params.minlen} \
          -q ${params.qualtrim} \
          ${ntrim} \
          ${nextseq_trim} \
          --threads ${task.cpus} \
          -o ${prefix}_trimmed.fq.gz \
-         --report-file ${prefix}_trimming_report.txt \
-         --info-file ${prefix}_trimming_info.txt \
-         --report-formats 'json' 'yaml' --stats 'both'
+         --report-file ${prefix}_trimming_report \
+	 --report-formats txt yaml json
      else    
        cp ${reads} ${prefix}_trimmed.fq.gz
+       touch ${prefix}_trimming_report.txt
        touch ${prefix}_trimming_report.txt.json
        touch ${prefix}_trimming_report.txt.yaml
      fi
      """
    } else {
-     if (params.adapter == 'truseq'){
-       adapter ="--adapter ${params.truseq_r1} -A ${params.truseq_r2}"
-     }else if (params.adapter == 'nextera'){
-       adapter ="--adapter ${params.nextera_r1} -A ${params.nextera_r2}"
-     }else{
-       adapter="--adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta"
-     }
      """
      readcount0=`cat ${prefix}_detect.0.fasta|wc -l`
      readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
-     if [ \$readcount0 != '0' ] && [ \$readcount1 != '0' ]
+     if [ \$readcount0 != '0' ] || [ \$readcount1 != '0' ]
      then
-       atropos ${adapters}  -pe1 ${reads[0]} -pe2 ${reads[1]}\
+       atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
+         --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
          --minimum-length ${params.minlen} \
          -q ${params.qualtrim} \
@@ -442,11 +458,11 @@ process atroposTrim {
          ${nextseq_trim} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
-         --info-file ${prefix}_trimming_info.txt \
-         --report-formats 'json' 'yaml' --stats 'both'
+         --report-formats txt yaml json 
      else
        cp ${reads[0]} ${prefix}_R1_trimmed.fq.gz
        cp ${reads[1]} ${prefix}_R2_trimmed.fq.gz
+       touch ${prefix}_trimming_report.txt
        touch ${prefix}_trimming_report.txt.json
        touch ${prefix}_trimming_report.txt.yaml
      fi
@@ -636,6 +652,7 @@ process multiqc {
 
   input:
   file splan from ch_splan.collect()
+  file metadata from ch_metadata.ifEmpty([])
   file multiqc_config from ch_multiqc_config
   file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
   file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
@@ -643,6 +660,8 @@ process multiqc {
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
   file ('trimReport/*') from trim_report.collect().ifEmpty([])
+  file ('software_versions/*') from software_versions_yaml.collect()
+  file ('workflow_summary/*') from workflow_summary_yaml.collect()
   
   output:
   file splan
@@ -653,9 +672,17 @@ process multiqc {
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+
+  if ( params.metadata ){
+  """
+  metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
+  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -c multiqc-config-metadata.yaml
+  """
+  }else{
   """
   multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
   """
+  }
 }
 
 
