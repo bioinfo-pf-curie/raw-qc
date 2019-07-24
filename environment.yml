@@ -9,3 +9,4 @@ dependencies:
   - atropos=1.1.16
   - fastp=0.20.0
   - multiqc=1.7
+  - conda-forge::r-markdown=0.8

@@ -34,20 +34,20 @@ def helpMessage() {
 
 
     Mandatory arguments:
-      --reads                       Path to input data (must be surrounded with quotes)
-      --samplePlan                  Path to sample plan input file (cannot be used with --reads)
-      -profile                      Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+      --reads 'READS'               Path to input data (must be surrounded with quotes)
+      --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
+      -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-      --trimtool                    Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'.
+      --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'.
 
     Trimming options:
-      --adapter                     Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
-      --qualtrim                    Minimum mapping quality for trimming. Default is '0', ie. no quality trimming
+      --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
+      --qualtrim QUAL               Minimum mapping quality for trimming. Default is '0', ie. no quality trimming
       --ntrim                       Trim 'N' bases from either side of the reads
-      --two_colour                     Trimming for NextSeq/NovaSeq sequencers
-      --minlen                      Minimum length of trimmed sequences
+      --two_colour                  Trimming for NextSeq/NovaSeq sequencers
+      --minlen LEN                  Minimum length of trimmed sequences
 
     Presets:
       --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
@@ -210,6 +210,8 @@ if (params.samplePlan) {
 }
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Trimming tool']= params.trimtool
+summary['Adapter']= params.adapter
+summary['Two colour']= params.two_colour
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -276,12 +278,12 @@ process trimGalore {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  ntrim = params.ntrim > 0 ? "--trim-n" : ""
-  qual_trim = params.two_colour ?  "--two_colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
-  pico_ots = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
+  ntrim = params.ntrim ? "--trim-n" : ""
+  qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
   adapter=""
 
   if (params.singleEnd) {
+    pico_opts = params.pico ? "--clip_r1 3 --three_prime_clip_r1 0" : ""
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -292,12 +294,13 @@ process trimGalore {
     """
     trim_galore ${adapter} \
                 ${ntrim} \
-                ${nextseq_trim} \
+                ${qual_trim} \
                 --length ${params.minlen} \
                 ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
     """
   }else {
+    pico_opts = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
@@ -305,7 +308,6 @@ process trimGalore {
     }
     """
     trim_galore ${adapter} \
-                ${qualtrim} \
                 ${ntrim} \
                 ${qual_trim} \
                 --length ${params.minlen} \
@@ -472,7 +474,7 @@ process fastp {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
-  pico_ots = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
+  pico_opts = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
   adapter=""
 
   if (params.singleEnd) {
@@ -595,19 +597,12 @@ process get_software_versions {
 
   script:
   """
-  echo $workflow.manifest.version &> v_rnaseq.txt
+  echo $workflow.manifest.version &> v_rawqc.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
-  STAR --version &> v_star.txt
-  tophat2 --version &> v_tophat2.txt
-  hisat2 --version &> v_hisat2.txt
-  preseq &> v_preseq.txt
-  infer_experiment.py --version &> v_rseqc.txt
-  read_duplication.py --version &> v_read_duplication.txt
-  featureCounts -v &> v_featurecounts.txt
-  htseq-count -h | grep version  &> v_htseq.txt
-  picard MarkDuplicates --version &> v_markduplicates.txt  || true
-  samtools --version &> v_samtools.txt
+  trim_galore --version &> v_trimgalore.txt
+  echo "toto" &> v_atropos.txt
+  fastp --version &> v_fastp.txt
   multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
@@ -667,6 +662,7 @@ process multiqc {
 /*
  * Sub-routine
  */
+/*
 process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
@@ -681,16 +677,13 @@ process output_documentation {
     markdown_to_html.r $output_docs results_description.html
     """
 }
-
+*/
 workflow.onComplete {
 
     // Set up the e-mail variables
-    def subject = "[rnaseq] Successful: $workflow.runName"
-    if(skipped_poor_alignment.size() > 0){
-        subject = "[rnaseq] Partially Successful (${skipped_poor_alignment.size()} skipped): $workflow.runName"
-    }
+    def subject = "[raw-qc] Successful: $workflow.runName"
     if(!workflow.success){
-      subject = "[rnaseq] FAILED: $workflow.runName"
+      subject = "[raw-qc] FAILED: $workflow.runName"
     }
     def email_fields = [:]
     email_fields['version'] = workflow.manifest.version
@@ -720,12 +713,12 @@ workflow.onComplete {
         if (workflow.success && !params.skip_multiqc) {
             mqc_report = multiqc_report.getVal()
             if (mqc_report.getClass() == ArrayList){
-                log.warn "[rnaseq] Found multiple reports from process 'multiqc', will use only one"
+                log.warn "[raw-qc] Found multiple reports from process 'multiqc', will use only one"
                 mqc_report = mqc_report[0]
                 }
         }
     } catch (all) {
-        log.warn "[rnaseq] Could not attach MultiQC report to summary email"
+        log.warn "[raw-qc] Could not attach MultiQC report to summary email"
     }
 
     // Render the TXT template
@@ -751,11 +744,11 @@ workflow.onComplete {
           if( params.plaintext_email ){ throw GroovyException('Send plaintext e-mail, not HTML') }
           // Try to send HTML e-mail using sendmail
           [ 'sendmail', '-t' ].execute() << sendmail_html
-          log.info "[rnaseq] Sent summary e-mail to $params.email (sendmail)"
+          log.info "[raw-qc] Sent summary e-mail to $params.email (sendmail)"
         } catch (all) {
           // Catch failures and try with plaintext
           [ 'mail', '-s', subject, params.email ].execute() << email_txt
-          log.info "[rnaseq] Sent summary e-mail to $params.email (mail)"
+          log.info "[raw-qc] Sent summary e-mail to $params.email (mail)"
         }
     }
 
@@ -768,16 +761,10 @@ workflow.onComplete {
     output_hf.withWriter { w -> w << email_html }
     def output_tf = new File( output_d, "pipeline_report.txt" )
     output_tf.withWriter { w -> w << email_txt }
-
-    if(skipped_poor_alignment.size() > 0){
-        log.info "[rnaseq] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
-    }
-
-    log.info "[rnaseq] Pipeline Complete"
+    log.info "[rawqc] Pipeline Complete"
 
     if(!workflow.success){
-        if( workflow.profile == 'test'){
-        
+        if( workflow.profile == 'test'){        
             log.error "====================================================\n" +
                     "  WARNING! You are running with the profile 'test' only\n" +
                     "  pipeline config profile, which runs on the head node\n" +
@@ -789,4 +776,3 @@ workflow.onComplete {
         }
     }
 }
-
