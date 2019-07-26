@@ -220,6 +220,9 @@ if (params.samplePlan) {
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Trimming tool']= params.trimtool
 summary['Adapter']= params.adapter
+summary['Min quality']= params.qualtrim
+summary['Min len']= params.minlen
+summary['N trim']= params.ntrim
 summary['Two colour']= params.two_colour
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -350,14 +353,14 @@ process atroposDetect {
   if ( params.singleEnd ){
     if (params.adapter == 'auto'){
     """
-    atropos detect --max-read 100000 \
+    atropos detect --max-read 50000 \
                    --detector 'known' \
                    -se ${reads} \
-		   -F ${sequences} \
-                   -o ${prefix}_detect \
-		   --include-contaminants 'known' \
+		   --known-contaminants-file ${sequences} \
+                   --output ${prefix}_detect \
                    --output-formats 'fasta' \
 		   --log-file ${prefix}_atropos.log
+                   --include-contaminants 'known'
     """
     }else{
     """
@@ -373,14 +376,14 @@ process atroposDetect {
   }else{
     if (params.adapter == 'auto'){
     """
-    atropos detect --max-read 100000 \
+    atropos detect --max-read 50000 \
                    --detector 'known' \
                    -pe1 ${reads[0]} -pe2 ${reads[1]} \
-	           -F ${sequences} \
-                   -o ${prefix}_detect \
-                   --include-contaminants 'known' \
+                   --known-contaminants-file ${sequences} \
+                   --output ${prefix}_detect \
                    --output-formats 'fasta' \
                    --log-file ${prefix}_atropos.log
+                   --include-contaminants 'known' \
     """
     }else{
     """
@@ -428,8 +431,9 @@ process atroposTrim {
      then
        atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
+         --times 3 \
          --minimum-length ${params.minlen} \
-         -q ${params.qualtrim} \
+         --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
          ${nextseq_trim} \
          --threads ${task.cpus} \
@@ -452,8 +456,9 @@ process atroposTrim {
        atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
+         --times 3 \
          --minimum-length ${params.minlen} \
-         -q ${params.qualtrim} \
+         --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
          ${nextseq_trim} \
          --threads ${task.cpus} \
