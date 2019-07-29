@@ -359,7 +359,7 @@ process atroposDetect {
 		   --known-contaminants-file ${sequences} \
                    --output ${prefix}_detect \
                    --output-formats 'fasta' \
-		   --log-file ${prefix}_atropos.log
+		   --log-file ${prefix}_atropos.log \
                    --include-contaminants 'known'
     """
     }else{
@@ -382,15 +382,15 @@ process atroposDetect {
                    --known-contaminants-file ${sequences} \
                    --output ${prefix}_detect \
                    --output-formats 'fasta' \
-                   --log-file ${prefix}_atropos.log
-                   --include-contaminants 'known' \
+                   --log-file ${prefix}_atropos.log \
+                   --include-contaminants 'known'
     """
     }else{
     """
     if [ "${params.adapter}" == "truseq" ]; then
       echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
       echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
-    elif [ "${params.adapter}" == "nextera" ]
+    elif [ "${params.adapter}" == "nextera" ]; then
       echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
       echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
     fi
@@ -622,7 +622,7 @@ process get_software_versions {
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
   trim_galore --version &> v_trimgalore.txt
-  echo "toto" &> v_atropos.txt
+  echo "lol" &> v_atropos.txt
   fastp --version &> v_fastp.txt
   multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
