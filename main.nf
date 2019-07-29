@@ -432,6 +432,7 @@ process atroposTrim {
        atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
          --times 3 \
+         --overlap 1 \
          --minimum-length ${params.minlen} \
          --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
@@ -457,6 +458,7 @@ process atroposTrim {
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
          --times 3 \
+         --overlap 1 \
          --minimum-length ${params.minlen} \
          --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
