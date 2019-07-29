@@ -13,7 +13,7 @@ The current workflow is based on the nf-core best practice. See the nf-core proj
 
 |   | TrimGalore | Fastp | Atropos |
 |---|------------|-------|---------|
-| 'pico'  | :*:\check::  | :*:\check:: | :*:\cross:: | 
+| 'pico'  | &#x2611;  | &#x2611; | &#9746; | 
 | Min size trimmed  | &#x2611;  | &#x2612;  | &#x2611;  |
 | Atropos |    |   |   |
 
