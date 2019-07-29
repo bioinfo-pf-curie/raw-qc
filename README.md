@@ -11,11 +11,13 @@ The current workflow is based on the nf-core best practice. See the nf-core proj
 
 ### Short comparison of trimming tools
 
-|   | TrimGalore | Fastp | Atropos |
-|---|------------|-------|---------|
-| 'pico'  | &#x2611;  | &#x2611; | &#9746; | 
-| Min size trimmed  | &#x2611;  | &#x2612;  | &#x2611;  |
-| Atropos |    |   |   |
+|                   | TrimGalore |  Fastp   | Atropos  |
+|-------------------|------------|----------|----------|
+| 'pico'            |  &#x2611;  | &#x2611; |          | 
+| Min trimmed size  |  &#x2611;  |          | &#x2611; |
+| Adapter detection |  +++       | ++       | +        |
+| Poly N trimming   |  &#x2611;  |          | &#x2611; |
+| Speed             |  ++        | +++      | +        |
 
 ### Documentation
 
