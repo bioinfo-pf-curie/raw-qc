@@ -222,8 +222,8 @@ summary['Trimming tool']= params.trimtool
 summary['Adapter']= params.adapter
 summary['Min quality']= params.qualtrim
 summary['Min len']= params.minlen
-summary['N trim']= params.ntrim
-summary['Two colour']= params.two_colour
+summary['N trim']= params.ntrim ? 'true' : 'false'
+summary['Two colour']= params.two_colour ? 'true' : 'false'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -642,7 +642,7 @@ process workflow_summary_mqc {
   id: 'summary'
   description: " - this information is collected when the pipeline is started."
   section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/rnaseq'
+  section_href: 'https://gitlab.curie.fr/rawqc'
   plot_type: 'html'
   data: |
       <dl class=\"dl-horizontal\">

@@ -32,7 +32,7 @@ for k, v in regexes.items():
 
 # Dump to YAML
 print ('''
-id: 'raw-qc-versions'
+id: 'software-versions'
 section_name: 'Software Versions'
 section_href: 'https://github.com/raw-qc'
 plot_type: 'html'
