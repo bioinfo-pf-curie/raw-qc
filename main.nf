@@ -51,6 +51,7 @@ def helpMessage() {
 
     Presets:
       --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+      --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
     Other options:
       --skip_fastqc_raw             Skip FastQC on raw sequencing reads
@@ -224,6 +225,8 @@ summary['Min quality']= params.qualtrim
 summary['Min len']= params.minlen
 summary['N trim']= params.ntrim ? 'true' : 'false'
 summary['Two colour']= params.two_colour ? 'true' : 'false'
+summary['Pico']= params.pico ? 'true' : 'false'
+summary['PolyA']= params.polyA ? 'true' : 'false'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -296,6 +299,7 @@ process trimGalore {
 
   if (params.singleEnd) {
     pico_opts = params.pico ? "--clip_r1 3 --three_prime_clip_r1 0" : ""
+    polyA_opts = params.polyA ? "--polyA" : ""
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -309,10 +313,12 @@ process trimGalore {
                 ${qual_trim} \
                 --length ${params.minlen} \
                 ${pico_opts} \
+		${polyA_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
     """
   }else {
     pico_opts = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
+    polyA_opts = params.polyA ? "--polyA" : ""
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
@@ -324,6 +330,7 @@ process trimGalore {
                 ${qual_trim} \
                 --length ${params.minlen} \
                 ${pico_opts} \
+		${polyA_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_R1_trimmed.fq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_R2_trimmed.fq.gz
@@ -422,6 +429,7 @@ process atroposTrim {
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
    ntrim = params.ntrim ? "--trim_n" : ""
    nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
+   polyA_opts = params.polyA ? "-a \"A{10}\"" : ""
    adapter=""
 
    if (params.singleEnd) {
@@ -437,6 +445,7 @@ process atroposTrim {
          --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
          ${nextseq_trim} \
+	 ${polyA_opts} \
          --threads ${task.cpus} \
          -o ${prefix}_trimmed.fq.gz \
          --report-file ${prefix}_trimming_report \
@@ -463,6 +472,7 @@ process atroposTrim {
          --quality-cutoff ${params.qualtrim} \
          ${ntrim} \
          ${nextseq_trim} \
+	 ${polyA_opts} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
          --report-formats txt yaml json 
@@ -498,6 +508,7 @@ process fastp {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
   pico_opts = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
+  polyA_opts = params.polyA ? "--trim_poly_x" : ""
   adapter=""
 
   if (params.singleEnd) {
@@ -513,6 +524,7 @@ process fastp {
     --qualified_quality_phred ${params.qualtrim} \
     ${nextseq_trim} \
     ${pico_opts} \
+    ${polyA_opts} \
     --length_required ${params.minlen} \
     -i ${reads} \
     -o ${prefix}_trimmed.fastq.gz \
@@ -530,6 +542,7 @@ process fastp {
      --qualified_quality_phred ${params.qualtrim} \
      ${nextseq_trim} \
      ${pico_opts} \
+     ${polyA_opts} \
     --length_required ${params.minlen} \
     -i ${reads[0]} -I ${reads[1]} \
     -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
