@@ -7,7 +7,9 @@ NEW FEATURES
 
   o Add options '--ntrim', '--two_colour', '--qualtrim', '--minlen'. Note that '--ntrim' does not work with fastp 
 
-  o Add preset for 'pico' protocol
+  o Add preset for 3'seq protocol
+
+  o Add preset for 'pico' protocol. Do not work for atropos
 
   o Add MultiQC report
 

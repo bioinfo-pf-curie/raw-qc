@@ -61,7 +61,7 @@ table_cond_formatting_colours:
     - fail: '#d9534f'
 
 report_section_order:
-  software_versions:
+  software-versions:
     order: -1000
   summary:
     order: -1100

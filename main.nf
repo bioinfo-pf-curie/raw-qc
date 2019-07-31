@@ -299,7 +299,6 @@ process trimGalore {
 
   if (params.singleEnd) {
     pico_opts = params.pico ? "--clip_r1 3 --three_prime_clip_r1 0" : ""
-    polyA_opts = params.polyA ? "--polyA" : ""
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -307,34 +306,58 @@ process trimGalore {
     }else if (params.adapter == 'smallrna'){
       adapter = "--adapter ${params.smallrna_r1}"
     }
+
+    if (!params.polyA){
     """
-    trim_galore ${adapter} \
-                ${ntrim} \
-                ${qual_trim} \
-                --length ${params.minlen} \
-                ${pico_opts} \
-		${polyA_opts} \
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
     """
+    }else{
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+    		--length ${params.minlen} ${pico_opts} \
+                --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    trim_galore -a "A{10}" --length ${params.minlen} \
+                --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
+    rm ${prefix}_trimmed.fq.gz
+    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_polyA_trimmed.fq.gz
+    mv ${reads}_trimming_report.txt ${prefix}_trimming_report.txt
+    mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimming_report.txt
+    """
+    }
   }else {
     pico_opts = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
-    polyA_opts = params.polyA ? "--polyA" : ""
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
       adapter ="--adapter ${params.nextera_r1} --adapter2 ${params.nextera_r2}"
     }
+    
+    if (!params.polyA){
     """
-    trim_galore ${adapter} \
-                ${ntrim} \
-                ${qual_trim} \
-                --length ${params.minlen} \
-                ${pico_opts} \
-		${polyA_opts} \
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_R1_trimmed.fq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_R2_trimmed.fq.gz
     """
+    }else{
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
+                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    trim_galore -a "A{10}" --length ${params.minlen} \
+      	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
+    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
+    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed_polyA.fq.gz
+    mv ${reads[0]}_trimming_report.txt ${prefix}_R1_trimming_report.txt
+    mv ${reads[1]}_trimming_report.txt ${prefix}_R2_trimming_report.txt
+    mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimming_report.txt
+    mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimming_report.txt
+    rm ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz
+    """
+    }
   }
 }
 
@@ -429,7 +452,7 @@ process atroposTrim {
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
    ntrim = params.ntrim ? "--trim_n" : ""
    nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
-   polyA_opts = params.polyA ? "-a \"A{10}\"" : ""
+   polyA_opts = params.polyA ? "-a A{10}" : ""
    adapter=""
 
    if (params.singleEnd) {
@@ -439,13 +462,9 @@ process atroposTrim {
      then
        atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
-         --times 3 \
-         --overlap 1 \
-         --minimum-length ${params.minlen} \
-         --quality-cutoff ${params.qualtrim} \
-         ${ntrim} \
-         ${nextseq_trim} \
-	 ${polyA_opts} \
+         --times 3 --overlap 1 \
+         --minimum-length ${params.minlen}  --quality-cutoff ${params.qualtrim} \
+         ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
          -o ${prefix}_trimmed.fq.gz \
          --report-file ${prefix}_trimming_report \
@@ -466,13 +485,9 @@ process atroposTrim {
        atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
-         --times 3 \
-         --overlap 1 \
-         --minimum-length ${params.minlen} \
-         --quality-cutoff ${params.qualtrim} \
-         ${ntrim} \
-         ${nextseq_trim} \
-	 ${polyA_opts} \
+         --times 3 --overlap 1 \
+         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
+         ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
          --report-formats txt yaml json 
@@ -522,12 +537,9 @@ process fastp {
     """
     fastp ${adapter} \
     --qualified_quality_phred ${params.qualtrim} \
-    ${nextseq_trim} \
-    ${pico_opts} \
-    ${polyA_opts} \
+    ${nextseq_trim} ${pico_opts} ${polyA_opts} \
     --length_required ${params.minlen} \
-    -i ${reads} \
-    -o ${prefix}_trimmed.fastq.gz \
+    -i ${reads} -o ${prefix}_trimmed.fastq.gz \
     -j ${prefix}.fastp.json -h ${prefix}.fastp.html\
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
@@ -540,14 +552,10 @@ process fastp {
     """
     fastp ${adapter} \
      --qualified_quality_phred ${params.qualtrim} \
-     ${nextseq_trim} \
-     ${pico_opts} \
-     ${polyA_opts} \
+     ${nextseq_trim} ${pico_opts} ${polyA_opts} \
     --length_required ${params.minlen} \
-    -i ${reads[0]} -I ${reads[1]} \
-    -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
-    --detect_adapter_for_pe \
-    -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
+    -i ${reads[0]} -I ${reads[1]} -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
+    --detect_adapter_for_pe -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
   }
