@@ -6,6 +6,7 @@
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
+[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
 ### Introduction
 
@@ -35,7 +36,9 @@ By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, b
 
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) \ [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
-1. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+4. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+
 
 ### Documentation
 
