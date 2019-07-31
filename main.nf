@@ -44,10 +44,10 @@ def helpMessage() {
 
     Trimming options:
       --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
-      --qualtrim QUAL               Minimum mapping quality for trimming. Default is '0', ie. no quality trimming
-      --ntrim                       Trim 'N' bases from either side of the reads
-      --two_colour                  Trimming for NextSeq/NovaSeq sequencers
-      --minlen LEN                  Minimum length of trimmed sequences
+      --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
+      --ntrim                       Trim 'N' bases from either side of the reads.
+      --two_colour                  Trimming for NextSeq/NovaSeq sequencers.
+      --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
     Presets:
       --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
@@ -223,10 +223,10 @@ summary['Trimming tool']= params.trimtool
 summary['Adapter']= params.adapter
 summary['Min quality']= params.qualtrim
 summary['Min len']= params.minlen
-summary['N trim']= params.ntrim ? 'true' : 'false'
-summary['Two colour']= params.two_colour ? 'true' : 'false'
-summary['Pico']= params.pico ? 'true' : 'false'
-summary['PolyA']= params.polyA ? 'true' : 'false'
+summary['N trim']= params.ntrim ? 'True' : 'False'
+summary['Two colour']= params.two_colour ? 'True' : 'False'
+summary['Pico']= params.pico ? 'True' : 'False'
+summary['PolyA']= params.polyA ? 'True' : 'False'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
@@ -318,7 +318,7 @@ process trimGalore {
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
     		--length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
-    trim_galore -a "A{10}" --length ${params.minlen} \
+    trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
     mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_polyA_trimmed.fq.gz
@@ -347,7 +347,7 @@ process trimGalore {
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
-    trim_galore -a "A{10}" --length ${params.minlen} \
+    trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
       	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
     mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed_polyA.fq.gz
