@@ -10,6 +10,6 @@ From: conda/miniconda2-centos7
  conda config --add channels defaults \
  && conda config --add channels conda-forge \
  && conda config --add channels bioconda
+ conda install -y python=2.7
  conda install -y atropos=1.1.16 
- conda clean -a
 
