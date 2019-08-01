@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: conda/miniconda3-centos7
+From: conda/miniconda2-centos7
 
 %environment
   LANG=en_US.UTF
@@ -9,8 +9,10 @@ From: conda/miniconda3-centos7
 %post
 conda config --add channels defaults \
  && conda config --add channels conda-forge \
- && conda config --add channels bioconda \
- && conda install -y anaconda::openjdk=8.0.152
+ && conda config --add channels bioconda
+ conda install -y which
+ ln -s /usr/local/bin/which /usr/bin/which
+ conda install -y anaconda::openjdk=8.0.152
  # Needed for FastQC - conda build hangs without this
  conda install -y bioconda::fastqc=0.11.8 
  conda clean -a
