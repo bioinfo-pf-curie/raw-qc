@@ -168,7 +168,6 @@ class Adapter_seq_Report(object):
               adapter_seq = l_list
             )
 
-           print(adapter_seq_dict)
            return adapter_seq_dict
 
         except ValueError: return False
@@ -178,9 +177,16 @@ class Adapter_seq_Report(object):
        """ Write json stats file.
        This file is read by MultiQC to summarize results of the trimming.
        """
-       with open(prefixname + ".txt", 'w') as out:
-          out.write('sample_name'+'\t'+'Adapter sequence read 1 '+'\t'+'Adapter sequence read 2'+'\n')
-          out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq'))))
+       for key, value in adapter_seq_dict.items():
+           if len(adapter_seq_dict[key]) == 1:
+               print(adapter_seq_dict)
+               with open(prefixname + ".trim.txt", 'w') as out:
+                   out.write('sample_name'+'\t'+'Adapter sequence read 1 '+'\n')
+                   out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq'))))
+           if len(adapter_seq_dict[key]) == 2:
+               with open(prefixname + ".trim.txt", 'w') as out:
+                   out.write('sample_name'+'\t'+'Adapter sequence read 1 '+'\t'+'Adapter sequence read 2'+'\n')
+                   out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq'))))
 
 
 if __name__ == '__main__':
