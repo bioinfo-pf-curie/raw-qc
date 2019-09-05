@@ -46,12 +46,24 @@ custom_data:
               id: 'stats'
               title: 'Basic Metrics'
               scale: 'RdYlBu'
-              format: '{:,.0f}'             
+              format: '{:,.0f}'
+              save_file: true
+    adapter_seq:
+           file_format: 'tsv'
+           section_name: 'Trimming'
+           description: 'Detected adapter from a trimming report.'
+           plot_type: 'table'
+           pconfig:
+              id: 'adapter'
+              title: 'Adapter Seq'
+              colour: 'blue'
               save_file: true
 
 sp:
     example_files:
         fn: '*_Basic_Metrics.*'
+    adapter_seq:
+        fn: '*_Adaptor_seq.*'
 
 table_cond_formatting_colours:
     - blue: '#337ab7'
@@ -65,6 +77,4 @@ report_section_order:
     order: -1000
   summary:
     order: -1100
-
-skip_generalstats: true
 

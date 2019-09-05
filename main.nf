@@ -271,6 +271,7 @@ process fastqc {
     """
 }
 
+
 /*
  * STEP 2 - Reads Trimming
 */
@@ -289,7 +290,7 @@ process trimGalore {
 
   output:
   file "*fq.gz" into trim_reads_trimgalore, fastqc_trimgalore_reads
-  file "*trimming_report.txt" into trim_results_trimgalore
+  file "*trimming_report.txt" into trim_results_trimgalore, report_results_trimgalore
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -376,21 +377,33 @@ process atroposDetect {
   file sequences from ch_adaptor_file_detect.collect()
 
   output:
-  file "*.fasta" into detected_adapters_atropos
+  file "*.fasta" into detected_adapters_atropos, report_results_atropos
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  // Dimitri: algorithm = 'heuristic' if 49 < read_length < 152 else 'known' & max_read = 50000 if algorithm == 'known' else 20000
+  // Dimitri # Get detected adapters
+  //      detected = summary['detect']
+  //      detect_list = [{
+  //              'read': i,
+  //              'adapter_name': hit['known_names'][0],
+  //              'sequence': hit['known_seqs'][0],
+  //              'longest_kmer': hit['longest_kmer'],
+  //              'kmer_freq': hit['kmer_freq'],
+  //              'match_fraction': hit['known_to_contaminant_match_frac'] } if hit['is_known'] else None
+  //      # Get adapters with best score = frequence * match fraction  ==> ['kmer_freq'] * adapter['match_fraction']
+
+
   if ( params.singleEnd ){
     if (params.adapter == 'auto'){
     """
-    atropos detect --max-read 50000 \
-                   --detector 'known' \
+    atropos detect --detector 'heuristic' \
+                   --max-adapters 1 \
                    -se ${reads} \
 		   --known-contaminants-file ${sequences} \
                    --output ${prefix}_detect \
-                   --output-formats 'fasta' \
+                   --output-formats 'fasta' 'txt'\
 		   --log-file ${prefix}_atropos.log \
-                   --include-contaminants 'known'
     """
     }else{
     """
@@ -406,14 +419,13 @@ process atroposDetect {
   }else{
     if (params.adapter == 'auto'){
     """
-    atropos detect --max-read 50000 \
-                   --detector 'known' \
+    atropos detect --detector 'heuristic' \
+                   --max-adapters 1 \
                    -pe1 ${reads[0]} -pe2 ${reads[1]} \
                    --known-contaminants-file ${sequences} \
                    --output ${prefix}_detect \
-                   --output-formats 'fasta' \
+                   --output-formats 'fasta' 'txt'\
                    --log-file ${prefix}_atropos.log \
-                   --include-contaminants 'known'
     """
     }else{
     """
@@ -516,7 +528,7 @@ process fastp {
   
   output:
   file "*_trimmed.fastq.gz" into trim_reads_fastp, fastqc_fastp_reads
-  file "*.json" into trim_results_fastp
+  file "*.json" into trim_results_fastp, report_results_fastp
   file "*.log" into trim_log_fastp
 
   script:
@@ -563,11 +575,15 @@ process fastp {
 
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos.collect()
+  trim_reports = report_results_atropos.collect()
 }else if (params.trimtool == "trimgalore"){
   trim_reads = trim_reads_trimgalore.collect()
+  trim_reports = report_results_trimgalore.collect()
 }else{
   trim_reads = trim_reads_fastp.collect()
+  trim_reports = report_results_fastp.collect()
 }
+
 
 process trimReport {
 
@@ -581,21 +597,53 @@ process trimReport {
   input:
   set val(name), file(reads) from read_files_trimreport
   file trims from trim_reads
+  file reports from trim_reports
 
   output:
-  file "*_Basic_Metrics.trim.txt" into trim_report
+  file '*_Basic_Metrics.trim.txt' into trim_report
+  file "*_Adaptor_seq.txt" into trim_adaptor
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
+
   """
-  TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+  if [[ ${params.singleEnd} == true && ${params.trimtool} == "trimgalore" ]]
+  then
+    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${reads}_trimming_report.txt --u ${params.trimtool} --o ${prefix}_Adaptor_seq
+  fi
+
+  if [[ ${params.singleEnd} == true && ${params.trimtool} == "fastp" ]]
+  then
+    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${prefix}.fastp.json --u ${params.trimtool} --o ${prefix}_Adaptor_seq
+  fi
+
+  if [[ ${params.singleEnd} == true && ${params.trimtool} == "atropos" ]]
+  then
+    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${prefix}_detect.0.fasta --o ${prefix}_Adaptor_seq --u ${params.trimtool}
+  fi
+
+  if [[ ${params.singleEnd} == false && ${params.trimtool} == "trimgalore" ]]
+  then
+    TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${reads[0]}_trimming_report.txt --tr2 ${reads[1]}_trimming_report.txt --u ${params.trimtool} --o ${prefix}_Adaptor_seq
+  fi
+
+  if [[ ${params.singleEnd} == false && ${params.trimtool} == "fastp" ]]
+  then
+    TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${prefix}.fastp.json --u ${params.trimtool} --o ${prefix}_Adaptor_seq  
+  fi
+
+  if [[ ${params.singleEnd} == false && ${params.trimtool} == "atropos" ]]
+  then
+    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
+    Adapter_seq_Report.py --tr1 ${prefix}_detect.0.fasta --tr2 ${prefix}_detect.1.fasta --o ${prefix}_Adaptor_seq --u ${params.trimtool}
+  fi
+
   """
-  } else {
-  """
-  TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
-  """
-  }
 }
 
 /*
@@ -630,10 +678,6 @@ process fastqcTrimmed {
   fastqc -q $reads -t ${task.cpus}
   """
 }
-
-/*
- * MultiQC
- */
 
 process get_software_versions {
   output:
@@ -674,6 +718,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
+
 process multiqc {
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
   //conda 'multiqc'
@@ -688,6 +733,7 @@ process multiqc {
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
   file ('trimReport/*') from trim_report.collect().ifEmpty([])
+  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
   file ('workflow_summary/*') from workflow_summary_yaml.collect()
   
@@ -712,7 +758,6 @@ process multiqc {
   """
   }
 }
-
 
 /*
  * Sub-routine
