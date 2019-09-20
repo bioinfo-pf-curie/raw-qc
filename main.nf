@@ -92,8 +92,12 @@ if (params.adapter!= 'truseq' && params.adapter != 'nextera' && params.adapter !
     exit 1, "Invalid adaptator seq tool option: ${params.adapter}. Valid options: 'truseq', 'nextera', 'smallrna', 'auto'"
 }
 
+if (params.adapter== 'auto' && params.trimtool == 'atropos') {
+   exit 1, "Cannot use Atropos without adaptator seq tool option."
+}
+
 if (params.adapter == 'smallrna' && !params.singleEnd){
-    exit 1, "${params.adapter} is only for singleEnd data. "
+    exit 1, "${params.adapter} is only for singleEnd data."
 }
 
 if (params.ntrim && params.trimtool == 'fastp') {
@@ -310,6 +314,7 @@ process trimGalore {
 
     if (!params.polyA){
     """
+    echo $name > titi.txt
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -363,84 +368,6 @@ process trimGalore {
 }
 
 
-process atroposDetect {
-  tag "$name"
-
-  publishDir "${params.outdir}/trimming", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
-
-  when:
-  params.trimtool =="atropos" && !params.skip_trimming
- 
-  input:
-  set val(name), file(reads) from read_files_atropos_detect
-  file sequences from ch_adaptor_file_detect.collect()
-
-  output:
-  file "*.fasta" into detected_adapters_atropos, report_results_atropos
-
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  // Dimitri: algorithm = 'heuristic' if 49 < read_length < 152 else 'known' & max_read = 50000 if algorithm == 'known' else 20000
-  // Dimitri # Get detected adapters
-  //      detected = summary['detect']
-  //      detect_list = [{
-  //              'read': i,
-  //              'adapter_name': hit['known_names'][0],
-  //              'sequence': hit['known_seqs'][0],
-  //              'longest_kmer': hit['longest_kmer'],
-  //              'kmer_freq': hit['kmer_freq'],
-  //              'match_fraction': hit['known_to_contaminant_match_frac'] } if hit['is_known'] else None
-  //      # Get adapters with best score = frequence * match fraction  ==> ['kmer_freq'] * adapter['match_fraction']
-
-
-  if ( params.singleEnd ){
-    if (params.adapter == 'auto'){
-    """
-    atropos detect --detector 'heuristic' \
-                   --max-adapters 1 \
-                   -se ${reads} \
-		   --known-contaminants-file ${sequences} \
-                   --output ${prefix}_detect \
-                   --output-formats 'fasta' 'txt'\
-		   --log-file ${prefix}_atropos.log \
-    """
-    }else{
-    """
-    if [ "${params.adapter}" == "truseq" ]; then
-      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
-    elif [ "${params.adapter}" == "nextera" ]; then
-      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
-    elif [ "${params.adapter}" == "smallrna" ]; then
-      echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
-    fi
-    """
-    }
-  }else{
-    if (params.adapter == 'auto'){
-    """
-    atropos detect --detector 'heuristic' \
-                   --max-adapters 1 \
-                   -pe1 ${reads[0]} -pe2 ${reads[1]} \
-                   --known-contaminants-file ${sequences} \
-                   --output ${prefix}_detect \
-                   --output-formats 'fasta' 'txt'\
-                   --log-file ${prefix}_atropos.log \
-    """
-    }else{
-    """
-    if [ "${params.adapter}" == "truseq" ]; then
-      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
-      echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
-    elif [ "${params.adapter}" == "nextera" ]; then
-      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
-      echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
-    fi
-    """
-    }
-  }
-}
-
 process atroposTrim {
   tag "$name"
 
@@ -449,52 +376,52 @@ process atroposTrim {
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   
   when:
-  params.trimtool == "atropos" && !params.skip_trimming
+  params.trimtool == "atropos" && !params.skip_trimming && params.adapter != ""
   
   input:
   set val(name), file(reads) from read_files_atropos_trim
-  file adapters from detected_adapters_atropos.collect()
   file sequences from ch_adaptor_file_defult.collect()
 
   output:
   file "*trimming_report*" into trim_results_atropos
   file "*_trimmed.fq.gz" into trim_reads_atropos, fastqc_atropos_reads
+  file "*.json" into report_results_atropos
 
    script:
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
    ntrim = params.ntrim ? "--trim_n" : ""
    nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
    polyA_opts = params.polyA ? "-a A{10}" : ""
-   adapter=""
 
    if (params.singleEnd) {
-     """
-     readcount=`cat ${prefix}_detect.0.fasta|wc -l`
-     if [ \$readcount != '0' ]
-     then
-       atropos trim -se ${reads} \
+   """
+   if  [ "${params.adapter}" == "truseq" ]; then
+      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+   elif [ "${params.adapter}" == "nextera" ]; then
+      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+   elif [ "${params.adapter}" == "smallrna" ]; then
+      echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
+   fi
+   atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
          --times 3 --overlap 1 \
-         --minimum-length ${params.minlen}  --quality-cutoff ${params.qualtrim} \
+         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
          ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
          -o ${prefix}_trimmed.fq.gz \
          --report-file ${prefix}_trimming_report \
-	 --report-formats txt yaml json
-     else    
-       cp ${reads} ${prefix}_trimmed.fq.gz
-       touch ${prefix}_trimming_report.txt
-       touch ${prefix}_trimming_report.txt.json
-       touch ${prefix}_trimming_report.txt.yaml
-     fi
-     """
+         --report-formats txt yaml json
+   """
    } else {
-     """
-     readcount0=`cat ${prefix}_detect.0.fasta|wc -l`
-     readcount1=`cat ${prefix}_detect.1.fasta|wc -l`
-     if [ \$readcount0 != '0' ] || [ \$readcount1 != '0' ]
-     then
-       atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
+   """
+   if [ "${params.adapter}" == "truseq" ]; then
+      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+      echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
+   elif [ "${params.adapter}" == "nextera" ]; then
+      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+      echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
+   fi
+   atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
          --times 3 --overlap 1 \
@@ -502,14 +429,7 @@ process atroposTrim {
          ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
-         --report-formats txt yaml json 
-     else
-       cp ${reads[0]} ${prefix}_R1_trimmed.fq.gz
-       cp ${reads[1]} ${prefix}_R2_trimmed.fq.gz
-       touch ${prefix}_trimming_report.txt
-       touch ${prefix}_trimming_report.txt.json
-       touch ${prefix}_trimming_report.txt.yaml
-     fi
+         --report-formats txt yaml json
    """
    }
 }
@@ -605,45 +525,22 @@ process trimReport {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+       """
+       Trimming_Report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+  } else {
 
-  """
-  if [[ ${params.singleEnd} == true && ${params.trimtool} == "trimgalore" ]]
-  then
-    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${reads}_trimming_report.txt --u ${params.trimtool} --o ${prefix}_Adaptor_seq
-  fi
-
-  if [[ ${params.singleEnd} == true && ${params.trimtool} == "fastp" ]]
-  then
-    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${prefix}.fastp.json --u ${params.trimtool} --o ${prefix}_Adaptor_seq
-  fi
-
-  if [[ ${params.singleEnd} == true && ${params.trimtool} == "atropos" ]]
-  then
-    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${prefix}_detect.0.fasta --o ${prefix}_Adaptor_seq --u ${params.trimtool}
-  fi
-
-  if [[ ${params.singleEnd} == false && ${params.trimtool} == "trimgalore" ]]
-  then
-    TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${reads[0]}_trimming_report.txt --tr2 ${reads[1]}_trimming_report.txt --u ${params.trimtool} --o ${prefix}_Adaptor_seq
-  fi
-
-  if [[ ${params.singleEnd} == false && ${params.trimtool} == "fastp" ]]
-  then
-    TrimReport.py --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${prefix}.fastp.json --u ${params.trimtool} --o ${prefix}_Adaptor_seq  
-  fi
-
-  if [[ ${params.singleEnd} == false && ${params.trimtool} == "atropos" ]]
-  then
-    TrimReport.py --r1 ${reads} --t1 ${trims} --o ${prefix}_Basic_Metrics
-    Adapter_seq_Report.py --tr1 ${prefix}_detect.0.fasta --tr2 ${prefix}_detect.1.fasta --o ${prefix}_Adaptor_seq --u ${params.trimtool}
-  fi
-
-  """
+    if(params.trimtool == "trimgalore"){
+       """
+       Trimming_Report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+    } else {
+       """
+       Trimming_Report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+    }
+  }
 }
 
 /*
@@ -746,14 +643,17 @@ process multiqc {
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+  isPE = params.singleEnd ? 0 : 1
 
   if ( params.metadata ){
   """
   metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
+  stats2multiqc.sh ${isPE}
   multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -c multiqc-config-metadata.yaml
   """
   }else{
   """
+  stats2multiqc.sh ${isPE}
   multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
   """
   }

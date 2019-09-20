@@ -61,7 +61,7 @@ custom_data:
 
 sp:
     example_files:
-        fn: '*_Basic_Metrics.*'
+        fn: 'mq_stats.tsv'
     adapter_seq:
         fn: '*_Adaptor_seq.*'
 
