@@ -37,17 +37,89 @@ module_order:
               - '*_trimmed_fastqc.zip'
 
 custom_data:
-    example_files:
+    basic_metrics_SE:
            file_format: 'tsv'
            section_name: 'Basic Metrics'
            description: 'Calculated basic metric for the raw-qc pipeline'
            plot_type: 'table'
            pconfig:
-              id: 'stats'
+              id: 'stats_SE'
               title: 'Basic Metrics'
-              scale: 'RdYlBu'
-              format: '{:,.0f}'
               save_file: true
+              scale: 'RdYlGn'
+           headers:
+              col1:
+                title: 'Sample_name'
+              col2:
+                title: 'Biological_name'
+              col3:
+                title: 'Total_reads'
+              col4:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              col5:
+                title: 'Mean_length'
+              col6:
+                title: 'Total_base'
+              col7:
+                title: 'Q20_R1'
+                format: '{:,.2f}'
+                suffix: '%'
+              col8:
+                title: 'Trimmed_Mean_length'
+              col9:
+                title: 'Trimmed_reads'
+                format: '{:,.2f}'
+                suffix: '%'
+              col10:
+                title: 'Discarded_reads'
+                format: '{:,.2f}'
+                suffix: '%'
+    basic_metrics_PE:
+           file_format: 'tsv'
+           section_name: 'Basic Metrics'
+           description: 'Calculated basic metric for the raw-qc pipeline'
+           plot_type: 'table'
+           pconfig:
+              id: 'stats_PE'
+              title: 'Basic Metrics'
+              save_file: true
+              scale: 'RdYlGn'
+           headers:
+              col1:
+                title: 'Sample_name'
+              col2:
+                title: 'Biological_name'
+              col3:
+                title: 'Total_reads'
+              col4:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              col5:
+                title: 'Mean_length'
+              col6:
+                title: 'Total_base'
+              col7:
+                title: 'Q20_R1'
+                format: '{:,.2f}'
+                suffix: '%'
+              col8:
+                title: 'Q20_R2'
+                format: '{:,.2f}'
+                suffix: '%'
+              col9:
+                title: 'Trimmed_Mean_length'
+              col10:
+                title: 'Trimmed_reads'
+                format: '{:,.2f}'
+                suffix: '%'
+              col11:
+                title: 'Discarded_reads'
+                format: '{:,.2f}'
+                suffix: '%'
+
     adapter_seq:
            file_format: 'tsv'
            section_name: 'Trimming'
@@ -60,10 +132,38 @@ custom_data:
               save_file: true
 
 sp:
-    example_files:
-        fn: 'mq_stats.tsv'
+    basic_metrics_SE:
+        fn: 'mq_stats_SE.tsv'
+    basic_metrics_PE:
+        fn: 'mq_stats_PE.tsv'
     adapter_seq:
         fn: '*_Adaptor_seq.*'
+
+
+table_columns_placement:
+    stats_SE:
+        col1: 900
+        col2: 1000
+        col3: 1005
+        col4: 1010
+        col5: 1015
+        col6: 1020
+        col7: 1025
+        col8: 1030
+        col9: 1035
+        col10: 1040
+    stats_PE:
+        col1: 900
+        col2: 1000
+        col3: 1005
+        col4: 1010
+        col5: 1015
+        col6: 1020
+        col7: 1025
+        col8: 1030
+        col9: 1035
+        col10: 1040
+        col11: 1045
 
 table_cond_formatting_colours:
     - blue: '#337ab7'

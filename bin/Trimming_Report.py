@@ -222,7 +222,9 @@ class Trimming_Report(object):
         l_list = list()
         try:
            base = os.path.basename(reports[0])
-           sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
+           sample = os.path.splitext(base)[0].rsplit('.', 3)[0]
+           print(base)
+           print(sample)
            l_list = list()
            blocks = []
            if len(reports)==1:
@@ -235,8 +237,8 @@ class Trimming_Report(object):
                       total_bases = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
-                   if re.findall('Reads with adapters:[^"]', line):
-                      trimmed_reads = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Total written', line.strip()):
+                      trimmed_reads = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Number of sequence pairs removed', line.strip()):
                       discarded_reads = float(re.search('^Number of sequence pairs removed [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    else:
@@ -252,8 +254,8 @@ class Trimming_Report(object):
                       total_reads_1 = int(re.search('Total reads processed:[^"]*',line).group().split(':')[1].strip().replace(",", ""))
                    if re.findall('Total basepairs processed:', line):
                       total_bases_1 = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
-                   if re.findall('Reads with adapters:[^"]', line):
-                      trimmed_reads_1 = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Total written', line.strip()):
+                      trimmed_reads_1 = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Number of sequence pairs removed', line.strip()):
@@ -273,8 +275,8 @@ class Trimming_Report(object):
                    #   blocks.append(re.search(r'^[0-9]+',line).group().split(' ')[0])
                    if re.findall('Total basepairs processed:', line):
                       total_bases_2 = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
-                   if re.findall('Reads with adapters:[^"]', line):
-                      trimmed_reads_2 = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Total written', line.strip()):
+                      trimmed_reads_2 = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
@@ -344,11 +346,8 @@ class Trimming_Report(object):
               if 'read2_mean_length' not in data['summary']['before_filtering']:
                  total_reads=data['summary']['before_filtering']['total_reads']
                  total_bases=data['summary']['before_filtering']['total_bases']
-                 q20_reads1=(data['read1_before_filtering']['q20_bases']/data['read1_before_filtering']['total_bases'])*100
-                 if 'adapter_cutting' in data:
-                    trimmed_reads=(data['adapter_cutting']['adapter_trimmed_reads']/total_reads)*100
-                 else:
-                    trimmed_reads=0.0
+                 q20_reads1=(data['read1_after_filtering']['q20_bases']/data['read1_after_filtering']['total_bases'])*100
+                 trimmed_reads=(data['summary']['after_filtering']['total_reads']/total_reads)*100
                  discarded_reads=(100-(data['filtering_result']['passed_filter_reads']/total_reads)*100)
                  l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
               else:
@@ -357,10 +356,7 @@ class Trimming_Report(object):
                  total_bases=data['summary']['before_filtering']['total_bases']
                  q20_reads1=(data['read1_after_filtering']['q20_bases']/data['read1_after_filtering']['total_bases'])*100
                  q20_reads2=(data['read2_after_filtering']['q20_bases']/data['read2_after_filtering']['total_bases'])*100
-                 if 'adapter_cutting' in data:
-                    trimmed_reads=(data['adapter_cutting']['adapter_trimmed_reads']/total_reads)*100
-                 else:
-                    trimmed_reads=0.0
+                 trimmed_reads=(data['summary']['after_filtering']['total_reads']/total_reads)*100
                  discarded_reads=(100-(data['filtering_result']['passed_filter_reads']/total_reads)*100)
                  l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
 
@@ -407,7 +403,9 @@ class Trimming_Report(object):
         l_list = list()
         try:
            base = os.path.basename(reports[0])
-           sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
+           sample = os.path.splitext(base)[0].rsplit('_', 2)[0]
+           print(base)
+           print(sample)
            with open(reports[0]) as json_file:
               data = json.load(json_file)
               if None in (data['input']['input_names']):

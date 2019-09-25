@@ -454,6 +454,7 @@ process fastp {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
+  ntrim = params.ntrim ? "" : "--n_base_limit 0"
   pico_opts = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
   polyA_opts = params.polyA ? "--trim_poly_x" : ""
   adapter=""
@@ -470,6 +471,7 @@ process fastp {
     fastp ${adapter} \
     --qualified_quality_phred ${params.qualtrim} \
     ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    ${ntrim} \
     --length_required ${params.minlen} \
     -i ${reads} -o ${prefix}_trimmed.fastq.gz \
     -j ${prefix}.fastp.json -h ${prefix}.fastp.html\
@@ -483,8 +485,9 @@ process fastp {
     }
     """
     fastp ${adapter} \
-     --qualified_quality_phred ${params.qualtrim} \
-     ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    --qualified_quality_phred ${params.qualtrim} \
+    ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    ${ntrim} \
     --length_required ${params.minlen} \
     -i ${reads[0]} -I ${reads[1]} -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
     --detect_adapter_for_pe -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
@@ -494,14 +497,14 @@ process fastp {
 }
 
 if(params.trimtool == "atropos"){
-  trim_reads = trim_reads_atropos.collect()
-  trim_reports = report_results_atropos.collect()
+  trim_reads = trim_reads_atropos
+  trim_reports = report_results_atropos
 }else if (params.trimtool == "trimgalore"){
-  trim_reads = trim_reads_trimgalore.collect()
-  trim_reports = report_results_trimgalore.collect()
+  trim_reads = trim_reads_trimgalore
+  trim_reports = report_results_trimgalore
 }else{
-  trim_reads = trim_reads_fastp.collect()
-  trim_reports = report_results_fastp.collect()
+  trim_reads = trim_reads_fastp
+  trim_reports = report_results_fastp
 }
 
 
