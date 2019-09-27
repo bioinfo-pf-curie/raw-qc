@@ -28,9 +28,14 @@ By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, b
 | 3'seq protocol       |  &#x2611;  |          | &#x2611; |
 | 2-colour support     |  &#x2611;  | &#x2611; | &#x2611; |
 | Min adapter overlap  |  &#x2611;  |          | &#x2611; |
-| Adapter detection    |  +++       | ++       | +        |
+| Adapter detection    |  +++       | ++       | -        |
 | Poly N trimming      |  &#x2611;  |          | &#x2611; |
 | Speed                |  ++        | +++      | +        |
+
+
+*/!\ Because of serval issues found in the auto-detection mode of the Atropos software, the `detect` command has been removed from the pipeline. 
+It means that Atropos currently requires the specification of the adapter to remove (`--adapter`) to be used.*
+
 
 ### Pipline summary
 
@@ -39,6 +44,76 @@ By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, b
 3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 4. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
+
+### Quick help
+
+```bash
+N E X T F L O W  ~  version 19.04.0
+Launching `main.nf` [cheesy_fermi] - revision: 8038a4770c
+raw-qc v1.0dev
+=======================================================
+
+Usage:
+nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
+nextflow run main.nf --samplePlan sample_plan -profile conda
+
+
+Mandatory arguments:
+  --reads 'READS'               Path to input data (must be surrounded with quotes)
+  --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
+  -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+
+Options:
+  --singleEnd                   Specifies that the input is single end reads
+  --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'.
+
+Trimming options:
+  --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
+  --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
+  --ntrim                       Trim 'N' bases from either side of the reads.
+  --two_colour                  Trimming for NextSeq/NovaSeq sequencers.
+  --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
+
+Presets:
+  --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+  --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
+
+Other options:
+  --skip_fastqc_raw             Skip FastQC on raw sequencing reads
+  --skip_trimming               Skip trimming step
+  --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+  --outdir 'PATH'               The output directory where the results will be saved
+  --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+  -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+  --metadata 'FILE'             Add metadata file for multiQC report
+									  
+```
+
+### Quick run
+
+The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
+
+#### Run the pipeline on a test dataset
+See the conf/test.conf to set your test dataset.
+
+```
+nextflow run main.nf -profile test
+
+```
+
+#### Run the pipeline from a sample plan
+
+```
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR
+
+```
+
+#### Run the pipeline on a cluster
+
+```
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rawqc
+
+```
 
 ### Documentation
 
@@ -50,7 +125,13 @@ By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, b
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
 
-<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
 ### Credits
-<!-- TODO add authors -->
+
+This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, S. Baulande, N. Servant)
+
+### Contacts
+
+For any question, bug or suggestion, please, contact the bioinformatics core facility.
+
+

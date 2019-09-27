@@ -93,11 +93,11 @@ if (params.adapter!= 'truseq' && params.adapter != 'nextera' && params.adapter !
 }
 
 if (params.adapter== 'auto' && params.trimtool == 'atropos') {
-   exit 1, "Cannot use Atropos without adaptator seq tool option."
+   exit 1, "Cannot use Atropos without specifying --adapter sequence."
 }
 
 if (params.adapter == 'smallrna' && !params.singleEnd){
-    exit 1, "${params.adapter} is only for singleEnd data."
+    exit 1, "smallRNA requires singleEnd data."
 }
 
 if (params.ntrim && params.trimtool == 'fastp') {
