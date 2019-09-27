@@ -6,7 +6,6 @@
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
-[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
 ### Introduction
 
@@ -33,14 +32,14 @@ By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, b
 | Speed                |  ++        | +++      | +        |
 
 
-*/!\ Because of serval issues found in the auto-detection mode of the Atropos software, the `detect` command has been removed from the pipeline. 
-It means that Atropos currently requires the specification of the adapter to remove (`--adapter`) to be used.*
+**/!\ Because of serval issues found in the auto-detection mode of the Atropos software, the `detect` command has been removed from the pipeline. 
+It means that Atropos currently requires the specification of the adapter to remove (`--adapter`) to be used.**
 
 
 ### Pipline summary
 
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) \ [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
+2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) / [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
 3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 4. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
@@ -76,7 +75,7 @@ Trimming options:
 
 Presets:
   --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
-  --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
+  --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
 
 Other options:
   --skip_fastqc_raw             Skip FastQC on raw sequencing reads
@@ -120,7 +119,6 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -p
 1. [Installation](docs/installation.md)
 2. Pipeline configuration
     * [Local installation](docs/configuration/local.md)
-    * [Reference genomes](docs/configuration/reference_genomes.md)  
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
