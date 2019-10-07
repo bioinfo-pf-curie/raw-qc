@@ -108,6 +108,7 @@ if ( params.pico && params.trimtool == 'atropos' ){
     exit 1, "Cannot use Atropos for pico preset"
 }
 
+
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
@@ -300,10 +301,17 @@ process trimGalore {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   ntrim = params.ntrim ? "--trim-n" : ""
   qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
-  adapter=""
+  adapter = ""
+  pico_opts = ""
 
   if (params.singleEnd) {
-    pico_opts = params.pico ? "--clip_r1 3 --three_prime_clip_r1 0" : ""
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r1 0"
+    }
+    if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--clip_r1 0 --three_prime_clip_r1 3" 
+    }
+
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -314,7 +322,6 @@ process trimGalore {
 
     if (!params.polyA){
     """
-    echo $name > titi.txt
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -333,7 +340,12 @@ process trimGalore {
     """
     }
   }else {
-    pico_opts = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3"
+    } else if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--clip_r1 0 --clip_r2 3 --three_prime_clip_r1 3 --three_prime_clip_r2 0"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
@@ -455,11 +467,18 @@ process fastp {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
   ntrim = params.ntrim ? "" : "--n_base_limit 0"
-  pico_opts = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
+  pico_opts = ""
   polyA_opts = params.polyA ? "--trim_poly_x" : ""
-  adapter=""
+  adapter = ""
 
   if (params.singleEnd) {
+    // we don't usually have pico_version2 for single-end.
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--trim_front1 3 --trim_tail1 0"
+    } else if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--trim_front1 0 --trim_tail1 3"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -478,6 +497,12 @@ process fastp {
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
   } else {
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3"
+    } else if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--trim_front1 0 --trim_front2 3 --trim_tail1 3 --trim_tail2 0"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1} --adapter_sequence_r2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
