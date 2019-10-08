@@ -342,7 +342,8 @@ process trimGalore {
   }else {
     if ( params.pico && params.pico_version == 1) {
        pico_opts = "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3"
-    } else if ( params.pico && params.pico_version == 2) {
+    }
+    if ( params.pico && params.pico_version == 2) {
        pico_opts = "--clip_r1 0 --clip_r2 3 --three_prime_clip_r1 3 --three_prime_clip_r2 0"
     }
 
@@ -475,7 +476,8 @@ process fastp {
     // we don't usually have pico_version2 for single-end.
     if ( params.pico && params.pico_version == 1) {
        pico_opts = "--trim_front1 3 --trim_tail1 0"
-    } else if ( params.pico && params.pico_version == 2) {
+    } 
+    if ( params.pico && params.pico_version == 2) {
        pico_opts = "--trim_front1 0 --trim_tail1 3"
     }
 
@@ -499,13 +501,15 @@ process fastp {
   } else {
     if ( params.pico && params.pico_version == 1) {
        pico_opts = "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3"
-    } else if ( params.pico && params.pico_version == 2) {
+    } 
+    if ( params.pico && params.pico_version == 2) {
        pico_opts = "--trim_front1 0 --trim_front2 3 --trim_tail1 3 --trim_tail2 0"
     }
 
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1} --adapter_sequence_r2 ${params.truseq_r2}"
-    }else if (params.adapter == 'nextera'){
+    }
+    else if (params.adapter == 'nextera'){
       adapter ="--adapter_sequence ${params.nextera_r1} --adapter_sequence_r2 ${params.nextera_r2}"
     }
     """
