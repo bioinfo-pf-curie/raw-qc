@@ -117,8 +117,7 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -p
 ### Documentation
 
 1. [Installation](docs/installation.md)
-2. Pipeline configuration
-    * [Local installation](docs/configuration/local.md)
+2  [Reference genomes](docs/reference_genomes.md)
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](docs/troubleshooting.md)
