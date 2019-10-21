@@ -82,6 +82,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
+print custom_runName
 
 // Validate inputs 
 if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
@@ -107,6 +108,7 @@ if (params.ntrim && params.trimtool == 'fastp') {
 if ( params.pico && params.trimtool == 'atropos' ){
     exit 1, "Cannot use Atropos for pico preset"
 }
+
 
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
@@ -248,6 +250,20 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
+/* Creates a file at the end of workflow execution */
+workflow.onComplete {
+  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
+  Map endSummary = [:]
+  endSummary['Completed on'] = workflow.complete
+  endSummary['Duration']     = workflow.duration
+  endSummary['Success']      = workflow.success
+  endSummary['exit status']  = workflow.exitStatus
+  endSummary['Error report'] = workflow.errorReport ?: '-'
+  String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
+  println endWfSummary
+  String execInfo = "Summary\n${endWfSummary}\n"
+  woc.write(execInfo)
+}
 
 /*
  * STEP 1 - FastQC
@@ -300,10 +316,17 @@ process trimGalore {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   ntrim = params.ntrim ? "--trim-n" : ""
   qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
-  adapter=""
+  adapter = ""
+  pico_opts = ""
 
   if (params.singleEnd) {
-    pico_opts = params.pico ? "--clip_r1 3 --three_prime_clip_r1 0" : ""
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r1 0"
+    }
+    if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--clip_r1 0 --three_prime_clip_r1 3" 
+    }
+
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -314,7 +337,6 @@ process trimGalore {
 
     if (!params.polyA){
     """
-    echo $name > titi.txt
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -333,7 +355,13 @@ process trimGalore {
     """
     }
   }else {
-    pico_opts = params.pico ? "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3" : ""
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3"
+    }
+    if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--clip_r1 0 --clip_r2 3 --three_prime_clip_r1 3 --three_prime_clip_r2 0"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
@@ -455,11 +483,19 @@ process fastp {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
   ntrim = params.ntrim ? "" : "--n_base_limit 0"
-  pico_opts = params.pico ? "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3" : ""
+  pico_opts = ""
   polyA_opts = params.polyA ? "--trim_poly_x" : ""
-  adapter=""
+  adapter = ""
 
   if (params.singleEnd) {
+    // we don't usually have pico_version2 for single-end.
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--trim_front1 3 --trim_tail1 0"
+    } 
+    if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--trim_front1 0 --trim_tail1 3"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -478,9 +514,17 @@ process fastp {
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
   } else {
+    if ( params.pico && params.pico_version == 1) {
+       pico_opts = "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3"
+    } 
+    if ( params.pico && params.pico_version == 2) {
+       pico_opts = "--trim_front1 0 --trim_front2 3 --trim_tail1 3 --trim_tail2 0"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1} --adapter_sequence_r2 ${params.truseq_r2}"
-    }else if (params.adapter == 'nextera'){
+    }
+    else if (params.adapter == 'nextera'){
       adapter ="--adapter_sequence ${params.nextera_r1} --adapter_sequence_r2 ${params.nextera_r2}"
     }
     """
@@ -639,13 +683,13 @@ process multiqc {
   
   output:
   file splan
-  file "*rawqc_report.html" into multiqc_report
+  file "*_report.html" into multiqc_report
   file "*_data"
 
   custom_runName=custom_runName ?: workflow.runName
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
   isPE = params.singleEnd ? 0 : 1
 
   if ( params.metadata ){
@@ -659,123 +703,5 @@ process multiqc {
   stats2multiqc.sh ${isPE}
   multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
   """
-  }
-}
-
-/*
- * Sub-routine
- */
-/*
-process output_documentation {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
-
-    input:
-    file output_docs from ch_output_docs
-
-    output:
-    file "results_description.html"
-
-    script:
-    """
-    markdown_to_html.r $output_docs results_description.html
-    """
-}
-*/
-workflow.onComplete {
-
-    // Set up the e-mail variables
-    def subject = "[raw-qc] Successful: $workflow.runName"
-    if(!workflow.success){
-      subject = "[raw-qc] FAILED: $workflow.runName"
-    }
-    def email_fields = [:]
-    email_fields['version'] = workflow.manifest.version
-    email_fields['runName'] = custom_runName ?: workflow.runName
-    email_fields['success'] = workflow.success
-    email_fields['dateComplete'] = workflow.complete
-    email_fields['duration'] = workflow.duration
-    email_fields['exitStatus'] = workflow.exitStatus
-    email_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
-    email_fields['errorReport'] = (workflow.errorReport ?: 'None')
-    email_fields['commandLine'] = workflow.commandLine
-    email_fields['projectDir'] = workflow.projectDir
-    email_fields['summary'] = summary
-    email_fields['summary']['Date Started'] = workflow.start
-    email_fields['summary']['Date Completed'] = workflow.complete
-    email_fields['summary']['Pipeline script file path'] = workflow.scriptFile
-    email_fields['summary']['Pipeline script hash ID'] = workflow.scriptId
-    if(workflow.repository) email_fields['summary']['Pipeline repository Git URL'] = workflow.repository
-    if(workflow.commitId) email_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
-    if(workflow.revision) email_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
-    if(workflow.container) email_fields['summary']['Docker image'] = workflow.container
-    email_fields['skipped_poor_alignment'] = skipped_poor_alignment
-
-    // On success try attach the multiqc report
-    def mqc_report = null
-    try {
-        if (workflow.success && !params.skip_multiqc) {
-            mqc_report = multiqc_report.getVal()
-            if (mqc_report.getClass() == ArrayList){
-                log.warn "[raw-qc] Found multiple reports from process 'multiqc', will use only one"
-                mqc_report = mqc_report[0]
-                }
-        }
-    } catch (all) {
-        log.warn "[raw-qc] Could not attach MultiQC report to summary email"
-    }
-
-    // Render the TXT template
-    def engine = new groovy.text.GStringTemplateEngine()
-    def tf = new File("$baseDir/assets/email_template.txt")
-    def txt_template = engine.createTemplate(tf).make(email_fields)
-    def email_txt = txt_template.toString()
-
-    // Render the HTML template
-    def hf = new File("$baseDir/assets/email_template.html")
-    def html_template = engine.createTemplate(hf).make(email_fields)
-    def email_html = html_template.toString()
-
-    // Render the sendmail template
-    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report, mqcMaxSize: params.maxMultiqcEmailFileSize.toBytes() ]
-    def sf = new File("$baseDir/assets/sendmail_template.txt")
-    def sendmail_template = engine.createTemplate(sf).make(smail_fields)
-    def sendmail_html = sendmail_template.toString()
-
-    // Send the HTML e-mail
-    if (params.email) {
-        try {
-          if( params.plaintext_email ){ throw GroovyException('Send plaintext e-mail, not HTML') }
-          // Try to send HTML e-mail using sendmail
-          [ 'sendmail', '-t' ].execute() << sendmail_html
-          log.info "[raw-qc] Sent summary e-mail to $params.email (sendmail)"
-        } catch (all) {
-          // Catch failures and try with plaintext
-          [ 'mail', '-s', subject, params.email ].execute() << email_txt
-          log.info "[raw-qc] Sent summary e-mail to $params.email (mail)"
-        }
-    }
-
-    // Write summary e-mail HTML to a file
-    def output_d = new File( "${params.outdir}/pipeline_info/" )
-    if( !output_d.exists() ) {
-      output_d.mkdirs()
-    }
-    def output_hf = new File( output_d, "pipeline_report.html" )
-    output_hf.withWriter { w -> w << email_html }
-    def output_tf = new File( output_d, "pipeline_report.txt" )
-    output_tf.withWriter { w -> w << email_txt }
-    log.info "[rawqc] Pipeline Complete"
-
-    if(!workflow.success){
-        if( workflow.profile == 'test'){        
-            log.error "====================================================\n" +
-                    "  WARNING! You are running with the profile 'test' only\n" +
-                    "  pipeline config profile, which runs on the head node\n" +
-                    "  and assumes all software is on the PATH.\n" +
-                    "  This is probably why everything broke.\n" +
-                    "  Please use `-profile test,curie` or `-profile test,singularity` to run on local.\n" +
-                    "  Please use `-profile test,curie,cluster` or `-profile test,singularity,cluster` to run on your clusters.\n" +
-                    "============================================================"
-        }
-    }
+  } 
 }
