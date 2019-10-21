@@ -7,13 +7,9 @@ To start using this pipeline, follow the steps below:
 
 1. [Install Nextflow](#1-install-nextflow)
 2. [Install the pipeline](#2-install-the-pipeline)
-    * [Automatic](#21-automatic)
-    * [Offline](#22-offline)
-    * [Development](#23-development)
 3. [Pipeline configuration](#3-pipeline-configuration)
-    * [Software deps: Docker and Singularity](#31-software-deps-docker-and-singularity)
-    * [Software deps: Bioconda](#32-software-deps-bioconda)
-    * [Configuration profiles](#33-configuration-profiles)
+    * [Software deps: Docker and Singularity](#31-software-deps-singularity)
+    * [Software deps: Bioconda](#32-software-deps-conda)
 4. [Reference genomes](#4-reference-genomes)
 
 ## 1) Install NextFlow
@@ -45,8 +41,6 @@ unzip master.zip -d ~/mypipelines/
 cd ~/mypipelines
 nextflow run ~/mypipelines/mypipeline-master
 ```
-
-#### 2.3) Development
 
 If you would like to make changes to the pipeline, it's best to make a fork on GitHub and then clone the files. Once cloned you can run the pipeline directly as above.
 
