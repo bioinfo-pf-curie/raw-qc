@@ -50,7 +50,8 @@ def helpMessage() {
       --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
     Presets:
-      --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+      --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+      --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
       --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
     Other options:
@@ -65,15 +66,13 @@ def helpMessage() {
     """.stripIndent()
 }
 
-/*
- * SET UP CONFIGURATION VARIABLES
- */
 
 // Show help emssage
 if (params.help){
     helpMessage()
     exit 0
 }
+
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -82,18 +81,17 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
-print custom_runName
 
 // Validate inputs 
-if (params.trimtool!= 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
+if (params.trimtool != 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
     exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
 } 
 
-if (params.adapter!= 'truseq' && params.adapter != 'nextera' && params.adapter != 'smallrna' && params.adapter!= 'auto' ){
+if (params.adapter != 'truseq' && params.adapter != 'nextera' && params.adapter != 'smallrna' && params.adapter!= 'auto' ){
     exit 1, "Invalid adaptator seq tool option: ${params.adapter}. Valid options: 'truseq', 'nextera', 'smallrna', 'auto'"
 }
 
-if (params.adapter== 'auto' && params.trimtool == 'atropos') {
+if (params.adapter == 'auto' && params.trimtool == 'atropos') {
    exit 1, "Cannot use Atropos without specifying --adapter sequence."
 }
 
@@ -105,9 +103,18 @@ if (params.ntrim && params.trimtool == 'fastp') {
   log.warn "[raw-qc] The 'ntrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
 }
 
-if ( params.pico && params.trimtool == 'atropos' ){
+if (params.pico_v1 && params.pico_v2){
+    exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2"
+}
+
+if (params.pico_v1 && params.pico_v2 && params.trimtool == 'atropos'){
     exit 1, "Cannot use Atropos for pico preset"
 }
+
+if (params.singleEnd && params.pico_v2){
+   exit 1, "Cannot use --pico_v2 for single end."
+}
+
 
 
 // Stage config files
@@ -231,7 +238,15 @@ summary['Min quality']= params.qualtrim
 summary['Min len']= params.minlen
 summary['N trim']= params.ntrim ? 'True' : 'False'
 summary['Two colour']= params.two_colour ? 'True' : 'False'
-summary['Pico']= params.pico ? 'True' : 'False'
+if (params.pico_v1) {
+   summary['Pico_v1'] = 'True'
+}
+if(params.pico_v2) {
+   summary['Pico_v2'] = 'True'
+}
+if (!params.pico_v1 && !params.pico_v2) {
+   summary['Pico'] = 'False'
+}
 summary['PolyA']= params.polyA ? 'True' : 'False'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -318,13 +333,10 @@ process trimGalore {
   qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
   adapter = ""
   pico_opts = ""
-
   if (params.singleEnd) {
-    if ( params.pico && params.pico_version == 1) {
-       pico_opts = "--clip_r1 3 --three_prime_clip_r1 0"
-    }
-    if ( params.pico && params.pico_version == 2) {
-       pico_opts = "--clip_r1 0 --three_prime_clip_r1 3" 
+    println params.pico_v1
+    if (params.pico_v1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
     }
 
     if (params.adapter == 'truseq'){
@@ -355,11 +367,11 @@ process trimGalore {
     """
     }
   }else {
-    if ( params.pico && params.pico_version == 1) {
-       pico_opts = "--clip_r1 3 --clip_r2 0 --three_prime_clip_r1 0 --three_prime_clip_r2 3"
+    if (params.pico_v1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
     }
-    if ( params.pico && params.pico_version == 2) {
-       pico_opts = "--clip_r1 0 --clip_r2 3 --three_prime_clip_r1 3 --three_prime_clip_r2 0"
+    if (params.pico_v2) {
+       pico_opts = "--clip_r2 3 --three_prime_clip_r1 3"
     }
 
     if (params.adapter == 'truseq'){
@@ -489,12 +501,9 @@ process fastp {
 
   if (params.singleEnd) {
     // we don't usually have pico_version2 for single-end.
-    if ( params.pico && params.pico_version == 1) {
-       pico_opts = "--trim_front1 3 --trim_tail1 0"
+    if (params.pico_v1) {
+       pico_opts = "--trim_front1 3 --trim_tail1 3"
     } 
-    if ( params.pico && params.pico_version == 2) {
-       pico_opts = "--trim_front1 0 --trim_tail1 3"
-    }
 
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1}"
@@ -514,11 +523,11 @@ process fastp {
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
   } else {
-    if ( params.pico && params.pico_version == 1) {
-       pico_opts = "--trim_front1 3 --trim_front2 0 --trim_tail1 0 --trim_tail2 3"
-    } 
-    if ( params.pico && params.pico_version == 2) {
-       pico_opts = "--trim_front1 0 --trim_front2 3 --trim_tail1 3 --trim_tail2 0"
+    if (params.pico_v1) {
+       pico_opts = "--trim_front1 3 --trim_tail2 3"
+    }
+    if (params.pico_v2) {
+       pico_opts = "--trim_front2 3 --trim_tail1 3"
     }
 
     if (params.adapter == 'truseq'){
