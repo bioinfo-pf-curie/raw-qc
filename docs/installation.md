@@ -1,8 +1,5 @@
 # Installation
 
-This documentation has been modified from the nf-core guidelines
-(see https://nf-co.re/usage/installation for details).
-
 To start using this pipeline, follow the steps below:
 
 1. [Install Nextflow](#1-install-nextflow)
@@ -10,7 +7,6 @@ To start using this pipeline, follow the steps below:
 3. [Pipeline configuration](#3-pipeline-configuration)
     * [Software deps: Docker and Singularity](#31-software-deps-singularity)
     * [Software deps: Bioconda](#32-software-deps-conda)
-4. [Reference genomes](#4-reference-genomes)
 
 ## 1) Install NextFlow
 Nextflow runs on most POSIX systems (Linux, Mac OSX etc). It can be installed by running the following commands:
@@ -35,9 +31,9 @@ See [nextflow.io](https://www.nextflow.io/) for further instructions on how to i
 You just need to download/clone the source code and transfer the pipeline files manually:
 
 ```bash
-wget https://mypipeline/archive/master.zip
+wget https://gitlab.curie.fr/data-analysis/raw-qc/tree/nextflow/raw-qc-nextflow.zip
 mkdir -p ~/mypipelines
-unzip master.zip -d ~/mypipelines/
+unzip raw-qc-nextflow.zip -d ~/mypipelines/
 cd ~/mypipelines
 nextflow run ~/mypipelines/mypipeline-master
 ```
@@ -77,6 +73,3 @@ Otherwise, you can look at the [`utils/conda`](../utils/conda/README.md) folder 
 In this case, you will be able to run the pipeline with `-profile internal`.
 createdwill bethe environmentNote that in this case,
 
-## 4) Reference genomes
-
-See [`docs/reference_genomes.md`](reference_genomes.md)

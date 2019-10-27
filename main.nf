@@ -7,8 +7,6 @@ You can use, modify and/ or redistribute the software under the terms of license
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND. 
 Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. 
 The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
-
-This script is based on the nf-core guidelines. See https://nf-co.re/ for more information
 */
 
 
@@ -58,8 +56,8 @@ def helpMessage() {
       --skip_fastqc_raw             Skip FastQC on raw sequencing reads
       --skip_trimming               Skip trimming step
       --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+      --skip_multiqc                Skip MultiQC step   
       --outdir 'PATH'               The output directory where the results will be saved
-      --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
       --metadata 'FILE'             Add metadata file for multiQC report
 

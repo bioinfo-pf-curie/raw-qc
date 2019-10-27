@@ -15,8 +15,6 @@ It was designed to help sequencing facilities to validate the quality of the gen
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
 It comes with docker / singularity containers making installation trivial and results highly reproducible.
 
-The current workflow is based on the nf-core best practice. See the nf-core project from details on [guidelines](https://nf-co.re/).
-
 ### Short comparison of trimming tools
 
 By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, but other tools are also available.
@@ -74,7 +72,8 @@ Trimming options:
   --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
 Presets:
-  --pico                        Sets trimming settings for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+  --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+  --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
   --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
 
 Other options:
@@ -117,10 +116,9 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -p
 ### Documentation
 
 1. [Installation](docs/installation.md)
-2. [Reference genomes](docs/reference_genomes.md)
-3. [Running the pipeline](docs/usage.md)
-4. [Output and how to interpret the results](docs/output.md)
-5. [Troubleshooting](docs/troubleshooting.md)
+2. [Running the pipeline](docs/usage.md)
+3. [Output and how to interpret the results](docs/output.md)
+4. [Troubleshooting](docs/troubleshooting.md)
 
 
 ### Credits
