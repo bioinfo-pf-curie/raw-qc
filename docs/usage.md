@@ -2,42 +2,35 @@
 
 ## Table of contents
 
-* [Introduction](#general-nextflow-info)
+* [General Nextflow info](#general-nextflow-info)
 * [Running the pipeline](#running-the-pipeline)
 * [Main arguments](#main-arguments)
-    * [`-profile`](#-profile-single-dash)
-        * [`conda`](#conda)
-        * [`docker`](#docker)
-        * [`singularity`](#singularity)
-        * [`test`](#test)
-    * [`--reads`](#--reads)
-    * [`--singleEnd`](#--singleend)
-* [Trimming tool](#--trimtool)
-* [Adapter Trimming](#Adapter Trimming)
-    * [adapter](#--adapter)
-    * [qualtrim](#--qualtrim)
-    * [ntrim](#--ntrim)
-    * [two_colour](#--two_colour)
-    * [minlen](#--minlen)
-* [Library Prep Presets](#Library Prep Presets)
-    * [pico_v1](#--pico_v1)
-    * [pico_v2](#--pico_v2)
-    * [polyA](#--polyA)
+    * [`profile`](#profile)
+    * [`reads`](#reads)
+    * [`singleEnd`](#singleend)
+* [Trimming tool](#trimming-tool)
+* [Trimming options](#trimming-options)
+    * [adapter](#adapter)
+    * [qualtrim](#qualtrim)
+    * [ntrim](#ntrim)
+    * [two_colour](#two_colour)
+    * [minlen](#minlen)
+* [Library Prep Presets](#library-prep-presets)
+    * [pico_v1](#pico_v1)
+    * [pico_v2](#pico_v2)
+    * [polyA](#polya)
 * [Other command line parameters](#other-command-line-parameters)
-    * [`skip_fastqc_raw`](#--skip_fastqc_raw)
-    * [`skip_trimming`](#--skip_trimming)
-    * [`skip_fastqc_trim`](#--skip_fastqc_trim)
-    * [`skip_multiqc`](#--skip_multiqc)
-    * [`--outdir`](#--outdir)
-    * [`-name`](#-name-single-dash)
-    * [`-resume`](#-resume-single-dash)
-    * [`-c`](#-c-single-dash)
-    * [`--custom_config_version`](#--custom_config_version)
-    * [`--max_memory`](#--max_memory)
-    * [`--max_time`](#--max_time)
-    * [`--max_cpus`](#--max_cpus)
-    * [`--multiqc_config`](#--multiqc_config)
-
+    * [`skip_fastqc_raw`](#other-command-line-parameters)
+    * [`skip_trimming` ](#other-command-line-parameters)
+    * [`skip_fastqc_trim`](#other-command-line-parameters)
+    * [`skip_multiqc`](#other-command-line-parameters)
+    * [`outdir`](#outdir)
+    * [`name`](#name)
+    * [`resume`](#resume)
+    * [`c`](#c)
+    * [`max_memory`](#max_memory)
+    * [`max_time`](#max_time)
+    * [`max_cpus`](#max_cpus)
 
 ## General Nextflow info
 Nextflow handles job submissions on SLURM or other environments, and supervises running the jobs. Thus the Nextflow process must run until the pipeline is finished. We recommend that you put the process running in the background through `screen` / `tmux` or similar tool. Alternatively you can run nextflow within a cluster job submitted your job scheduler.
@@ -125,34 +118,34 @@ The benchmarking for these three tools is in the table below.
 | Speed                |  ++        | +++      | +        |
 
 ##Trimming options:
-## adapter
+## `--adapter`
 Adapter sequence to be trimmed for read1 (SE data). For PE data, this is used if R1/R2 are found not overlapped.
 By default pipeline try to auto-detect whether the Illumina universal, Nextera transposase or Illumina. If you prefer, you can fix the adapter sequnce for especific data in the config file and use this option.
 
-##qualtrim
+### `--qualtrim`
 Trim low-quality ends from reads in addition to adapter removal. Quality trimming will be performed first, and adapter trimming is carried in a second round. Other files are quality and adapter trimmed in a single pass. Default Phred score: 20.
 
-##ntrim
+### `--ntrim`
 Removes Ns from either side of the read. If one read's number of N base is >ntrim, then this read/pair is discarded. Default is 5 (int [=5]).
 
-##two_colour  
+### `--two_colour`  
 This enables the option '--nextseq-trim=3'CUTOFF' within Cutadapt, which will set a quality cutoff, but qualities of G bases are ignored.
 This pipeline is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases. This is mutually exlusive with 'qualtrim'.
 
-##minlen
+### `--minlen`
 Discard reads that became shorter than length INT because of either quality or adapter trimming. Default: 10 bp.
 
-##Presets:
-##pico_v1
+###  `Library Prep Presets`
+###  `--pico_v1`
 Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
 
-##pico_v2 
+### `--pico_v2` 
 Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
 
-##polyA
+### `--polyA`
 enable polyX trimming in 3' ends. When --polyA is selected, pipeline attempts to identify from the first supplied sample whether sequences contain more often a stretch of either 'AAAAAAAAAA' or 'TTTTTTTTTT'. This determines if Read 1 of a paired-end end file, or single-end files, are trimmed for PolyA or PolyT. In case of paired-end sequencing, Read2 is trimmed for the complementary base from the start of the reads.
 
-##Other options:
+## Other command line parameters
 The pipeline contains diffrent steps. Sometimes, it may not be desirable to run all of them if time and compute resources are limited.
 The following options make this easy:
 
@@ -170,20 +163,15 @@ Wherever process-specific requirements are set in the pipeline, the default valu
 
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
 
-## Other command line parameters
-
 ### `--outdir`
 The output directory where the results will be saved.
 
-### `-name`
+### `--name`
 Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
 This is used in the MultiQC report (if not default).
 
 **NB:** Single hyphen (core Nextflow option)
-
-##metadata
-Add metadata file for multiQC report
 
 ### `-resume`
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
