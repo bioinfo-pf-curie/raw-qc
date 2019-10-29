@@ -10,15 +10,15 @@
     * [`singleEnd`](#singleend)
 * [Trimming tool](#trimming-tool)
 * [Trimming options](#trimming-options)
-    * [adapter](#adapter)
-    * [qualtrim](#qualtrim)
-    * [ntrim](#ntrim)
-    * [two_colour](#two_colour)
-    * [minlen](#minlen)
+    * [`adapter`](#adapter)
+    * [`qualtrim`](#qualtrim)
+    * [`ntrim`](#ntrim)
+    * [`two_colour`](#two_colour)
+    * [`minlen`](#minlen)
 * [Library Prep Presets](#library-prep-presets)
-    * [pico_v1](#pico_v1)
-    * [pico_v2](#pico_v2)
-    * [polyA](#polya)
+    * [`pico_v1`](#pico_v1)
+    * [`pico_v2`](#pico_v2)
+    * [`polyA`](#polya)
 * [Other command line parameters](#other-command-line-parameters)
     * [`skip_fastqc_raw`](#other-command-line-parameters)
     * [`skip_trimming` ](#other-command-line-parameters)
@@ -60,22 +60,26 @@ results         # Finished results (configurable, see below)
 ## Main arguments
 
 ### `-profile`
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile singularity` - the order of arguments is important!
 
 If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
 * `conda`
     * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Pulls most software from [Bioconda](https://bioconda.github.io/)
-* `docker`
-    * A generic configuration profile to be used with [Docker](http://docker.com/)
-    * Pulls software from dockerhub: (http://hub.docker.com/r/nfcore/mypipeline/)
+	* Pulls most software from [Bioconda](https://bioconda.github.io/)
+* `condaPath`
+    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
+    * Use the conda images available on the cluster
 * `singularity`
     * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-    * Pulls software from singularity-hub
+    * Use the singularity images available on the cluster
+* `cluster`
+    * Run the workflow on the computational cluster
 * `test`
     * A profile with a complete configuration for automated testing
     * Includes links to test data so needs no other parameters
+	* Use the singularity images set up* Use the conda images available on
+
 
 ### `--reads`
 Use this to specify the location of your input FastQ files. For example:
@@ -103,7 +107,10 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 
 ## Trimming tool
 
-By default, the pipeline uses Trim Galore to automate quality and adapter trimming as well as quality control. If you prefer, you can use fastp or atropos as the trimming tool instead. 
+Must be one of the available tool: ['trimgalore', 'atropos', 'fastp'].
+
+By default, the pipeline uses `TrimGalore!` to automate quality and adapter trimming as well as quality control.
+If you prefer, you can use `fastp` or `atropos` as the trimming tool instead. 
 
 The benchmarking for these three tools is in the table below.
 
@@ -117,35 +124,53 @@ The benchmarking for these three tools is in the table below.
 | Poly N trimming      |  &#x2611;  |          | &#x2611; |
 | Speed                |  ++        | +++      | +        |
 
-##Trimming options:
-## `--adapter`
-Adapter sequence to be trimmed for read1 (SE data). For PE data, this is used if R1/R2 are found not overlapped.
-By default pipeline try to auto-detect whether the Illumina universal, Nextera transposase or Illumina. If you prefer, you can fix the adapter sequnce for especific data in the config file and use this option.
+Note that the current version does not implement the adapter detection using `Atropos` as we detected some unexpected results during our internal tests.
+
+## Trimming options:
+
+### `--adapter`
+
+Adapter sequence to be trimmed.
+
+   - [`auto`]: By default, the pipeline tries to auto-detect the adapter.
+   - [`truseq`, `nextera`, `smallrna`]: Otherwise, you can specified the name of the adapter to remove at the 3' end of the reads (Illumina universal, Nextera transposase or Illumina)
 
 ### `--qualtrim`
-Trim low-quality ends from reads in addition to adapter removal. Quality trimming will be performed first, and adapter trimming is carried in a second round. Other files are quality and adapter trimmed in a single pass. Default Phred score: 20.
+
+Trim low-quality bases at the end of the reads in addition to adapter removal.
+Quality trimming will be performed first, and adapter trimming is carried in a second round. 
+Other files are quality and adapter trimmed in a single pass.
+Default Phred score: 20.
 
 ### `--ntrim`
-Removes Ns from either side of the read. If one read's number of N base is >ntrim, then this read/pair is discarded. Default is 5 (int [=5]).
+
+Removes 'N's from either side of the read. If one read's number of N base is >ntrim, then this read/pair is discarded. Default is 5 (int [=5]).
 
 ### `--two_colour`  
-This enables the option '--nextseq-trim=3'CUTOFF' within Cutadapt, which will set a quality cutoff, but qualities of G bases are ignored.
-This pipeline is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases. This is mutually exlusive with 'qualtrim'.
+
+Set special options for two colours sequencers (NextSeq- and NovaSeq-platforms), where basecalls without any signal are called as high-quality G bases.
 
 ### `--minlen`
+
 Discard reads that became shorter than length INT because of either quality or adapter trimming. Default: 10 bp.
 
-###  `Library Prep Presets`
+##  `Library Prep Presets`
+
 ###  `--pico_v1`
+
 Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
 
 ### `--pico_v2` 
+
 Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
 
 ### `--polyA`
-enable polyX trimming in 3' ends. When --polyA is selected, pipeline attempts to identify from the first supplied sample whether sequences contain more often a stretch of either 'AAAAAAAAAA' or 'TTTTTTTTTT'. This determines if Read 1 of a paired-end end file, or single-end files, are trimmed for PolyA or PolyT. In case of paired-end sequencing, Read2 is trimmed for the complementary base from the start of the reads.
+
+Specific option for polyA-sequencing.
+After adapter trimming, the pipeline tries to detect and remove polyA tail at the 3' end of the reads that will failed to align on the reference genome (A{10}).
 
 ## Other command line parameters
+
 The pipeline contains diffrent steps. Sometimes, it may not be desirable to run all of them if time and compute resources are limited.
 The following options make this easy:
 
@@ -155,18 +180,23 @@ The following options make this easy:
 * `--skip_multiqc` -     Skip MultiQC step
 
 ## Job resources
+
 ### Automatic resubmission
+
 Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
 
 ### Custom resource requests
+
 Wherever process-specific requirements are set in the pipeline, the default value can be changed by creating a custom config file. See the files hosted at [`rawqc/configs`](https://github.com/git/raw-qc/conf) for examples.
 
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
 
 ### `--outdir`
+
 The output directory where the results will be saved.
 
 ### `--name`
+
 Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
 This is used in the MultiQC report (if not default).
@@ -174,6 +204,7 @@ This is used in the MultiQC report (if not default).
 **NB:** Single hyphen (core Nextflow option)
 
 ### `-resume`
+
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
 
 You can also supply a run name to resume a specific run: `-resume [run-name]`. Use the `nextflow log` command to show previous run names.
@@ -181,19 +212,23 @@ You can also supply a run name to resume a specific run: `-resume [run-name]`. U
 **NB:** Single hyphen (core Nextflow option)
 
 ### `-c`
+
 Specify the path to a specific config file (this is a core NextFlow command).
 
 Note - you can use this to override pipeline defaults.
 
 ### `--max_memory`
+
 Use to set a top-limit for the default memory requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
 ### `--max_time`
+
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
 ### `--max_cpus`
+
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
 

@@ -1,4 +1,4 @@
-# curie/rawqc: Output
+# rawqc: Output
 
 This document describes the output produced by the pipeline. All the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
