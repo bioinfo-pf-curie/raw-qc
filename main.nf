@@ -42,23 +42,23 @@ def helpMessage() {
 
     Options:
       --singleEnd                   Specifies that the input is single end reads
-      --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'.
+      --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
 
     Trimming options:
       --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
       --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
-      --ntrim                       Trim 'N' bases from either side of the reads.
-      --two_colour                  Trimming for NextSeq/NovaSeq sequencers.
+      --ntrim                       Trim 'N' bases from either side of the reads
+      --two_colour                  Trimming for NextSeq/NovaSeq sequencers
       --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
     Presets:
-      --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
-      --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
+      --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+      --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
       --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
     Other options:
       --outdir 'PATH'               The output directory where the results will be saved
-      -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+      -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
       --metadata 'FILE'             Add metadata file for multiQC report
 
     Skip options:
