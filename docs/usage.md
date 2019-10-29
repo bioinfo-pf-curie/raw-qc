@@ -10,15 +10,15 @@
     * [`singleEnd`](#singleend)
 * [Trimming tool](#trimming-tool)
 * [Trimming options](#trimming-options)
-    * [adapter](#adapter)
-    * [qualtrim](#qualtrim)
-    * [ntrim](#ntrim)
-    * [two_colour](#two_colour)
-    * [minlen](#minlen)
+    * [`adapter`](#adapter)
+    * [`qualtrim`](#qualtrim)
+    * [`ntrim`](#ntrim)
+    * [`two_colour`](#two_colour)
+    * [`minlen`](#minlen)
 * [Library Prep Presets](#library-prep-presets)
-    * [pico_v1](#pico_v1)
-    * [pico_v2](#pico_v2)
-    * [polyA](#polya)
+    * [`pico_v1`](#pico_v1)
+    * [`pico_v2`](#pico_v2)
+    * [`polyA`](#polya)
 * [Other command line parameters](#other-command-line-parameters)
     * [`skip_fastqc_raw`](#other-command-line-parameters)
     * [`skip_trimming` ](#other-command-line-parameters)
@@ -60,22 +60,26 @@ results         # Finished results (configurable, see below)
 ## Main arguments
 
 ### `-profile`
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile singularity` - the order of arguments is important!
 
 If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
 * `conda`
     * A generic configuration profile to be used with [conda](https://conda.io/docs/)
-    * Pulls most software from [Bioconda](https://bioconda.github.io/)
-* `docker`
-    * A generic configuration profile to be used with [Docker](http://docker.com/)
-    * Pulls software from dockerhub: (http://hub.docker.com/r/nfcore/mypipeline/)
+	* Pulls most software from [Bioconda](https://bioconda.github.io/)
+* `condaPath`
+    * A generic configuration profile to be used with [conda](https://conda.io/docs/)
+    * Use the conda images available on the cluster
 * `singularity`
     * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-    * Pulls software from singularity-hub
+    * Use the singularity images available on the cluster
+* `cluster`
+    * Run the workflow on the computational cluster
 * `test`
     * A profile with a complete configuration for automated testing
     * Includes links to test data so needs no other parameters
+	* Use the singularity images set up* Use the conda images available on
+
 
 ### `--reads`
 Use this to specify the location of your input FastQ files. For example:

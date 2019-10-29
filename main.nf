@@ -22,14 +22,18 @@ The fact that you are presently reading this means that you have had knowledge o
 
 
 def helpMessage() {
+    if ("${workflow.manifest.version}" =~ /dev/ ){
+       dev_mess = file("$baseDir/assets/dev_message.txt")
+       log.info dev_mess.text
+    }
+
     log.info"""
     raw-qc v${workflow.manifest.version}
-    =======================================================
+    ==========================================================
 
     Usage:
     nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
     nextflow run main.nf --samplePlan sample_plan -profile conda
-
 
     Mandatory arguments:
       --reads 'READS'               Path to input data (must be surrounded with quotes)
@@ -53,13 +57,24 @@ def helpMessage() {
       --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
     Other options:
-      --skip_fastqc_raw             Skip FastQC on raw sequencing reads
-      --skip_trimming               Skip trimming step
-      --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
-      --skip_multiqc                Skip MultiQC step   
       --outdir 'PATH'               The output directory where the results will be saved
       -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
       --metadata 'FILE'             Add metadata file for multiQC report
+
+    Skip options:
+      --skip_fastqc_raw             Skip FastQC on raw sequencing reads
+      --skip_trimming               Skip trimming step
+      --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+      --skip_multiqc                Skip MultiQC step
+
+    =======================================================
+    Available Profiles
+
+      -profile test                Set up the test dataset
+      -profile conda               Build a new conda environment before running the pipeline
+      -profile condaPath      	      Use a pre-build conda environment already installed on our cluster
+      -profile singularity         Use the Singularity images for each process
+      -profile cluster             Run the workflow on the cluster, instead of locally
 
     """.stripIndent()
 }
@@ -215,6 +230,11 @@ if ( params.metadata ){
 
 
 // Header log info
+if ("${workflow.manifest.version}" =~ /dev/ ){
+   dev_mess = file("$baseDir/assets/dev_message.txt")
+   log.info dev_mess.text
+}
+
 log.info """=======================================================
 
 raw-qc v${workflow.manifest.version}"
@@ -250,13 +270,11 @@ summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time
 summary['Container Engine'] = workflow.containerEngine
-if(workflow.containerEngine) summary['Container'] = workflow.container
 summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
 summary['Output dir']     = params.outdir
-summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
 
 if(params.email) summary['E-mail Address'] = params.email
@@ -285,7 +303,6 @@ workflow.onComplete {
 
 process fastqc {
     tag "$name (raw)"
-    //conda 'fastqc=0.11.8'
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -311,8 +328,6 @@ process fastqc {
 
 process trimGalore {
   tag "$name" 
-
-  //conda 'trim-galore=0.6.2'
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   when:
@@ -407,9 +422,6 @@ process trimGalore {
 
 
 process atroposTrim {
-  tag "$name"
-
-  //conda 'atropos=1.1.16'
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   
@@ -473,8 +485,6 @@ process atroposTrim {
 }
 
 process fastp {
-  tag "$name"
- 
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
@@ -558,10 +568,7 @@ if(params.trimtool == "atropos"){
   trim_reports = report_results_fastp
 }
 
-
 process trimReport {
-
-  //conda 'python=3.6'
   publishDir "${params.outdir}/trimReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
@@ -581,17 +588,17 @@ process trimReport {
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
        """
-       Trimming_Report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+       trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
   } else {
 
     if(params.trimtool == "trimgalore"){
        """
-       Trimming_Report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
     } else {
        """
-       Trimming_Report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       trimming_report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
     }
   }
@@ -610,8 +617,6 @@ if(params.trimtool == "atropos"){
  
 process fastqcTrimmed {
   tag "$name (trimmed reads)"
-  //conda 'fastqc=0.11.8'
-
   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -629,6 +634,49 @@ process fastqcTrimmed {
   fastqc -q $reads -t ${task.cpus}
   """
 }
+
+/*
+ * MultiQC
+ */
+
+process multiqc {
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+  input:
+  file splan from ch_splan.collect()
+  file metadata from ch_metadata.ifEmpty([])
+  file multiqc_config from ch_multiqc_config
+  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
+  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
+  file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
+  file ('trimReport/*') from trim_report.collect().ifEmpty([])
+  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('software_versions/*') from software_versions_yaml.collect()
+  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  
+  output:
+  file splan
+  file "*_report.html" into multiqc_report
+  file "*_data"
+
+  script:
+  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
+  isPE = params.singleEnd ? 0 : 1
+  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+
+  """
+  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
+  """
+}
+
+/*
+ * Sub-routine
+ */
 
 process get_software_versions {
   output:
@@ -667,48 +715,4 @@ process workflow_summary_mqc {
 ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
       </dl>
   """.stripIndent()
-}
-
-
-process multiqc {
-  publishDir "${params.outdir}/MultiQC", mode: 'copy'
-  //conda 'multiqc'
-
-  input:
-  file splan from ch_splan.collect()
-  file metadata from ch_metadata.ifEmpty([])
-  file multiqc_config from ch_multiqc_config
-  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
-  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
-  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
-  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
-  file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
-  file ('trimReport/*') from trim_report.collect().ifEmpty([])
-  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
-  file ('software_versions/*') from software_versions_yaml.collect()
-  file ('workflow_summary/*') from workflow_summary_yaml.collect()
-  
-  output:
-  file splan
-  file "*_report.html" into multiqc_report
-  file "*_data"
-
-  custom_runName=custom_runName ?: workflow.runName
-  script:
-  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
-  isPE = params.singleEnd ? 0 : 1
-
-  if ( params.metadata ){
-  """
-  metadata2multiqc.py $metadata > multiqc-config-metadata.yaml
-  stats2multiqc.sh ${isPE}
-  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -c multiqc-config-metadata.yaml
-  """
-  }else{
-  """
-  stats2multiqc.sh ${isPE}
-  multiqc . -f $rtitle $rfilename --config $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp
-  """
-  } 
 }
