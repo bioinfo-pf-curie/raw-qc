@@ -38,7 +38,7 @@ def helpMessage() {
     Mandatory arguments:
       --reads 'READS'               Path to input data (must be surrounded with quotes)
       --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
-      -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+      -profile PROFILE              Configuration profile to use. test / conda / singularity / cluster (see below)
 
     Options:
       --singleEnd                   Specifies that the input is single end reads

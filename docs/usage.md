@@ -107,6 +107,8 @@ It is not possible to run a mixture of single-end and paired-end files in one ru
 
 ## Trimming tool
 
+Must be one of the available tool: ['trimgalore', 'atropos', 'fastp'].
+
 By default, the pipeline uses `TrimGalore!` to automate quality and adapter trimming as well as quality control.
 If you prefer, you can use `fastp` or `atropos` as the trimming tool instead. 
 
