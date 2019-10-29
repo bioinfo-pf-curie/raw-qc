@@ -427,7 +427,7 @@ process atroposTrim {
 
    script:
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-   ntrim = params.ntrim ? "--trim_n" : ""
+   ntrim = params.ntrim ? "--trim-n" : ""
    nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
    polyA_opts = params.polyA ? "-a A{10}" : ""
 
