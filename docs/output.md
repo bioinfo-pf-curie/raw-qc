@@ -1,8 +1,9 @@
-# rawqc: Output
+# Output
 
-This document describes the output produced by the pipeline. All the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
+This document describes the outputs produced by the pipeline. All the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
 ## Pipeline overview
+
 The pipeline is built using [Nextflow](https://www.nextflow.io/)
 and processes data using the following steps:
 
@@ -10,24 +11,23 @@ and processes data using the following steps:
 * [FastQC](#fastqc) - read quality control
 * [MultiQC](#multiqc) - aggregate report, describing results of the whole pipeline
 
-
-
 ## Trimming
 
-The goal of curie/rawqc pipeline is removal of adapter contamination and trimming of low quality regions. In this way, we applied three following trimming tools which use Cutadapt for adapter trimming.
+The goal of curie/rawqc pipeline is to assess the overall quality of the sequencing data, to remove remaining part of adapters at the 3' end of the reads and to trim low quality regions.
+It curently supports three trimming tools which are mainly based on the Cutadapt software for adapter trimming.
 
 **Output directory for trim_galore: `results/trimming`**
 
-  * outputs for [Trim_galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
+  * outputs for [TrimGalore!](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
     
-     * NB: Only if `--trimtool` has been set as `Trim_galore`.
+     * NB: Only if `--trimtool` has been set as `trimgalore`.
         
      * `sample_R1_trimmed.fastq.gz`, `sample_R2_trimmed.fastq.gz`
         * Trimmed FastQ data, reads 1 and 2.
      *  `sample_R1.fastq.gz_trimming_report.txt`, `sample_R2.fastq.gz_trimming_report.txt`
         * Trimming report
         
-  * outpts for [Fastp](https://github.com/OpenGene/fastp)
+  * outputs for [Fastp](https://github.com/OpenGene/fastp)
   
      * NB: Only if `--trimtool` has been set as `fastp`.
         
@@ -36,9 +36,8 @@ The goal of curie/rawqc pipeline is removal of adapter contamination and trimmin
      *  `sample.fastp.json`
         * Trimming report
      *  `logs/sample_fasp.log`
-        * Trimming report (describes which parameters that were used)
+        * Trimming report (describes which parameters have been used)
         
-  
  * outputs for [Atropos](https://github.com/jdidion/atropos)
 
      * NB: Only if `--trimtool` has been set as `atropos`.
@@ -51,7 +50,10 @@ The goal of curie/rawqc pipeline is removal of adapter contamination and trimmin
 > **NB:** Single-end data will have slightly different file names.
 
 ## FastQC
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
+
+[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads.
+It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C).
+You get information about adapter contamination and other overrepresented sequences.
 
 For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
 
@@ -72,6 +74,7 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
      * zip file containing the FastQC report, tab-delimited data file and plot images
 
 ## MultiQC
+
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
 
 The pipeline has special steps which allow the software versions used to be reported in the MultiQC output for future traceability.
