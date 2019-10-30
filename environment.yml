@@ -1,0 +1,13 @@
+name: curie-rawqc-1.0-dev
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - which
+  - fastqc=0.11.8
+  - trim-galore=0.6.2
+  - atropos=1.1.16
+  - fastp=0.20.0
+  - multiqc=1.7
+  - conda-forge::r-markdown=0.8
