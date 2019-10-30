@@ -54,55 +54,65 @@ Usage:
 nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
 nextflow run main.nf --samplePlan sample_plan -profile conda
 
-
 Mandatory arguments:
   --reads 'READS'               Path to input data (must be surrounded with quotes)
   --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
-  -profile PROFILE              Configuration profile to use. test / curie / conda / docker / singularity / cluster (see below)
+  -profile PROFILE              Configuration profile to use. test / conda / singularity / cluster (see below)
 
 Options:
   --singleEnd                   Specifies that the input is single end reads
-  --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'.
+  --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
 
 Trimming options:
   --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
   --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
-  --ntrim                       Trim 'N' bases from either side of the reads.
-  --two_colour                  Trimming for NextSeq/NovaSeq sequencers.
+  --ntrim                       Trim 'N' bases from either side of the reads
+  --two_colour                  Trimming for NextSeq/NovaSeq sequencers
   --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
 Presets:
-  --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
-  --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp.
-  --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
+  --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+  --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+  --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
 Other options:
+  --outdir 'PATH'               The output directory where the results will be saved
+  -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+  --metadata 'FILE'             Add metadata file for multiQC report
+
+Skip options:
   --skip_fastqc_raw             Skip FastQC on raw sequencing reads
   --skip_trimming               Skip trimming step
   --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
-  --outdir 'PATH'               The output directory where the results will be saved
-  --email 'MAIL'                Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-  -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
-  --metadata 'FILE'             Add metadata file for multiQC report
-									  
+  --skip_multiqc                Skip MultiQC step
+
+=======================================================
+Available Profiles
+
+  -profile test                Set up the test dataset
+  -profile conda               Build a new conda environment before running the pipeline
+  -profile condaPath      	         Use a pre-build conda environment already installed on our cluster
+  -profile singularity         Use the Singularity images for each process
+  -profile cluster             Run the workflow on the cluster, instead of locally
+
 ```
 
 ### Quick run
 
 The pipeline can be run on any infrastructure from a list of input files or from a sample plan as follow
 
-#### Run the pipeline on a test dataset
+#### Run the pipeline on the test dataset
 See the conf/test.conf to set your test dataset.
 
 ```
-nextflow run main.nf -profile test
+nextflow run main.nf -profile conda,test
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR -profile conda
 
 ```
 
