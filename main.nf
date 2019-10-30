@@ -72,7 +72,7 @@ def helpMessage() {
 
       -profile test                Set up the test dataset
       -profile conda               Build a new conda environment before running the pipeline
-      -profile condaPath      	      Use a pre-build conda environment already installed on our cluster
+      -profile condaPath           Use a pre-build conda environment already installed on our cluster
       -profile singularity         Use the Singularity images for each process
       -profile cluster             Run the workflow on the cluster, instead of locally
 
