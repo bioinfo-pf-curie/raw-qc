@@ -639,46 +639,7 @@ process fastqcTrimmed {
  * MultiQC
  */
 
-process multiqc {
-  publishDir "${params.outdir}/MultiQC", mode: 'copy'
-
-  input:
-  file splan from ch_splan.collect()
-  file metadata from ch_metadata.ifEmpty([])
-  file multiqc_config from ch_multiqc_config
-  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
-  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
-  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
-  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
-  file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
-  file ('trimReport/*') from trim_report.collect().ifEmpty([])
-  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
-  file ('software_versions/*') from software_versions_yaml.collect()
-  file ('workflow_summary/*') from workflow_summary_yaml.collect()
-  
-  output:
-  file splan
-  file "*_report.html" into multiqc_report
-  file "*_data"
-
-  script:
-  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
-  isPE = params.singleEnd ? 0 : 1
-  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
-
-  """
-  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
-  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
-  """
-}
-
-/*
- * Sub-routine
- */
-
-process get_software_versions {
+ process get_software_versions {
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
 
@@ -715,4 +676,39 @@ process workflow_summary_mqc {
 ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
       </dl>
   """.stripIndent()
+}
+
+process multiqc {
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+  input:
+  file splan from ch_splan.collect()
+  file metadata from ch_metadata.ifEmpty([])
+  file multiqc_config from ch_multiqc_config
+  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
+  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
+  file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
+  file ('trimReport/*') from trim_report.collect().ifEmpty([])
+  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('software_versions/*') from software_versions_yaml.collect()
+  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  
+  output:
+  file splan
+  file "*_report.html" into multiqc_report
+  file "*_data"
+
+  script:
+  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
+  isPE = params.singleEnd ? 0 : 1
+  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+
+  """
+  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
+  """
 }
