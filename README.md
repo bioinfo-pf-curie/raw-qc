@@ -3,7 +3,7 @@
 **Institut Curie - Nextflow raw-qc analysis pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
-[![MultiQC](https://img.shields.io/badge/MultiQC-1.6-blue.svg)](https://multiqc.info/)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.7-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 
@@ -73,7 +73,7 @@ Trimming options:
 Presets:
   --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
   --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
-  --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
+  --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
 
 Other options:
   --outdir 'PATH'               The output directory where the results will be saved
@@ -89,11 +89,11 @@ Skip options:
 =======================================================
 Available Profiles
 
-  -profile test                Set up the test dataset
-  -profile conda               Build a new conda environment before running the pipeline
-  -profile condaPath           Use a pre-build conda environment already installed on our cluster
-  -profile singularity         Use the Singularity images for each process
-  -profile cluster             Run the workflow on the cluster, instead of locally
+  -profile test                 Set up the test dataset
+  -profile conda                Build a new conda environment before running the pipeline
+  -profile toolsPath            Use the paths defined in configuration for each tool
+  -profile singularity          Use the Singularity images for each process
+  -profile cluster              Run the workflow on the cluster, instead of locally
 
 ```
 

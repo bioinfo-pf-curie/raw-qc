@@ -7,7 +7,7 @@
 
 params {
   // Set path to images
-  containerPath = "/bioinfo/local/curie/ngs-data-analysis/centos/tools/containers/singularity/rawqc-2.0/images"
+  containerPath = "/bioinfo/local/curie/ngs-data-analysis/centos/tools/containers/singularity/raw-qc/images"
 
   // Options: Tool versions  
   fastqc_version = '0.11.8'
@@ -42,10 +42,7 @@ process {
   withName:get_software_versions {
     container = "${params.containerPath}/rawqc-${params.rawqc_version}.simg"
   }
-  withName:makeReport {
-    container = "${params.containerPath}/rawqc-${params.rawqc_version}.simg"
-  }
-  withName:makeReport4RawData {
+  withName:trimReport {
     container = "${params.containerPath}/rawqc-${params.rawqc_version}.simg"
   }
   withName:output_documentation {
