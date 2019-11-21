@@ -89,11 +89,11 @@ Skip options:
 =======================================================
 Available Profiles
 
-  -profile test                Set up the test dataset
-  -profile conda               Build a new conda environment before running the pipeline
-  -profile condaPath           Use a pre-build conda environment already installed on our cluster
-  -profile singularity         Use the Singularity images for each process
-  -profile cluster             Run the workflow on the cluster, instead of locally
+  -profile test                 Set up the test dataset
+  -profile conda                Build a new conda environment before running the pipeline
+  -profile toolsPath            Use the paths defined in configuration for each tool
+  -profile singularity          Use the Singularity images for each process
+  -profile cluster              Run the workflow on the cluster, instead of locally
 
 ```
 

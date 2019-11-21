@@ -72,7 +72,7 @@ def helpMessage() {
 
       -profile test                Set up the test dataset
       -profile conda               Build a new conda environment before running the pipeline
-      -profile condaPath           Use a pre-build conda environment already installed on our cluster
+      -profile toolsPath           Use the paths defined in configuration for each tool
       -profile singularity         Use the Singularity images for each process
       -profile cluster             Run the workflow on the cluster, instead of locally
 
@@ -148,13 +148,13 @@ if(params.samplePlan){
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[1], [file(row[2])]] }
+         .map{ row -> [ row[0], [file(row[2])]] }
          .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
+         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
          .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
    }
    params.reads=false
@@ -281,20 +281,6 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/* Creates a file at the end of workflow execution */
-workflow.onComplete {
-  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
-  Map endSummary = [:]
-  endSummary['Completed on'] = workflow.complete
-  endSummary['Duration']     = workflow.duration
-  endSummary['Success']      = workflow.success
-  endSummary['exit status']  = workflow.exitStatus
-  endSummary['Error report'] = workflow.errorReport ?: '-'
-  String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
-  println endWfSummary
-  String execInfo = "Summary\n${endWfSummary}\n"
-  woc.write(execInfo)
-}
 
 /*
  * STEP 1 - FastQC
@@ -703,12 +689,118 @@ process multiqc {
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
+  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+  splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
 
   """
-  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  mqc_header.py --name "Raw-qc" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """
+}
+
+
+/*
+ * Sub-routine
+ */
+process output_documentation {
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+
+    input:
+    file output_docs from ch_output_docs
+
+    output:
+    file "results_description.html"
+
+    script:
+    """
+    markdown_to_html.r $output_docs results_description.html
+    """
+}
+
+
+workflow.onComplete {
+
+    /*pipeline_report.html*/
+
+    def report_fields = [:]
+    report_fields['version'] = workflow.manifest.version
+    report_fields['runName'] = custom_runName ?: workflow.runName
+    report_fields['success'] = workflow.success
+    report_fields['dateComplete'] = workflow.complete
+    report_fields['duration'] = workflow.duration
+    report_fields['exitStatus'] = workflow.exitStatus
+    report_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
+    report_fields['errorReport'] = (workflow.errorReport ?: 'None')
+    report_fields['commandLine'] = workflow.commandLine
+    report_fields['projectDir'] = workflow.projectDir
+    report_fields['summary'] = summary
+    report_fields['summary']['Date Started'] = workflow.start
+    report_fields['summary']['Date Completed'] = workflow.complete
+    report_fields['summary']['Pipeline script file path'] = workflow.scriptFile
+    report_fields['summary']['Pipeline script hash ID'] = workflow.scriptId
+    if(workflow.repository) report_fields['summary']['Pipeline repository Git URL'] = workflow.repository
+    if(workflow.commitId) report_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
+    if(workflow.revision) report_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
+
+    report_fields['skipped_poor_alignment'] = skipped_poor_alignment
+
+    // Render the TXT template
+    def engine = new groovy.text.GStringTemplateEngine()
+    def tf = new File("$baseDir/assets/oncomplete_template.txt")
+    def txt_template = engine.createTemplate(tf).make(report_fields)
+    def report_txt = txt_template.toString()
+
+    // Render the HTML template
+    def hf = new File("$baseDir/assets/oncomplete_template.html")
+    def html_template = engine.createTemplate(hf).make(report_fields)
+    def report_html = html_template.toString()
+
+    // Write summary e-mail HTML to a file
+    def output_d = new File( "${params.outdir}/pipeline_info/" )
+    if( !output_d.exists() ) {
+      output_d.mkdirs()
+    }
+    def output_hf = new File( output_d, "pipeline_report.html" )
+    output_hf.withWriter { w -> w << report_html }
+    def output_tf = new File( output_d, "pipeline_report.txt" )
+    output_tf.withWriter { w -> w << report_txt }
+
+    /*oncomplete file*/
+
+    File woc = new File("${params.outdir}/workflow.oncomplete.txt")
+    Map endSummary = [:]
+    endSummary['Completed on'] = workflow.complete
+    endSummary['Duration']     = workflow.duration
+    endSummary['Success']      = workflow.success
+    endSummary['exit status']  = workflow.exitStatus
+    endSummary['Error report'] = workflow.errorReport ?: '-'
+    String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
+    println endWfSummary
+    String execInfo = "${fullSum}\nExecution summary\n${logSep}\n${endWfSummary}\n${logSep}\n"
+    woc.write(execInfo)
+
+    /*final logs*/
+
+    if(skipped_poor_alignment.size() > 0){
+        log.info "[rawqc] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
+    }
+
+    if(workflow.success){
+        log.info "[rawqc] Pipeline Complete"
+    }else{
+        log.info "[rawqc] FAILED: $workflow.runName"
+        if( workflow.profile == 'test'){
+            log.error "====================================================\n" +
+                    "  WARNING! You are running with the profile 'test' only\n" +
+                    "  pipeline config profile, which runs on the head node\n" +
+                    "  and assumes all software is on the PATH.\n" +
+                    "  This is probably why everything broke.\n" +
+                    "  Please use `-profile test,conda` or `-profile test,singularity` to run on local.\n" +
+                    "  Please use `-profile test,conda,cluster` or `-profile test,singularity,cluster` to run on your cluster.\n" +
+                    "============================================================"
+        }
+    }
 }
