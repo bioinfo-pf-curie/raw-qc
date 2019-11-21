@@ -602,7 +602,6 @@ if(params.trimtool == "atropos"){
 }
  
 process fastqcTrimmed {
-  tag "$name (trimmed reads)"
   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -696,7 +695,7 @@ process multiqc {
 
   """
   mqc_header.py --name "Raw-qc" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
-  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+  stats2multiqc.sh ${isPE}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """
 }
@@ -783,11 +782,6 @@ workflow.onComplete {
     woc.write(execInfo)
 
     /*final logs*/
-
-    if(skipped_poor_alignment.size() > 0){
-        log.info "[rawqc] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
-    }
-
     if(workflow.success){
         log.info "[rawqc] Pipeline Complete"
     }else{

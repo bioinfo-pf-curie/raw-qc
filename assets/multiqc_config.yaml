@@ -21,9 +21,9 @@ custom_data:
             id: 'stats_SE'
             title: 'Basic Metrics'
             save_file: true
+            col1_header: 'Sample ID'
          headers:
             col1:
-              title: 'Sample ID'
               scale: false
               format: '{:.0f}'
               placement: 2000
@@ -85,16 +85,17 @@ custom_data:
               format: '{:,.1f}'
               placement: 11000
     basic_metrics_PE:
-           file_format: 'tsv'
-           section_name: 'General Metrics'
-           description: 'Calculated basic metric for the raw-qc pipeline'
-           plot_type: 'table'
-           pconfig:
+         file_format: 'tsv'
+         section_name: 'General Metrics'
+         description: 'Calculated basic metric for the raw-qc pipeline'
+         plot_type: 'table'
+         pconfig:
               id: 'stats_PE'
               title: 'Basic Metrics'
               save_file: true
-           headers:
-              title: 'Sample ID'
+              col1_header: 'Sample ID'
+         headers:
+            col1:
               scale: false
               format: '{:.0f}'
               placement: 2000
@@ -165,16 +166,28 @@ custom_data:
               placement: 12000
 
     adapter_seq:
-           file_format: 'tsv'
-           section_name: 'Trimming'
-           description: 'Detected adapter from a trimming report.'
-           plot_type: 'table'
-           pconfig:
-              id: 'adapter'
-              title: 'Adapter Seq'
-              colour: 'blue'
-              save_file: true
+         file_format: 'tsv'
+         section_name: 'Trimming'
+         description: 'Detected adapter from a trimming report.'
+         plot_type: 'table'
+         pconfig:
+            id: 'adapter'
+            title: 'Adapter Seq'
+            colour: 'blue'
+            save_file: true
+            scale: false
+            col1_header: 'Sample ID'
+         headers:
+            sample_name:
               scale: false
+              format: '{:.0f}'
+              placement: 1000
+            Adapter_sequence_read_1_regular_3':
+              title: "Detected Adapter"
+              scale: false
+              format: '{:.0f}'
+              placement: 1000
+
 
 sp:
     basic_metrics_SE:
@@ -221,7 +234,7 @@ module_order:
         path_filters:
             - '*_fastqc.zip'
         path_filters_exclude:
-	    - '*_trimmed_fastqc.zip'
+            - '*_trimmed_fastqc.zip'
     - cutadapt:
         name: 'Trimming metrics (TrimGalore!)'
     - fastp:
