@@ -112,9 +112,11 @@ if (params.adapter == 'smallrna' && !params.singleEnd){
     exit 1, "smallRNA requires singleEnd data."
 }
 
+/*
 if (params.ntrim && params.trimtool == 'fastp') {
   log.warn "[raw-qc] The 'ntrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
 }
+*/
 
 if (params.pico_v1 && params.pico_v2){
     exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2"
@@ -149,13 +151,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
    }
    params.reads=false
 }
@@ -165,20 +167,20 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line\
 ." }
-        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
 }
 
 /*
@@ -557,6 +559,7 @@ process fastp {
   }
 }
 
+
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos
   trim_reports = report_results_atropos
@@ -568,8 +571,8 @@ if(params.trimtool == "atropos"){
   trim_reports = report_results_fastp
 }
 
-process trimReport {
-  publishDir "${params.outdir}/trimReport", mode: 'copy',
+process makeReport {
+  publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
   when:
@@ -604,6 +607,34 @@ process trimReport {
   }
 }
 
+
+process makeReport4RawData {
+  publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  params.skip_trimming
+
+  input:
+  set val(name), file(reads) from read_files_rawdatareport
+
+  output:
+  file "*_Basic_Metrics_rawdata.txt" into rawdata_report
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+          """
+          rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+          """
+  } else {
+
+          """
+          rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+          """
+          }
+}
+
 /*
  * STEP 3 - FastQC after Trim!
 */
@@ -635,9 +666,6 @@ process fastqcTrimmed {
   """
 }
 
-/*
- * MultiQC
- */
 
  process get_software_versions {
   output:
@@ -678,6 +706,11 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
+/*
+ * * STEP 4 - MultiQC
+ */
+
+
 process multiqc {
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
@@ -690,8 +723,9 @@ process multiqc {
   file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
-  file ('trimReport/*') from trim_report.collect().ifEmpty([])
-  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('makeReport/*') from trim_report.collect().ifEmpty([])
+  file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
   file ('workflow_summary/*') from workflow_summary_yaml.collect()
   
@@ -704,11 +738,12 @@ process multiqc {
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
   isPE = params.singleEnd ? 0 : 1
+  isSkipTrim = params.skip_trimming ? 0 : 1
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
 
   """
-  mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
-  stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """
 }
