@@ -72,7 +72,7 @@ custom_data:
               title: 'Trimmed Reads Percent'
               min: 0
               max: 100
-              scale: 'RdYlGn'
+              scale: 'YlGnBu'
               suffix: '%'
               format: '{:,.1f}'
               placement: 10000
@@ -80,7 +80,7 @@ custom_data:
               title: 'Discarded Reads Percent'
               min: 0
               max: 100
-              scale: 'RdYlGn'
+              scale: 'RdYlGn-rev'
               suffix: '%'
               format: '{:,.1f}'
               placement: 11000
@@ -152,7 +152,7 @@ custom_data:
               title: 'Trimmed Reads Percent'
               min: 0
               max: 100
-              scale: 'RdYlGn'
+              scale: 'YlGnBu'
               suffix: '%'
               format: '{:,.1f}'
               placement: 11000
@@ -160,7 +160,7 @@ custom_data:
               title: 'Discarded Reads Percent'
               min: 0
               max: 100
-              scale: 'RdYlGn'
+              scale: 'RdYlGn-rev'
               suffix: '%'
               format: '{:,.1f}'
               placement: 12000
