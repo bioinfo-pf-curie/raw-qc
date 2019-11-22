@@ -690,6 +690,8 @@ process workflow_summary_mqc {
 
   output:
   file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
+  
+  executor = 'local'
 
   exec:
   def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
