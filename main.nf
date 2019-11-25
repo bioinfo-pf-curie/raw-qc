@@ -283,6 +283,23 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
+def create_workflow_summary(summary) {
+    def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
+    yaml_file.text  = """
+    id: 'summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'Workflow Summary'
+    section_href: 'https://gitlab.curie.fr/rawqc'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+      </dl>
+  """.stripIndent()
+
+   return yaml_file
+}
+
 /* Creates a file at the end of workflow execution */
 workflow.onComplete {
   File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
@@ -684,30 +701,6 @@ process fastqcTrimmed {
   """
 }
 
-process workflow_summary_mqc {
-  when:
-  !params.skip_multiqc
-
-  output:
-  file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
-  
-  executor = 'local'
-
-  exec:
-  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-  yaml_file.text  = """
-  id: 'summary'
-  description: " - this information is collected when the pipeline is started."
-  section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/rawqc'
-  plot_type: 'html'
-  data: |
-      <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-      </dl>
-  """.stripIndent()
-}
-
 /*
  * * STEP 4 - MultiQC
  */
@@ -729,7 +722,7 @@ process multiqc {
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
   file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
-  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  file workflow_summary from create_workflow_summary(summary)
   
   output:
   file splan
