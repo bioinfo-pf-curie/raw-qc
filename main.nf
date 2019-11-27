@@ -687,7 +687,7 @@ process multiqc {
 
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName + "_multiqc_report" : ''
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
   splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1

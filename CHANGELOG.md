@@ -15,8 +15,5 @@ NEW FEATURES
 
   o Add support for Atropos, TrimGalore!, and fastp trimmers
 
-SIGNIFICANT USER-VISIBLE CHANGES
-
-BUG_FIXES
 
 
