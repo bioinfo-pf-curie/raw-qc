@@ -255,21 +255,38 @@ table_columns_placement:
         Discarded_reads: 1045
 
 table_cond_formatting_rules:
-    Mean_length:
+    Q20_R1:
         pass:
             - gt: 95
         warn:
             - lt: 95
         fail:
-            - lt: 80
-    basic_metrics_SE-Trimmed_Mean_length:
+            - lt: 90
+    basic_metric_PE-Q20_R2:
+        pass:
+            - gt: 95
+        warn:
+            - lt: 95
+        fail:
+            - lt: 90
+
+    basic_metric_PE_rawdata-Q20_R2:
+        pass:
+            - gt: 95
+	    warn:
+            - lt: 95
+        fail:
+            - lt: 90
+
+    basic_metric_SE-Trimmed_Mean_length:
         pass:
             - gt: 50
         warn:
             - lt: 50
         fail:
             - lt: 30
-    basic_metrics_PE-Trimmed_Mean_length:
+
+    basic_metric_PE-Trimmed_Mean_length:
         pass:
             - gt: 50
         warn:
