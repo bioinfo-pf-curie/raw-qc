@@ -459,12 +459,12 @@ class Trimming_Report(object):
        for key, value in stats_dict.items():
            if len(stats_dict['stat']) == 7:
              with open(prefixname + "_Basic_Metrics.trim.txt", 'w') as out:
-               out.write('Sample_name'+'\t'+'Biological_name'+'\t'+'Total_reads'+'\t'+'Mean_length'+'\t'+'Total_base'+'\t'+'Q20_R1'+'\t'+'Trimmed_Mean_length'+'\t'+'trimmed_reads'+'\t'+'discarded_reads'+'\n')
+               out.write('Sample_name'+'\t'+'Biological_name'+'\t'+'Total_reads'+'\t'+'Mean_length'+'\t'+'Total_base'+'\t'+'Q20_R1'+'\t'+'Trimmed_Mean_length'+'\t'+'Trimmed_reads'+'\t'+'Discarded_reads'+'\n')
                out.write(stats_dict.get('sample_name')+'\t'+stats_dict.get('biological_name')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
    
            if len(stats_dict['stat']) == 8:
              with open(prefixname + "_Basic_Metrics.trim.txt", 'w') as out:
-              out.write('Sample_name'+'\t'+'Biological_name'+'\t'+'Total_reads'+'\t'+'Mean_length'+'\t'+'Total_base'+'\t'+'Q20_R1'+'\t'+'Q20_R2'+'\t'+'Trimmed_Mean_length'+'\t'+'trimmed_reads'+'\t'+'discarded_reads'+'\n')
+              out.write('Sample_name'+'\t'+'Biological_name'+'\t'+'Total_reads'+'\t'+'Mean_length'+'\t'+'Total_base'+'\t'+'Q20_R1'+'\t'+'Q20_R2'+'\t'+'Trimmed_Mean_length'+'\t'+'Trimmed_reads'+'\t'+'Discarded_reads'+'\n')
               out.write(stats_dict.get('sample_name')+'\t'+stats_dict.get('biological_name')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
 
 if __name__ == '__main__':

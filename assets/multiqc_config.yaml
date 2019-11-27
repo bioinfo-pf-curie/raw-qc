@@ -23,67 +23,37 @@ custom_data:
             save_file: true
             col1_header: 'Sample ID'
          headers:
-            col1:
-              scale: false
-              format: '{:.0f}'
-              placement: 2000
-            col2:
-              title: 'Sample Name'
-              scale: false
-              format: '{:.0f}'
-              placement: 3000
-            col3:
-              title: 'Total Reads'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 4000
-            col4:
-              title: 'Sample Fraction'
-              min: 0
-              max: 100
-              scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 5000
-            col5:
-              title: 'Mean Length'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 6000
-            col6:
-              title: 'Total Base'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 7000
-            col7:
-              title: '>Q20 Percent'
-              min: 0
-              max: 100
-              scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 8000
-            col8:
-              title: 'Trimmed Mean Length'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 9000
-            col9:
-              title: 'Trimmed Reads Percent'
-              min: 0
-              max: 100
-              scale: 'YlGnBu'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 10000
-            col10:
-              title: 'Discarded Reads Percent'
-              min: 0
-              max: 100
-              scale: 'RdYlGn-rev'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 11000
+              Biological_name:
+                title: 'Biological name'
+              Total_reads:
+                title: 'Total reads'
+                description: 'Total number of readas sequenced'
+                format: '{:,.0f}'
+              Sample_representation:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              Mean_length:
+                title: 'Mean length'
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+              Q20_R1:
+                title: 'Q20 R1'
+                format: '{:,.2f}'
+                suffix: '%'
+              Trimmed_Mean_length:
+                title: 'Trimmed Mean length'
+                format: '{:,.0f}'
+              Trimmed_reads:
+                title: 'Trimmed reads'
+                format: '{:,.2f}'
+                suffix: '%'
+              Discarded_reads:
+                title: 'Discarded reads'
+                format: '{:,.2f}'
+                suffix: '%'
+
     basic_metrics_PE:
          file_format: 'tsv'
          section_name: 'General Metrics'
@@ -95,75 +65,110 @@ custom_data:
               save_file: true
               col1_header: 'Sample ID'
          headers:
-            col1:
-              scale: false
-              format: '{:.0f}'
-              placement: 2000
-            col2:
-              title: 'Sample Name'
-              scale: false
-              format: '{:.0f}'
-              placement: 3000
-            col3:
-              title: 'Total Reads'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 4000
-            col4:
-              title: 'Sample Fraction'
-              min: 0
-              max: 100
+              Biological_name:
+                title: 'Biological name'
+              Total_reads:
+                title: 'Total reads'
+                description: 'Total number of readas sequenced'
+                format: '{:,.0f}'
+              Sample_representation:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              Mean_length:
+                title: 'Mean length'
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+              Q20_R1:
+                title: 'Q20 R1'
+                format: '{:,.2f}'
+                suffix: '%'
+              Q20_R2:
+                title: 'Q20 R2'
+                format: '{:,.2f}'
+                suffix: '%'
+              Trimmed_Mean_length:
+                title: 'Trimmed Mean length'
+                format: '{:,.0f}'
+              Trimmed_reads:
+                title: 'Trimmed reads'
+                format: '{:,.2f}'
+                suffix: '%'
+              Discarded_reads:
+                title: 'Discarded reads'
+                format: '{:,.2f}'
+                suffix: '%'
+    basic_metrics_SE_rawdata:
+           file_format: 'tsv'
+           section_name: 'Basic Metrics'
+           description: 'Calculated basic metric for the raw-qc pipeline'
+           plot_type: 'table'
+           pconfig:
+              id: 'stats_SE_rawdata'
+              title: 'Basic Metrics for rawdata'
+              save_file: true
               scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 5000
-            col5:
-              title: 'Mean Length'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 6000
-            col6:
-              title: 'Total Base'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 7000
-            col7:
-              title: '>Q20 R1 Percent'
-              min: 0
-              max: 100
+           headers:
+              Biological_name:
+                title: 'Biological name'
+              Total_reads:
+                title: 'Total reads'
+                description: 'Total number of readas sequenced'
+                format: '{:,.0f}'
+              Sample_representation:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              Mean_length:
+                title: 'Mean length'
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+              Q20_R1:
+                title: 'Q20 R1'
+              Trimmed_Mean_length:
+                title: 'Trimmed Mean length'
+              Trimmed_reads:
+                title: 'Trimmed reads'
+              Discarded_reads:
+                title: 'Discarded reads'
+    basic_metrics_PE_rawdata:
+           file_format: 'tsv'
+           section_name: 'Basic Metrics for rawdata'
+           description: 'Calculated basic metric for the raw-qc pipeline'
+           plot_type: 'table'
+           pconfig:
+              id: 'stats_PE_rawdata'
+              title: 'Basic Metrics'
+              save_file: true
               scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 8000
-            col8:
-              title: '>Q20 R2 Percent'
-              min: 0
-              max: 100
-              scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 9000
-            col9:
-              title: 'Trimmed Mean Length'
-              scale: 'YlGnBu'
-              format: '{:,.0f}'
-              placement: 10000
-            col10:
-              title: 'Trimmed Reads Percent'
-              min: 0
-              max: 100
-              scale: 'YlGnBu'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 11000
-            col11:
-              title: 'Discarded Reads Percent'
-              min: 0
-              max: 100
-              scale: 'RdYlGn-rev'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 12000
+           headers:
+              Biological_name:
+                title: 'Biological name'
+              Total_reads:
+                title: 'Total reads'
+                description: 'Total number of readas sequenced'
+                format: '{:,.0f}'
+              Sample_representation:
+                title: 'Sample representation'
+                format: '{:,.2f}'
+                suffix: '%'
+              Mean_length:
+                title: 'Mean length'
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+              Q20_R1:
+                title: 'Q20 R1'
+              Q20_R2:
+                title: 'Q20 R2'
+              Trimmed_Mean_length:
+                title: 'Trimmed Mean length'
+              Trimmed_reads:
+                title: 'Trimmed reads'
+              Discarded_reads:
+                title: 'Discarded reads'
 
     adapter_seq:
          file_format: 'tsv'
@@ -188,7 +193,6 @@ custom_data:
               format: '{:.0f}'
               placement: 1000
 
-
 sp:
     basic_metrics_SE:
         fn: 'mq_stats_SE.tsv'
@@ -196,31 +200,82 @@ sp:
         fn: 'mq_stats_PE.tsv'
     adapter_seq:
         fn: '*_Adaptor_seq.*'
+    basic_metrics_SE_rawdata:
+        fn: 'mq_stats_SE_rawdata.tsv'
+    basic_metrics_PE_rawdata:
+        fn: 'mq_stats_PE_rawdata.tsv'
 
+
+table_columns_placement:
+    stats_SE:
+        Sample_name: 900
+        Biological_name: 1000
+        Total_reads: 1005
+        Sample_representation: 1010
+        Mean_length: 1015
+        Total_base: 1020
+        Q20_R1: 1025
+        Trimmed_Mean_length: 1030
+        Trimmed_reads: 1035
+        Discarded_reads: 1040
+    stats_PE:
+        Sample_name: 900
+        Biological_name: 1000
+        Total_reads: 1005
+        Sample_representation: 1010
+        Mean_length: 1015
+        Total_base: 1020
+        Q20_R1: 1025
+        Q20_R2: 1030
+        Trimmed_Mean_length: 1035
+        Trimmed_reads: 1040
+        Discarded_reads: 1045
+    stats_SE_rawdata:
+        Sample_name: 900
+        Biological_name: 1000
+        Total_reads: 1005
+        Sample_representation: 1010
+        Mean_length: 1015
+        Total_base: 1020
+        Q20_R1: 1025
+        Trimmed_Mean_length: 1030
+        Trimmed_reads: 1035
+        Discarded_reads: 1040
+    stats_PE_rawdata:
+        Sample_name: 900
+        Biological_name: 1000
+        Total_reads: 1005
+        Sample_representation: 1010
+        Mean_length: 1015
+        Total_base: 1020
+        Q20_R1: 1025
+        Q20_R2: 1030
+        Trimmed_Mean_length: 1035
+        Trimmed_reads: 1040
+        Discarded_reads: 1045
 
 table_cond_formatting_rules:
-    col7:
+    Mean_length:
         pass:
             - gt: 95
         warn:
             - lt: 95
         fail:
             - lt: 80
-    basic_metrics_SE-col8:
+    basic_metrics_SE-Trimmed_Mean_length:
         pass:
             - gt: 50
         warn:
             - lt: 50
         fail:
             - lt: 30
-    basic_metrics_PE-col9:
+    basic_metrics_PE-Trimmed_Mean_length:
         pass:
             - gt: 50
         warn:
             - lt: 50
         fail:
             - lt: 30
-
 
 ###############################
 ## Modules

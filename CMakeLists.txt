@@ -6,8 +6,6 @@ project (analysis_pipeline LANGUAGES NONE)
 
 
 set(CMAKE_BUILD_TYPE Release)
-set(ap_install_prefix_subdirectory "" CACHE STRING "if not null, the pipeline will be installed in CMAKE_INSTALL_PREFIX/ap_install_prefix_subdirectory")
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${ap_install_prefix_subdirectory})
 
 # force out-of-source build
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR} )

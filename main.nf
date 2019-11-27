@@ -72,7 +72,7 @@ def helpMessage() {
 
       -profile test                Set up the test dataset
       -profile conda               Build a new conda environment before running the pipeline
-      -profile toolsPath           Use the paths defined in configuration for each tool
+      -profile condaPath           Use a pre-build conda environment already installed on our cluster
       -profile singularity         Use the Singularity images for each process
       -profile cluster             Run the workflow on the cluster, instead of locally
 
@@ -112,9 +112,11 @@ if (params.adapter == 'smallrna' && !params.singleEnd){
     exit 1, "smallRNA requires singleEnd data."
 }
 
+/*
 if (params.ntrim && params.trimtool == 'fastp') {
   log.warn "[raw-qc] The 'ntrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
 }
+*/
 
 if (params.pico_v1 && params.pico_v2){
     exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2"
@@ -148,14 +150,14 @@ if(params.samplePlan){
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[0], [file(row[2])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+         .map{ row -> [ row[1], [file(row[2])]] }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
-         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+         .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
    }
    params.reads=false
 }
@@ -165,20 +167,20 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line\
 ." }
-        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport }
+        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
 }
 
 /*
@@ -281,6 +283,37 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
+def create_workflow_summary(summary) {
+    def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
+    yaml_file.text  = """
+    id: 'summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'Workflow Summary'
+    section_href: 'https://gitlab.curie.fr/rawqc'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+      </dl>
+  """.stripIndent()
+
+   return yaml_file
+}
+
+/* Creates a file at the end of workflow execution */
+workflow.onComplete {
+  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
+  Map endSummary = [:]
+  endSummary['Completed on'] = workflow.complete
+  endSummary['Duration']     = workflow.duration
+  endSummary['Success']      = workflow.success
+  endSummary['exit status']  = workflow.exitStatus
+  endSummary['Error report'] = workflow.errorReport ?: '-'
+  String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
+  println endWfSummary
+  String execInfo = "Summary\n${endWfSummary}\n"
+  woc.write(execInfo)
+}
 
 /*
  * STEP 1 - FastQC
@@ -543,6 +576,7 @@ process fastp {
   }
 }
 
+
 if(params.trimtool == "atropos"){
   trim_reads = trim_reads_atropos
   trim_reports = report_results_atropos
@@ -554,8 +588,8 @@ if(params.trimtool == "atropos"){
   trim_reports = report_results_fastp
 }
 
-process trimReport {
-  publishDir "${params.outdir}/trimReport", mode: 'copy',
+process makeReport {
+  publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
   when:
@@ -590,6 +624,34 @@ process trimReport {
   }
 }
 
+
+process makeReport4RawData {
+  publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  params.skip_trimming
+
+  input:
+  set val(name), file(reads) from read_files_rawdatareport
+
+  output:
+  file "*_Basic_Metrics_rawdata.txt" into rawdata_report
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+          """
+          rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+          """
+  } else {
+
+          """
+          rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+          """
+          }
+}
+
 /*
  * STEP 3 - FastQC after Trim!
 */
@@ -602,6 +664,7 @@ if(params.trimtool == "atropos"){
 }
  
 process fastqcTrimmed {
+  tag "$name (trimmed reads)"
   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -620,9 +683,6 @@ process fastqcTrimmed {
   """
 }
 
-/*
- * MultiQC
- */
 
  process get_software_versions {
   output:
@@ -641,27 +701,10 @@ process fastqcTrimmed {
   """
 }
 
-process workflow_summary_mqc {
-  when:
-  !params.skip_multiqc
+/*
+ * * STEP 4 - MultiQC
+ */
 
-  output:
-  file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
-
-  exec:
-  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-  yaml_file.text  = """
-  id: 'summary'
-  description: " - this information is collected when the pipeline is started."
-  section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/rawqc'
-  plot_type: 'html'
-  data: |
-      <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-      </dl>
-  """.stripIndent()
-}
 
 process multiqc {
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
@@ -675,10 +718,11 @@ process multiqc {
   file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
-  file ('trimReport/*') from trim_report.collect().ifEmpty([])
-  file ('trimReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('makeReport/*') from trim_report.collect().ifEmpty([])
+  file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
+  file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
-  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  file workflow_summary from create_workflow_summary(summary)
   
   output:
   file splan
@@ -688,113 +732,13 @@ process multiqc {
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
   rfilename = custom_runName ? "--filename " + custom_runName + "_multiqc_report" : ''
-  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
-  splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
   isPE = params.singleEnd ? 0 : 1
+  isSkipTrim = params.skip_trimming ? 0 : 1
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
 
   """
-  mqc_header.py --name "Raw-qc" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
-  stats2multiqc.sh ${isPE}
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """
-}
-
-
-/*
- * Sub-routine
- */
-process output_documentation {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
-
-    input:
-    file output_docs from ch_output_docs
-
-    output:
-    file "results_description.html"
-
-    script:
-    """
-    markdown_to_html.r $output_docs results_description.html
-    """
-}
-
-
-workflow.onComplete {
-
-    /*pipeline_report.html*/
-
-    def report_fields = [:]
-    report_fields['version'] = workflow.manifest.version
-    report_fields['runName'] = custom_runName ?: workflow.runName
-    report_fields['success'] = workflow.success
-    report_fields['dateComplete'] = workflow.complete
-    report_fields['duration'] = workflow.duration
-    report_fields['exitStatus'] = workflow.exitStatus
-    report_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
-    report_fields['errorReport'] = (workflow.errorReport ?: 'None')
-    report_fields['commandLine'] = workflow.commandLine
-    report_fields['projectDir'] = workflow.projectDir
-    report_fields['summary'] = summary
-    report_fields['summary']['Date Started'] = workflow.start
-    report_fields['summary']['Date Completed'] = workflow.complete
-    report_fields['summary']['Pipeline script file path'] = workflow.scriptFile
-    report_fields['summary']['Pipeline script hash ID'] = workflow.scriptId
-    if(workflow.repository) report_fields['summary']['Pipeline repository Git URL'] = workflow.repository
-    if(workflow.commitId) report_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
-    if(workflow.revision) report_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
-
-    report_fields['skipped_poor_alignment'] = skipped_poor_alignment
-
-    // Render the TXT template
-    def engine = new groovy.text.GStringTemplateEngine()
-    def tf = new File("$baseDir/assets/oncomplete_template.txt")
-    def txt_template = engine.createTemplate(tf).make(report_fields)
-    def report_txt = txt_template.toString()
-
-    // Render the HTML template
-    def hf = new File("$baseDir/assets/oncomplete_template.html")
-    def html_template = engine.createTemplate(hf).make(report_fields)
-    def report_html = html_template.toString()
-
-    // Write summary e-mail HTML to a file
-    def output_d = new File( "${params.outdir}/pipeline_info/" )
-    if( !output_d.exists() ) {
-      output_d.mkdirs()
-    }
-    def output_hf = new File( output_d, "pipeline_report.html" )
-    output_hf.withWriter { w -> w << report_html }
-    def output_tf = new File( output_d, "pipeline_report.txt" )
-    output_tf.withWriter { w -> w << report_txt }
-
-    /*oncomplete file*/
-
-    File woc = new File("${params.outdir}/workflow.oncomplete.txt")
-    Map endSummary = [:]
-    endSummary['Completed on'] = workflow.complete
-    endSummary['Duration']     = workflow.duration
-    endSummary['Success']      = workflow.success
-    endSummary['exit status']  = workflow.exitStatus
-    endSummary['Error report'] = workflow.errorReport ?: '-'
-    String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
-    println endWfSummary
-    String execInfo = "${fullSum}\nExecution summary\n${logSep}\n${endWfSummary}\n${logSep}\n"
-    woc.write(execInfo)
-
-    /*final logs*/
-    if(workflow.success){
-        log.info "[rawqc] Pipeline Complete"
-    }else{
-        log.info "[rawqc] FAILED: $workflow.runName"
-        if( workflow.profile == 'test'){
-            log.error "====================================================\n" +
-                    "  WARNING! You are running with the profile 'test' only\n" +
-                    "  pipeline config profile, which runs on the head node\n" +
-                    "  and assumes all software is on the PATH.\n" +
-                    "  This is probably why everything broke.\n" +
-                    "  Please use `-profile test,conda` or `-profile test,singularity` to run on local.\n" +
-                    "  Please use `-profile test,conda,cluster` or `-profile test,singularity,cluster` to run on your cluster.\n" +
-                    "============================================================"
-        }
-    }
 }
