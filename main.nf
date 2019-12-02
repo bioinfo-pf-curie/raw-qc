@@ -731,7 +731,7 @@ process multiqc {
 
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName + "_multiqc_report" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : "--filename rawqc_report"
   isPE = params.singleEnd ? 0 : 1
   isSkipTrim = params.skip_trimming ? 0 : 1
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""

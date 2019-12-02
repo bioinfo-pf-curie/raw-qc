@@ -273,7 +273,7 @@ table_cond_formatting_rules:
     basic_metric_PE_rawdata-Q20_R2:
         pass:
             - gt: 95
-	    warn:
+        warn:
             - lt: 95
         fail:
             - lt: 90

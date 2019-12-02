@@ -1,5 +1,5 @@
 ***********************************
-CHANGES IN VERSION 1.0.0dev
+CHANGES IN VERSION 2.0.0dev
 
 NEW FEATURES
 
