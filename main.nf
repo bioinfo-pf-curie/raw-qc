@@ -377,8 +377,7 @@ process trimGalore {
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
     mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_polyA_trimmed.fq.gz
-    mv ${reads}_trimming_report.txt ${prefix}_trimming_report.txt
-    mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimming_report.txt
+    mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimmingreport.txt
     """
     }
   }else {
@@ -412,10 +411,8 @@ process trimGalore {
       	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
     mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed_polyA.fq.gz
-    mv ${reads[0]}_trimming_report.txt ${prefix}_R1_trimming_report.txt
-    mv ${reads[1]}_trimming_report.txt ${prefix}_R2_trimming_report.txt
-    mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimming_report.txt
-    mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimming_report.txt
+    mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimmingreport.txt
+    mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimmingreport.txt
     rm ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz
     """
     }
@@ -739,6 +736,7 @@ process multiqc {
   rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
   isPE = params.singleEnd ? 0 : 1
   isSkipTrim = params.skip_trimming ? 0 : 1
+  //typeAdapter = "${params.adapter}"
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
 
   """
