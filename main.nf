@@ -735,9 +735,10 @@ process multiqc {
   isPE = params.singleEnd ? 0 : 1
   isSkipTrim = params.skip_trimming ? 0 : 1
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+  splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
 
   """
-  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts}  ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """
