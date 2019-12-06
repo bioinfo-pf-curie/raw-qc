@@ -645,7 +645,6 @@ if(params.trimtool == "atropos"){
 }
  
 process fastqcTrimmed {
-  tag "$name (trimmed reads)"
   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
