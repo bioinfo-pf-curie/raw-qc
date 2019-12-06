@@ -733,14 +733,14 @@ process multiqc {
 
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','') + "_multiqc_report" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : '--filename rawqc_report'
   isPE = params.singleEnd ? 0 : 1
   isSkipTrim = params.skip_trimming ? 0 : 1
-  //typeAdapter = "${params.adapter}"
   metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+  splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
 
   """
-  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} > multiqc-config-header.yaml
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
   """

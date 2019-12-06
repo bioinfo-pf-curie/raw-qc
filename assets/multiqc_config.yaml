@@ -188,7 +188,12 @@ custom_data:
               format: '{:.0f}'
               placement: 1000
             Adapter_sequence_read_1_regular_3':
-              title: "Detected Adapter"
+              title: "Detected Adapter1"
+              scale: false
+              format: '{:.0f}'
+              placement: 1000
+            Adapter_sequence_read_2_regular_3':
+              title: "Detected Adapter2"
               scale: false
               format: '{:.0f}'
               placement: 1000
