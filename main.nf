@@ -367,6 +367,7 @@ process trimGalore {
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    mv ${prefix}_trimmed.fq.gz ${prefix}_R1_trimmed.fq.gz
     """
     }else{
     """
@@ -376,7 +377,7 @@ process trimGalore {
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
-    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_polyA_trimmed.fq.gz
+    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
     mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimmingreport.txt
     """
     }
