@@ -377,7 +377,7 @@ process trimGalore {
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
-    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
+    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_R1_trimmed.fq.gz
     mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimmingreport.txt
     """
     }
@@ -410,8 +410,8 @@ process trimGalore {
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
       	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
-    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed_polyA.fq.gz
-    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed_polyA.fq.gz
+    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed.fq.gz
+    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed.fq.gz
     mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimmingreport.txt
     mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimmingreport.txt
     rm ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz
