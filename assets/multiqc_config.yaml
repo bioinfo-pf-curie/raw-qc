@@ -326,7 +326,15 @@ module_order:
 #############################
 ## Display
 
-report_section_order:
+custom_content:
+  order:
+    - basic_metrics_SE
+    - basic_metrics_PE
+    - basic_metrics_SE_rawdata
+    - basic_metrics_PE_rawdata
+    - adapter_seq
+
+report_section_order: 
   software-versions:
     order: -1000
   summary:
