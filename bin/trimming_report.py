@@ -178,11 +178,11 @@ class Trimming_Report(object):
 
 
     def get_adatptor_trimgalore(self, reports):
-        l_list = list()
         try:
+           base = os.path.basename(reports[0])
+           sample = os.path.splitext(base)[0].rsplit('.', 3)[0]
+           print("adap" , sample)
            if len(reports)==1:
-              base = os.path.basename(reports[0])
-              sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
               l_list = list()
               trim_report = reports[0]
               with open(trim_report) as f:
@@ -192,8 +192,6 @@ class Trimming_Report(object):
                       l_list.append(self_adapter_seq)
 
            if len(reports) == 2:
-              base = os.path.basename(reports[0])
-              sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
               l_list = list()
               trim_report_1= reports[0]
               trim_report_2 = reports[1]
@@ -219,11 +217,9 @@ class Trimming_Report(object):
         except ValueError: return False
 
     def get_stat_trimgalore(self, reports, biological_name):
-        l_list = list()
         try:
            base = os.path.basename(reports[0])
            sample = os.path.splitext(base)[0].rsplit('.', 3)[0]
-           print(base)
            print(sample)
            l_list = list()
            blocks = []
@@ -246,6 +242,7 @@ class Trimming_Report(object):
                 l_list.extend([total_reads, self.mean_length, total_bases, q20_reads, self.mean_length_trimmed, trimmed_reads, discarded_reads])
 
            if len(reports)==2:
+              l_list = list()
               trim_report_1= reports[0]
               trim_report_2 = reports[1]
               with open(trim_report_1) as f:
