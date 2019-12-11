@@ -262,14 +262,14 @@ table_columns_placement:
 table_cond_formatting_rules:
     Q20_R1:
         pass:
-            - gt: 95
+            - gt: 94
         warn:
             - lt: 95
         fail:
             - lt: 90
     basic_metric_PE-Q20_R2:
         pass:
-            - gt: 95
+            - gt: 94
         warn:
             - lt: 95
         fail:
@@ -277,7 +277,7 @@ table_cond_formatting_rules:
 
     basic_metric_PE_rawdata-Q20_R2:
         pass:
-            - gt: 95
+            - gt: 94
         warn:
             - lt: 95
         fail:
@@ -285,7 +285,7 @@ table_cond_formatting_rules:
 
     basic_metric_SE-Trimmed_Mean_length:
         pass:
-            - gt: 50
+            - gt: 49
         warn:
             - lt: 50
         fail:
@@ -293,7 +293,7 @@ table_cond_formatting_rules:
 
     basic_metric_PE-Trimmed_Mean_length:
         pass:
-            - gt: 50
+            - gt: 49
         warn:
             - lt: 50
         fail:
