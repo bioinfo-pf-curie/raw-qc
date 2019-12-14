@@ -321,7 +321,8 @@ module_order:
         info: 'This section of the report shows FastQC results after adapter trimming.'
         path_filters:
               - '*_trimmed_fastqc.zip'
-
+    - fastq_screen:
+        name: 'Genomes screen'
 
 #############################
 ## Display

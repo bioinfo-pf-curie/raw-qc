@@ -65,6 +65,7 @@ def helpMessage() {
       --skip_fastqc_raw             Skip FastQC on raw sequencing reads
       --skip_trimming               Skip trimming step
       --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+      --skip_fastq_sreeen           Skip FastQScreen on trimmed sequencing reads
       --skip_multiqc                Skip MultiQC step
 
     =======================================================
@@ -138,6 +139,13 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
+// FastqScreen
+Channel
+    .from(params.fastqScreenGenomes)
+    .set{ fastqScreenGenomeCh }
+
+
+
 /*
  * CHANNELS
  */
@@ -151,13 +159,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
    }
    params.reads=false
 }
@@ -167,13 +175,13 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
     }
 } else {
     Channel
@@ -299,8 +307,8 @@ workflow.onComplete {
 }
 
 /*
- * STEP 1 - FastQC
-*/
+ * First QC on raw data [FastQC]
+ */
 
 
 process fastqc {
@@ -325,8 +333,8 @@ process fastqc {
 
 
 /*
- * STEP 2 - Reads Trimming
-*/
+ * Reads Trimming
+ */
 
 process trimGalore {
   tag "$name" 
@@ -339,7 +347,7 @@ process trimGalore {
   set val(name), file(reads) from read_files_trimgalore
 
   output:
-  file "*fq.gz" into trim_reads_trimgalore, fastqc_trimgalore_reads
+  set val(name), file("*fq.gz") into trim_reads_trimgalore, trimgalore_reads
   file "*trimming_report.txt" into trim_results_trimgalore, report_results_trimgalore
 
   script:
@@ -434,7 +442,7 @@ process atroposTrim {
 
   output:
   file "*trimming_report*" into trim_results_atropos
-  file "*_trimmed.fq.gz" into trim_reads_atropos, fastqc_atropos_reads
+  set val(name), file("*_trimmed.fq.gz") into trim_reads_atropos, atropos_reads
   file "*.json" into report_results_atropos
 
    script:
@@ -495,7 +503,7 @@ process fastp {
   set val(name), file(reads) from read_files_fastp
   
   output:
-  file "*_trimmed.fastq.gz" into trim_reads_fastp, fastqc_fastp_reads
+  set val(name), file("*_trimmed.fastq.gz") into trim_reads_fastp, fastp_reads
   file "*.json" into trim_results_fastp, report_results_fastp
   file "*.log" into trim_log_fastp
 
@@ -558,16 +566,27 @@ process fastp {
 }
 
 
-if(params.trimtool == "atropos"){
-  trim_reads = trim_reads_atropos
-  trim_reports = report_results_atropos
-}else if (params.trimtool == "trimgalore"){
-  trim_reads = trim_reads_trimgalore
-  trim_reports = report_results_trimgalore
+if (!params.skip_trimming){
+  if(params.trimtool == "atropos"){
+    trim_reads = trim_reads_atropos
+    trim_reports = report_results_atropos
+  }else if (params.trimtool == "trimgalore"){
+    trim_reads = trim_reads_trimgalore
+    trim_reports = report_results_trimgalore
+  }else{
+    trim_reads = trim_reads_fastp
+    trim_reports = report_results_fastp
+  }
 }else{
-  trim_reads = trim_reads_fastp
-  trim_reports = report_results_fastp
+  trim_reads = Channel.create()
+  trim_reports = Channel.create()
 }
+
+
+/*
+ * Trimming reports
+ */
+
 
 process makeReport {
   publishDir "${params.outdir}/makeReport", mode: 'copy',
@@ -578,7 +597,7 @@ process makeReport {
 
   input:
   set val(name), file(reads) from read_files_trimreport
-  file trims from trim_reads
+  set val(name), file(trims) from trim_reads
   file reports from trim_reports
 
   output:
@@ -621,29 +640,36 @@ process makeReport4RawData {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
-          """
-          rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
-          """
+  if (params.singleEnd){
+     """
+     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+     """
   } else {
-
-          """
-          rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
-          """
-          }
+     """
+     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+     """
+  }
 }
+
 
 /*
- * STEP 3 - FastQC after Trim!
-*/
-if(params.trimtool == "atropos"){
-  fastqc_trim_reads = fastqc_atropos_reads
-}else if (params.trimtool == "trimgalore"){
-  fastqc_trim_reads = fastqc_trimgalore_reads
+ * QC on trim data [FastQC]
+ */
+
+if (!params.skip_trimming){
+  if (params.trimtool == "atropos"){
+    atropos_reads.into{fastqc_trim_reads; fastq_screen_reads} 
+  }else if (params.trimtool == "trimgalore"){
+    trimgalore_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }else{
+    fastp_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }
 }else{
-  fastqc_trim_reads = fastqc_fastp_reads
+  fastq_screen_reads = read_fastqscreen  
+  fastqc_trim_reads = Channel.create()
 }
- 
+
+
 process fastqcTrimmed {
   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -652,7 +678,7 @@ process fastqcTrimmed {
   !params.skip_fastqc_trim
 
   input:
-  file reads from fastqc_trim_reads
+  set val(name), file(reads) from fastqc_trim_reads
 
   output:
   file "*_fastqc.{zip,html}" into fastqc_after_trim_results
@@ -663,6 +689,54 @@ process fastqcTrimmed {
   """
 }
 
+/*
+ * FastqScreen
+ */
+
+process makeFastqScreenGenomeConfig {
+    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+
+    input:
+    val(fastqScreenGenome) from fastqScreenGenomeCh
+
+    output:
+    file(outputFile) into ch_fastq_screen_config
+
+    script:
+    outputFile = 'fastq_screen_databases.config'
+
+    String result = ''
+    for (Map.Entry entry: fastqScreenGenome.entrySet()) {
+        result += """
+        echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
+    }
+
+    return result
+}
+
+process fastq_screen {
+   publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+
+   when:
+   !params.skip_fastq_screen
+
+   input:
+   set val(name), file(reads) from fastq_screen_reads
+   file fastq_screen_config from ch_fastq_screen_config
+
+   output:
+   file "*_screen.txt" into fastq_screen_txt
+   file "*_screen.html" into fastq_screen_html
+
+   script:
+   """
+   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
+   """
+}
+
+/*
+ * MulitQC report
+ */
 
  process get_software_versions {
   output:
@@ -673,6 +747,7 @@ process fastqcTrimmed {
   echo $workflow.manifest.version &> v_rawqc.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
+  fastq_screen --version &> v_fastqscreen.txt
   trim_galore --version &> v_trimgalore.txt
   echo "lol" &> v_atropos.txt
   fastp --version &> v_fastp.txt
@@ -703,8 +778,9 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
+
 /*
- * * STEP 4 - MultiQC
+ *  MultiQC
  */
 
 
@@ -720,6 +796,7 @@ process multiqc {
   file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
   file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
+  file ('fastq_screen/*') from fastq_screen_txt.collect().ifEmpty([])
   file ('makeReport/*') from trim_report.collect().ifEmpty([])
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
   file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
@@ -742,6 +819,6 @@ process multiqc {
   """
   mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
-  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
