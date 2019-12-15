@@ -577,9 +577,6 @@ if (!params.skip_trimming){
     trim_reads = trim_reads_fastp
     trim_reports = report_results_fastp
   }
-}else{
-  trim_reads = Channel.create()
-  trim_reports = Channel.create()
 }
 
 
@@ -587,70 +584,75 @@ if (!params.skip_trimming){
  * Trimming reports
  */
 
+if (!params.skip_trimming){
 
-process makeReport {
-  publishDir "${params.outdir}/makeReport", mode: 'copy',
+  rawdata_report = Channel.empty()
+
+  process makeReport {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
-  when:
-  !params.skip_trimming
+    when:
+    !params.skip_trimming
 
-  input:
-  set val(name), file(reads) from read_files_trimreport
-  set val(name), file(trims) from trim_reads
-  file reports from trim_reports
+    input:
+    set val(name), file(reads) from read_files_trimreport
+    set val(name), file(trims) from trim_reads
+    file reports from trim_reports
 
-  output:
-  file '*_Basic_Metrics.trim.txt' into trim_report
-  file "*_Adaptor_seq.trim.txt" into trim_adaptor
+    output:
+    file '*_Basic_Metrics.trim.txt' into trim_report
+    file "*_Adaptor_seq.trim.txt" into trim_adaptor
 
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    if (params.singleEnd) {
        """
        trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
-  } else {
-
-    if(params.trimtool == "trimgalore"){
+    } else {
+      if(params.trimtool == "trimgalore"){
        """
        trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
-    } else {
+      } else {
        """
        trimming_report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
+      }
+    }
+  }
+}else{
+
+  trim_report = Channel.empty()
+  trim_adaptor = Channel.empty()
+
+  process makeReport4RawData {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+    //when:
+    //params.skip_trimming
+
+    input:
+    set val(name), file(reads) from read_files_rawdatareport
+
+    output:
+    file "*_Basic_Metrics_rawdata.txt" into rawdata_report
+
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    if (params.singleEnd){
+      """
+      rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+      """
+    } else {
+      """
+      rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+      """
     }
   }
 }
-
-
-process makeReport4RawData {
-  publishDir "${params.outdir}/makeReport", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
-
-  when:
-  params.skip_trimming
-
-  input:
-  set val(name), file(reads) from read_files_rawdatareport
-
-  output:
-  file "*_Basic_Metrics_rawdata.txt" into rawdata_report
-
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd){
-     """
-     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
-     """
-  } else {
-     """
-     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
-     """
-  }
-}
-
 
 /*
  * QC on trim data [FastQC]
@@ -666,28 +668,33 @@ if (!params.skip_trimming){
   }
 }else{
   fastq_screen_reads = read_fastqscreen  
-  fastqc_trim_reads = Channel.create()
+  fastqc_trim_reads = Channel.empty()
 }
 
 
-process fastqcTrimmed {
-  publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
+if (!params.skip_fastqc_trim && !params.skip_trimming){
+  process fastqcTrimmed {
+    publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-  when:
-  !params.skip_fastqc_trim
+    //when:
+    //!params.skip_fastqc_trim && !params.skip_trimming
 
-  input:
-  set val(name), file(reads) from fastqc_trim_reads
+    input:
+    set val(name), file(reads) from fastqc_trim_reads
 
-  output:
-  file "*_fastqc.{zip,html}" into fastqc_after_trim_results
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_after_trim_results
 
-  script:
-  """
-  fastqc -q $reads -t ${task.cpus}
-  """
+    script:
+    """
+    fastqc -q $reads -t ${task.cpus}
+    """
+  }
+}else{
+  fastqc_after_trim_results = Channel.empty()
 }
+
 
 /*
  * FastqScreen
@@ -730,7 +737,7 @@ process fastq_screen {
 
    script:
    """
-   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
+   fastq_screen --force --subset 10000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
    """
 }
 
@@ -802,6 +809,9 @@ process multiqc {
   file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
   file ('workflow_summary/*') from workflow_summary_yaml.collect()
+
+  when:
+  !params.skip_multiqc
   
   output:
   file splan
