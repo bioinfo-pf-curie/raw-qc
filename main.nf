@@ -144,8 +144,6 @@ Channel
     .from(params.fastqScreenGenomes)
     .set{ fastqScreenGenomeCh }
 
-
-
 /*
  * CHANNELS
  */
@@ -729,7 +727,7 @@ process fastq_screen {
 
    input:
    set val(name), file(reads) from fastq_screen_reads
-   file fastq_screen_config from ch_fastq_screen_config
+   file fastq_screen_config from ch_fastq_screen_config.collect()
 
    output:
    file "*_screen.txt" into fastq_screen_txt
@@ -737,7 +735,7 @@ process fastq_screen {
 
    script:
    """
-   fastq_screen --force --subset 10000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
+   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
    """
 }
 

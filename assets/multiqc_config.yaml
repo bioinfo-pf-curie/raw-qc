@@ -267,6 +267,15 @@ table_cond_formatting_rules:
             - lt: 95
         fail:
             - lt: 90
+
+    Q20_R2:
+        pass:
+            - gt: 94
+        warn:
+            - lt: 95
+	fail:
+            - lt: 90
+
     basic_metric_PE-Q20_R2:
         pass:
             - gt: 94
@@ -283,7 +292,7 @@ table_cond_formatting_rules:
         fail:
             - lt: 90
 
-    basic_metric_SE-Trimmed_Mean_length:
+    Trimmed_Mean_length:
         pass:
             - gt: 49
         warn:
@@ -291,13 +300,6 @@ table_cond_formatting_rules:
         fail:
             - lt: 30
 
-    basic_metric_PE-Trimmed_Mean_length:
-        pass:
-            - gt: 49
-        warn:
-            - lt: 50
-        fail:
-            - lt: 30
 
 ###############################
 ## Modules
@@ -322,7 +324,7 @@ module_order:
         path_filters:
               - '*_trimmed_fastqc.zip'
     - fastq_screen:
-        name: 'Genomes screen'
+        name: 'Fastq screen'
 
 #############################
 ## Display
