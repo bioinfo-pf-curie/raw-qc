@@ -732,6 +732,7 @@ process fastq_screen {
    output:
    file "*_screen.txt" into fastq_screen_txt
    file "*_screen.html" into fastq_screen_html
+   file "*tagged_filter.fastq.gz" into nohits_fastq
 
    script:
    """
