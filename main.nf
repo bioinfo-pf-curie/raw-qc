@@ -735,7 +735,7 @@ process fastq_screen {
 
    script:
    """
-   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --aligner bowtie2 ${reads}
+   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --nohits --aligner bowtie2 ${reads}
    """
 }
 
