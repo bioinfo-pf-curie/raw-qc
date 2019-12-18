@@ -133,7 +133,7 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -p
 
 ### Credits
 
-This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, S. Baulande, N. Servant)
+This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, S. Baulande, N. Servant)
 
 ### Contacts
 
