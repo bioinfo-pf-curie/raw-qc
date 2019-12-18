@@ -14,9 +14,9 @@ params {
   trimgalore_version = '0.6.2'
   atropos_version = '1.1.16'
   fastp_version = '0.20.0'
-  multiqc_version = '1.7'
+  multiqc_version = '1.8'
   rmarkdown_version = '0.8'
-  rawqc_version = '1.0'
+  rawqc_version = '2.0.0'
 }
 
 process {
