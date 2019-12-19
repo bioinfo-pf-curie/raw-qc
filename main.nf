@@ -339,8 +339,8 @@ process trimGalore {
   set val(name), file(reads) from read_files_trimgalore
 
   output:
-  file "*fastq.gz" into trim_reads_trimgalore, fastqc_trimgalore_reads
-  file "*trimming_report.txt" into trim_results_trimgalore, report_results_trimgalore
+  set val(name), file("*fastq.gz") into trim_reads_trimgalore, fastqc_trimgalore_reads
+  set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -433,9 +433,9 @@ process atroposTrim {
   file sequences from ch_adaptor_file_defult.collect()
 
   output:
-  file "*trimming_report*" into trim_results_atropos
-  file "*trimmed*fastq.gz" into trim_reads_atropos, fastqc_atropos_reads
-  file "*.json" into report_results_atropos
+  file("*trimming_report*") into trim_results_atropos
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, fastqc_atropos_reads
+  set val(name), file("*.json") into report_results_atropos
 
    script:
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -495,8 +495,8 @@ process fastp {
   set val(name), file(reads) from read_files_fastp
   
   output:
-  file "*trimmed*fastq.gz" into trim_reads_fastp, fastqc_fastp_reads
-  file "*.json" into trim_results_fastp, report_results_fastp
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastqc_fastp_reads
+  set val(name), file("*.json") into trim_results_fastp, report_results_fastp
   file "*.log" into trim_log_fastp
 
   script:
@@ -577,9 +577,10 @@ process makeReport {
   !params.skip_trimming
 
   input:
-  set val(name), file(reads) from read_files_trimreport
-  file trims from trim_reads
-  file reports from trim_reports
+  set val(name), file(reads), file(trims), file(reports) from read_files_trimreport.join(trim_reads).join(trim_reports)
+  //set val(name), file(reads) from read_files_trimreport
+  //file trims from trim_reads
+  //file reports from trim_reports
 
   output:
   file '*_Basic_Metrics.trim.txt' into trim_report
@@ -622,15 +623,14 @@ process makeReport4RawData {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
-          """
-          rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
-          """
+     """
+     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+     """
   } else {
-
-          """
-          rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
-          """
-          }
+     """
+     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+     """
+  }
 }
 
 /*
@@ -652,7 +652,7 @@ process fastqcTrimmed {
   !params.skip_fastqc_trim
 
   input:
-  file reads from fastqc_trim_reads
+  set val(name), file(reads) from fastqc_trim_reads
 
   output:
   file "*_fastqc.{zip,html}" into fastqc_after_trim_results
