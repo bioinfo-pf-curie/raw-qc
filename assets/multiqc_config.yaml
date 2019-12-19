@@ -27,30 +27,30 @@ custom_data:
                 title: 'Biological name'
               Total_reads:
                 title: 'Total reads'
-                description: 'Total number of readas sequenced'
                 format: '{:,.0f}'
               Sample_representation:
-                title: 'Sample representation'
+                title: 'Sample fraction (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
+                format: '{:,.0f}'
               Total_base:
                 title: 'Total base'
                 format: '{:,.0f}'
               Q20_R1:
-                title: 'Q20 R1'
+                title: '>Q20 R1 (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Trimmed_Mean_length:
                 title: 'Trimmed Mean length'
                 format: '{:,.0f}'
               Trimmed_reads:
-                title: 'Trimmed reads'
+                title: 'Trimmed reads (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Discarded_reads:
-                title: 'Discarded reads'
+                title: 'Discarded reads (%)'
                 format: '{:,.2f}'
                 suffix: '%'
 
@@ -69,34 +69,34 @@ custom_data:
                 title: 'Biological name'
               Total_reads:
                 title: 'Total reads'
-                description: 'Total number of readas sequenced'
                 format: '{:,.0f}'
               Sample_representation:
-                title: 'Sample representation'
+                title: 'Sample fraction (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
+                format: '{:,.0f}'
               Total_base:
                 title: 'Total base'
                 format: '{:,.0f}'
               Q20_R1:
-                title: 'Q20 R1'
+                title: '>Q20 R1 (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Q20_R2:
-                title: 'Q20 R2'
+                title: '>Q20 R2 (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Trimmed_Mean_length:
                 title: 'Trimmed Mean length'
                 format: '{:,.0f}'
               Trimmed_reads:
-                title: 'Trimmed reads'
+                title: 'Trimmed reads (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Discarded_reads:
-                title: 'Discarded reads'
+                title: 'Discarded reads (%)'
                 format: '{:,.2f}'
                 suffix: '%'
     basic_metrics_SE_rawdata:
@@ -114,25 +114,32 @@ custom_data:
                 title: 'Biological name'
               Total_reads:
                 title: 'Total reads'
-                description: 'Total number of readas sequenced'
                 format: '{:,.0f}'
               Sample_representation:
-                title: 'Sample representation'
+                title: 'Sample fraction (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
+                format: '{:,.0f}'
               Total_base:
                 title: 'Total base'
                 format: '{:,.0f}'
               Q20_R1:
-                title: 'Q20 R1'
+                title: '>Q20 R1 (%)'
+                format: '{:,.2f}'
+                suffix: '%'
               Trimmed_Mean_length:
                 title: 'Trimmed Mean length'
+                format: '{:,.0f}'
               Trimmed_reads:
-                title: 'Trimmed reads'
+                title: 'Trimmed reads (%)'
+                format: '{:,.2f}'
+                suffix: '%'
               Discarded_reads:
-                title: 'Discarded reads'
+                title: 'Discarded reads (%)'
+                format: '{:,.2f}'
+                suffix: '%'
     basic_metrics_PE_rawdata:
            file_format: 'tsv'
            section_name: 'Basic Metrics for rawdata'
@@ -148,28 +155,36 @@ custom_data:
                 title: 'Biological name'
               Total_reads:
                 title: 'Total reads'
-                description: 'Total number of readas sequenced'
                 format: '{:,.0f}'
               Sample_representation:
-                title: 'Sample representation'
+                title: 'Sample fraction (%)'
                 format: '{:,.2f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
+                format: '{:,.0f}'
               Total_base:
                 title: 'Total base'
                 format: '{:,.0f}'
               Q20_R1:
-                title: 'Q20 R1'
+                title: '>Q20 R1 (%)'
+                format: '{:,.2f}'
+                suffix: '%'
               Q20_R2:
-                title: 'Q20 R2'
+                title: '>Q20 R2 (%)'
+                format: '{:,.2f}'
+                suffix: '%'
               Trimmed_Mean_length:
                 title: 'Trimmed Mean length'
+                format: '{:,.0f}'
               Trimmed_reads:
-                title: 'Trimmed reads'
+                title: 'Trimmed reads (%)'
+                format: '{:,.2f}'
+                suffix: '%'
               Discarded_reads:
-                title: 'Discarded reads'
-
+                title: 'Discarded reads (%)'
+                format: '{:,.2f}'
+                suffix: '%'
     adapter_seq:
          file_format: 'tsv'
          section_name: 'Trimming'
@@ -259,45 +274,30 @@ table_columns_placement:
         Trimmed_reads: 1040
         Discarded_reads: 1045
 
+
 table_cond_formatting_rules:
     Q20_R1:
         pass:
-            - gt: 94.99
+            - gt: 94
         warn:
             - lt: 95
         fail:
             - lt: 90
-    basic_metric_PE-Q20_R2:
+    Q20_R2:
         pass:
-            - gt: 94.99
+            - gt: 94
         warn:
             - lt: 95
         fail:
             - lt: 90
-
-    basic_metric_PE_rawdata-Q20_R2:
+    Discarded_reads:
         pass:
-            - gt: 94.99
+            - lt: 6
         warn:
-            - lt: 95
+            - gt: 5
         fail:
-            - lt: 90
+            - gt: 20 
 
-    basic_metric_SE-Trimmed_Mean_length:
-        pass:
-            - gt: 49.99
-        warn:
-            - lt: 50
-        fail:
-            - lt: 30
-
-    basic_metric_PE-Trimmed_Mean_length:
-        pass:
-            - gt: 49.99
-        warn:
-            - lt: 50
-        fail:
-            - lt: 30
 
 ###############################
 ## Modules
@@ -321,7 +321,8 @@ module_order:
         info: 'This section of the report shows FastQC results after adapter trimming.'
         path_filters:
               - '*_trimmed_fastqc.zip'
-
+    - fastq_screen:
+        name: 'Fastq screen'
 
 #############################
 ## Display
