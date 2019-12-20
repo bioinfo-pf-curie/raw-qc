@@ -103,7 +103,7 @@ custom_data:
                 format: '{:,.1f}'
                 suffix: '%'
               Trimmed_Mean_length:
-                title: 'Mean length tfter trimming'
+                title: 'Mean length after trimming'
                 min: 0
                 max: 100
                 format: '{:,.0f}'
