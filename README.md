@@ -39,8 +39,8 @@ It means that Atropos currently requires the specification of the adapter to rem
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) / [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
 3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-4. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
-
+4. Run first mapping screen on know references and sources of contamination ([`fastq Screen`](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/))
+5. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
@@ -84,6 +84,7 @@ Skip options:
   --skip_fastqc_raw             Skip FastQC on raw sequencing reads
   --skip_trimming               Skip trimming step
   --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+  --skip_fastq_sreeen           Skip FastQScreen on trimmed sequencing reads
   --skip_multiqc                Skip MultiQC step
 
 =======================================================
