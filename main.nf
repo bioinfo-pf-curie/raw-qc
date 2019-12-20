@@ -496,8 +496,8 @@ process fastp {
   
   output:
   set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastqc_fastp_reads
-  set val(name), file("*.json") into trim_results_fastp, report_results_fastp
-  file "*.log" into trim_log_fastp
+  set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
+  //file "*.log" into trim_log_fastp
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -589,14 +589,25 @@ process makeReport {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
+
+     if(params.trimtool == "fastp"){
+       """
+       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+      } else {
        """
        trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
+      }
   } else {
 
     if(params.trimtool == "trimgalore"){
        """
        trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+    } else if (params.trimtool == "fastp"){
+       """
+       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
     } else {
        """
