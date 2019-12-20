@@ -13,6 +13,7 @@ class Trimming_Report(object):
     def get_options(self):
         usage = "usage: %prog [options] arg"
         parser = OptionParser(usage)
+        parser.add_option("--l", "--logs", dest="logs", default="", help="logs of trimming")
         parser.add_option("--tr1", "--trimreport_1", dest="trim_report_1", default="", help="read adaptor sequence from trimming report_1")
         parser.add_option("--tr2", "--trimreport_2", dest="trim_report_2", default="", help="read adaptor sequence from trimming report_2. (Only for trimgalore)")
         parser.add_option("--r1", "--read1", dest="r1_file", default="", help="read data from raed1")
@@ -25,12 +26,12 @@ class Trimming_Report(object):
         ...
         (options, args) = parser.parse_args()
         ...
-        ##print(options, args)
+
         args = []
-        args = self.check_options(options.trim_report_1,options.trim_report_2, options.r1_file, options.r2_file, options.trim1_file, options.trim2_file, options.trim_tool, options.biological_name, options.output_file)
+        args = self.check_options(options.logs,options.trim_report_1,options.trim_report_2, options.r1_file, options.r2_file, options.trim1_file, options.trim2_file, options.trim_tool, options.biological_name, options.output_file)
         return(args)
  
-    def check_options(self, trim_report_1, trim_report_2, r1_file, r2_file, trim1_file, trim2_file, trim_tool, biological_name, output_file):
+    def check_options(self, logs, trim_report_1, trim_report_2, r1_file, r2_file, trim1_file, trim2_file, trim_tool, biological_name, output_file):
         """
           Check arguments in command lign.
         """
@@ -92,7 +93,7 @@ class Trimming_Report(object):
             prefixname = biological_name 
 
         args = []
-        args = (reports, reads, trims, trim_tool, biological_name, prefixname)
+        args = (logs, reports, reads, trims, trim_tool, biological_name, prefixname)
         return(args)
 
     def get_mean_length_raw(self, reads):
@@ -233,8 +234,9 @@ class Trimming_Report(object):
                       total_bases = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
-                   if re.findall('Total written', line.strip()):
-                      trimmed_reads = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Reads with adapters', line.strip()):
+                      trimmed_reads = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
+                      ##trimmed_reads = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Number of sequence pairs removed', line.strip()):
                       discarded_reads = float(re.search('^Number of sequence pairs removed [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    else:
@@ -251,15 +253,14 @@ class Trimming_Report(object):
                       total_reads_1 = int(re.search('Total reads processed:[^"]*',line).group().split(':')[1].strip().replace(",", ""))
                    if re.findall('Total basepairs processed:', line):
                       total_bases_1 = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
-                   if re.findall('Total written', line.strip()):
-                      trimmed_reads_1 = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Reads with adapters', line.strip()):
+                      trimmed_reads_1 = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Number of sequence pairs removed', line.strip()):
                       discarded_reads_1 = float(re.search('^Number of sequence pairs removed [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
                    else:
                       discarded_reads_1 = 0
-#                 trimmed_mean_length=data['summary']['after_filtering']['read1_mean_length']
 
               with open(trim_report_2) as f:
                 blocks = []
@@ -272,8 +273,8 @@ class Trimming_Report(object):
                    #   blocks.append(re.search(r'^[0-9]+',line).group().split(' ')[0])
                    if re.findall('Total basepairs processed:', line):
                       total_bases_2 = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
-                   if re.findall('Total written', line.strip()):
-                      trimmed_reads_2 = float(re.search('^Total written [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                   if re.findall('Reads with adapters', line.strip()):
+                      trimmed_reads_2 = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
@@ -299,7 +300,6 @@ class Trimming_Report(object):
         except ValueError: return False
 
 
-    
     def get_adatptor_fastp(self, reports):
         l_list = list()   
         try:
@@ -332,35 +332,73 @@ class Trimming_Report(object):
            return adapter_seq_dict
         except ValueError: return False
 
-
-    def get_stat_fastp(self, reports, biological_name):
-        l_list = list()
+    def get_stat_fastp(self, logs, length, biological_name):
         try:
-           base = os.path.basename(reports[0])
-           sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
-           with open(reports[0]) as json_file:
-              data = json.load(json_file)
-              if 'read2_mean_length' not in data['summary']['before_filtering']:
-                 total_reads=data['summary']['before_filtering']['total_reads']
-                 total_bases=data['summary']['before_filtering']['total_bases']
-                 q20_reads1=(data['read1_after_filtering']['q20_bases']/data['read1_after_filtering']['total_bases'])*100
-                 trimmed_reads=(data['summary']['after_filtering']['total_reads']/total_reads)*100
-                 discarded_reads=(100-(data['filtering_result']['passed_filter_reads']/total_reads)*100)
-                 l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
-              else:
-                 total_reads=data['summary']['before_filtering']['total_reads']
-                 ##mean_length=(data['summary']['before_filtering']['read1_mean_length']+data['summary']['before_filtering']['read2_mean_length'])/2
-                 total_bases=data['summary']['before_filtering']['total_bases']
-                 q20_reads1=(data['read1_after_filtering']['q20_bases']/data['read1_after_filtering']['total_bases'])*100
-                 q20_reads2=(data['read2_after_filtering']['q20_bases']/data['read2_after_filtering']['total_bases'])*100
-                 trimmed_reads=(data['summary']['after_filtering']['total_reads']/total_reads)*100
-                 discarded_reads=(100-(data['filtering_result']['passed_filter_reads']/total_reads)*100)
-                 l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
+           base = os.path.basename(logs)
+           sample = os.path.splitext(base)[0].rsplit('_', 1)[0]
+           l_list = list()
+           read_block = []
+           base_block = []
+           Q20_block = []
+           if length==1:
+              with open(logs) as f:
+                for i, line in enumerate(f):
+                   if re.findall('^total reads:', line):
+                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
+                      read_block.append(total_reads)
+                   if re.findall('^total bases:', line):
+                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
+                      base_block.append(total_bases)
+                   if re.findall('^Q20 bases:', line):
+                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                      Q20_block.append(Q20)
+                   if re.findall('^reads with adapter trimmed:', line):
+                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to low quality:', line):
+                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too many N:', line):
+                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too short:', line):
+                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
 
+                total_reads = read_block[0]  ##befor_trimming
+                total_bases = base_block[0]  ##befor_trimming
+                q20_reads1 = Q20_block[1]
+                trimmed_reads = (adapt_trimmed/total_reads)*100
+                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
+                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
+
+           if length==2:
+              with open(logs) as f:
+                for i, line in enumerate(f):
+                   if re.findall('^total reads:', line):
+                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
+                      read_block.append(total_reads)
+                   if re.findall('^total bases:', line):
+                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
+                      base_block.append(total_bases)
+                   if re.findall('^Q20 bases:', line):
+                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                      Q20_block.append(Q20) 
+                   if re.findall('^reads with adapter trimmed:', line):
+                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to low quality:', line):
+                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too many N:', line):
+                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too short:', line):
+                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
+                total_reads = (read_block[0]+read_block[1])  ##befor_trimming
+                total_bases = (base_block[0]+base_block[1]) ##befor_trimming
+                q20_reads1 = Q20_block[2]
+                q20_reads2 = Q20_block[3]
+                trimmed_reads = (adapt_trimmed/total_reads)*100
+                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
+                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
            stat_dict = dict(
               sample_name = sample,
               biological_name = biological_name,
-              stat= l_list
+              stat = l_list
            )
            print(stat_dict)
            return stat_dict
@@ -410,7 +448,7 @@ class Trimming_Report(object):
                  ##mean_length = (int(data['derived']['mean_sequence_lengths'][0]))
                  total_bases=int(data['total_bp_counts'][0])+int(data['total_bp_counts'][1])
                  q20_reads1 = (1-(data['trim']['modifiers']['QualityTrimmer']['fraction_bp_trimmed'][0]))*100
-                 trimmed_reads=(data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][0])
+                 trimmed_reads=(data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][0])*100
                  discarded_reads = round(data['trim']['filters']['too_short']['fraction_records_filtered'],4)
                  l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
               else:
@@ -418,7 +456,7 @@ class Trimming_Report(object):
                  total_bases=int(data['total_bp_counts'][0])+int(data['total_bp_counts'][1])
                  q20_reads1 = (1-(data['trim']['modifiers']['QualityTrimmer']['fraction_bp_trimmed'][0]))*100
                  q20_reads2 = (1-(data['trim']['modifiers']['QualityTrimmer']['fraction_bp_trimmed'][1]))*100
-                 trimmed_reads = ((data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][0]+data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][1]))/2
+                 trimmed_reads = ((data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][0]*100)+(data['trim']['modifiers']['AdapterCutter']['fraction_records_with_adapters'][1]*100))/2
                  discarded_reads = round(data['trim']['filters']['too_short']['fraction_records_filtered'],4)
                  l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
 
@@ -448,9 +486,10 @@ class Trimming_Report(object):
     def write_stats_txt(self, stats_dict, prefixname):
        """ Write json stats file.
        This file is read by MultiQC to summarize results of the trimming.
-        trimmed_reads = remove with adapter
-        discarded_reads = low_quality_reads + too_many_N_reads + too_short_reads + too_long_reads
-      
+        based reads = after trimming
+        Q20 = after trimming
+        trimmed_reads = %reads with adapter
+        discarded_reads = %(low_quality_reads + too_many_N_reads + too_short_reads + too_long_reads)/total_reads_befor_trimming
        """
        my_formatted_list = [ '%.2f' % elem for elem in stats_dict.get('stat')]
        for key, value in stats_dict.items():
@@ -467,12 +506,18 @@ class Trimming_Report(object):
 if __name__ == '__main__':
     TR = Trimming_Report()
     args = TR.get_options()
-    reports = args[0]
-    reads = args[1]
-    trims= args[2]
-    trim_tool= args[3]
-    biological_name = args[4]
-    prefixname = args[5]
+    logs=args[0]
+    reports = args[1]
+    reads = args[2]
+    trims= args[3]
+    trim_tool= args[4]
+    biological_name = args[5]
+    prefixname = args[6]
+    if len(reads)==1:
+       length=1
+    else:
+       length=2
+
     TR.get_mean_length_raw(reads)
     TR.get_mean_length_trimmed(trims)
     if trim_tool == "trimgalore":
@@ -480,7 +525,7 @@ if __name__ == '__main__':
         stat_dict = TR.get_stat_trimgalore(reports, biological_name)
     if trim_tool == "fastp":
         adapter_seq_dict = TR.get_adatptor_fastp(reports)
-        stat_dict = TR.get_stat_fastp(reports, biological_name)
+        stat_dict = TR.get_stat_fastp(logs, length, biological_name)
     if trim_tool == "atropos":
         adapter_seq_dict = TR.get_adatptor_atropos(reports)
         stat_dict = TR.get_stat_atropos(reports, biological_name)

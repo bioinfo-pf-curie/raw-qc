@@ -339,8 +339,8 @@ process trimGalore {
   set val(name), file(reads) from read_files_trimgalore
 
   output:
-  file "*fq.gz" into trim_reads_trimgalore, fastqc_trimgalore_reads
-  file "*trimming_report.txt" into trim_results_trimgalore, report_results_trimgalore
+  set val(name), file("*fastq.gz") into trim_reads_trimgalore, fastqc_trimgalore_reads
+  set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -367,7 +367,7 @@ process trimGalore {
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
-    mv ${prefix}_trimmed.fq.gz ${prefix}_R1_trimmed.fq.gz
+    mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
     """
     }else{
     """
@@ -377,7 +377,7 @@ process trimGalore {
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
-    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_R1_trimmed.fq.gz
+    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimmingreport.txt
     """
     }
@@ -400,8 +400,8 @@ process trimGalore {
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
-    mv ${prefix}_R1_val_1.fq.gz ${prefix}_R1_trimmed.fq.gz
-    mv ${prefix}_R2_val_2.fq.gz ${prefix}_R2_trimmed.fq.gz
+    mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
     """
     }else{
     """
@@ -410,8 +410,8 @@ process trimGalore {
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
       	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
-    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_R1_trimmed.fq.gz
-    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_R2_trimmed.fq.gz
+    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
     mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimmingreport.txt
     mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimmingreport.txt
     rm ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz
@@ -433,9 +433,9 @@ process atroposTrim {
   file sequences from ch_adaptor_file_defult.collect()
 
   output:
-  file "*trimming_report*" into trim_results_atropos
-  file "*_trimmed.fq.gz" into trim_reads_atropos, fastqc_atropos_reads
-  file "*.json" into report_results_atropos
+  file("*trimming_report*") into trim_results_atropos
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, fastqc_atropos_reads
+  set val(name), file("*.json") into report_results_atropos
 
    script:
    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -458,7 +458,7 @@ process atroposTrim {
          --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
          ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
-         -o ${prefix}_trimmed.fq.gz \
+         -o ${prefix}_trimmed_R1.fastq.gz \
          --report-file ${prefix}_trimming_report \
          --report-formats txt yaml json
    """
@@ -473,7 +473,7 @@ process atroposTrim {
    fi
    atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
-         -o ${prefix}_R1_trimmed.fq.gz -p ${prefix}_R2_trimmed.fq.gz  \
+         -o ${prefix}_trimmed_R1.fastq.gz -p ${prefix}_trimmed_R2.fastq.gz  \
          --times 3 --overlap 1 \
          --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
          ${ntrim} ${nextseq_trim} ${polyA_opts} \
@@ -495,9 +495,8 @@ process fastp {
   set val(name), file(reads) from read_files_fastp
   
   output:
-  file "*_trimmed.fastq.gz" into trim_reads_fastp, fastqc_fastp_reads
-  file "*.json" into trim_results_fastp, report_results_fastp
-  file "*.log" into trim_log_fastp
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastqc_fastp_reads
+  set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -550,7 +549,7 @@ process fastp {
     ${nextseq_trim} ${pico_opts} ${polyA_opts} \
     ${ntrim} \
     --length_required ${params.minlen} \
-    -i ${reads[0]} -I ${reads[1]} -o ${prefix}_R1_trimmed.fastq.gz -O ${prefix}_R2_trimmed.fastq.gz \
+    -i ${reads[0]} -I ${reads[1]} -o ${prefix}_trimmed_R1.fastq.gz -O ${prefix}_trimmed_R2.fastq.gz \
     --detect_adapter_for_pe -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
     --thread ${task.cpus} 2> ${prefix}_fasp.log
     """
@@ -577,9 +576,7 @@ process makeReport {
   !params.skip_trimming
 
   input:
-  set val(name), file(reads) from read_files_trimreport
-  file trims from trim_reads
-  file reports from trim_reports
+  set val(name), file(reads), file(trims), file(reports) from read_files_trimreport.join(trim_reads).join(trim_reports)
 
   output:
   file '*_Basic_Metrics.trim.txt' into trim_report
@@ -588,14 +585,24 @@ process makeReport {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
+     if(params.trimtool == "fastp"){
+       """
+       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+      } else {
        """
        trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
+      }
   } else {
 
     if(params.trimtool == "trimgalore"){
        """
        trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+       """
+    } else if (params.trimtool == "fastp"){
+       """
+       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
        """
     } else {
        """
@@ -622,15 +629,14 @@ process makeReport4RawData {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   if (params.singleEnd) {
-          """
-          rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
-          """
+      """
+     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+     """
   } else {
-
-          """
-          rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
-          """
-          }
+     """
+     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+     """
+  }
 }
 
 /*
@@ -652,7 +658,7 @@ process fastqcTrimmed {
   !params.skip_fastqc_trim
 
   input:
-  file reads from fastqc_trim_reads
+  set val(name), file(reads) from fastqc_trim_reads
 
   output:
   file "*_fastqc.{zip,html}" into fastqc_after_trim_results
