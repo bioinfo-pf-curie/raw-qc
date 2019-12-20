@@ -30,7 +30,9 @@ custom_data:
                 format: '{:,.0f}'
               Sample_representation:
                 title: 'Sample fraction (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
@@ -40,18 +42,24 @@ custom_data:
                 format: '{:,.0f}'
               Q20_R1:
                 title: '>Q20 R1 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Trimmed_Mean_length:
-                title: 'Trimmed Mean length'
+                title: 'Mean length after trimming'
                 format: '{:,.0f}'
               Trimmed_reads:
                 title: 'Trimmed reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Discarded_reads:
                 title: 'Discarded reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
 
     basic_metrics_PE:
@@ -72,7 +80,9 @@ custom_data:
                 format: '{:,.0f}'
               Sample_representation:
                 title: 'Sample fraction (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
@@ -82,22 +92,32 @@ custom_data:
                 format: '{:,.0f}'
               Q20_R1:
                 title: '>Q20 R1 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Q20_R2:
                 title: '>Q20 R2 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Trimmed_Mean_length:
-                title: 'Trimmed Mean length'
+                title: 'Mean length tfter trimming'
+                min: 0
+                max: 100
                 format: '{:,.0f}'
               Trimmed_reads:
                 title: 'Trimmed reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Discarded_reads:
                 title: 'Discarded reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
     basic_metrics_SE_rawdata:
            file_format: 'tsv'
@@ -117,7 +137,9 @@ custom_data:
                 format: '{:,.0f}'
               Sample_representation:
                 title: 'Sample fraction (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
@@ -127,18 +149,24 @@ custom_data:
                 format: '{:,.0f}'
               Q20_R1:
                 title: '>Q20 R1 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Trimmed_Mean_length:
-                title: 'Trimmed Mean length'
+                title: 'Mean length after trimming'
                 format: '{:,.0f}'
               Trimmed_reads:
                 title: 'Trimmed reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Discarded_reads:
                 title: 'Discarded reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
     basic_metrics_PE_rawdata:
            file_format: 'tsv'
@@ -158,7 +186,9 @@ custom_data:
                 format: '{:,.0f}'
               Sample_representation:
                 title: 'Sample fraction (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Mean_length:
                 title: 'Mean length'
@@ -168,22 +198,30 @@ custom_data:
                 format: '{:,.0f}'
               Q20_R1:
                 title: '>Q20 R1 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Q20_R2:
                 title: '>Q20 R2 (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Trimmed_Mean_length:
-                title: 'Trimmed Mean length'
+                title: 'Mean length after trimming'
                 format: '{:,.0f}'
               Trimmed_reads:
                 title: 'Trimmed reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
               Discarded_reads:
                 title: 'Discarded reads (%)'
-                format: '{:,.2f}'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
                 suffix: '%'
     adapter_seq:
          file_format: 'tsv'
