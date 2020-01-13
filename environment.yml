@@ -1,4 +1,4 @@
-name: curie-rawqc-2.0.0
+name: rawqc-2.0
 channels:
   - conda-forge
   - bioconda
@@ -9,5 +9,7 @@ dependencies:
   - trim-galore=0.6.2
   - atropos=1.1.16
   - fastp=0.20.0
+  - fastq-screen=0.13.0
+  - bowtie2=2.3.5
   - multiqc=1.8
   - conda-forge::r-markdown=0.8
