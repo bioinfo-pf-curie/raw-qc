@@ -349,7 +349,7 @@ module_order:
         path_filters:
             - '*_fastqc.zip'
         path_filters_exclude:
-            - '*_trimmed_fastqc.zip'
+            - '*trimmed*fastqc.zip'
     - cutadapt:
         name: 'Trimming metrics (TrimGalore!)'
     - fastp:
@@ -358,7 +358,7 @@ module_order:
         name: 'FastQC (trimmed)'
         info: 'This section of the report shows FastQC results after adapter trimming.'
         path_filters:
-              - '*_trimmed_fastqc.zip'
+              - '*trimmed*fastqc.zip'
     - fastq_screen:
         name: 'Fastq screen'
 

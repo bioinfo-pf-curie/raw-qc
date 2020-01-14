@@ -16,7 +16,7 @@ params {
   fastp_version = '0.20.0'
   multiqc_version = '1.8'
   rmarkdown_version = '0.8'
-  rawqc_version = '2.0.0'
+  rawqc_version = '2.1.0'
 }
 
 process {

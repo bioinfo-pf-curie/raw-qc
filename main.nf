@@ -345,7 +345,7 @@ process trimGalore {
   set val(name), file(reads) from read_files_trimgalore
 
   output:
-  set val(name), file("*fastq.gz") into trim_reads_trimgalore, fastqc_trimgalore_reads
+  set val(name), file("*fastq.gz") into trim_reads_trimgalore, trimgalore_reads
   set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
 
   script:
@@ -441,7 +441,7 @@ process atroposTrim {
   output:
 
   file("*trimming_report*") into trim_results_atropos
-  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, fastqc_atropos_reads
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, atropos_reads
   set val(name), file("*.json") into report_results_atropos
 
   script:
@@ -503,7 +503,7 @@ process fastp {
   
   output:
 
-  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastqc_fastp_reads
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastp_reads
   set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
 
   script:
@@ -572,12 +572,11 @@ if (!params.skip_trimming){
   }else if (params.trimtool == "trimgalore"){
     trim_reads = trim_reads_trimgalore
     trim_reports = report_results_trimgalore
-  }else{
+  }else if (params.trimtool == "fastp"){
     trim_reads = trim_reads_fastp
     trim_reports = report_results_fastp
   }
 }
-
 
 /*
  * Trimming reports
@@ -656,10 +655,12 @@ if (!params.skip_trimming){
      """
     }
   }
+}
 
 /*
  * QC on trim data [FastQC]
  */
+
 
 if (!params.skip_trimming){
   if (params.trimtool == "atropos"){
@@ -722,6 +723,7 @@ process makeFastqScreenGenomeConfig {
 }
 
 process fastq_screen {
+   tag "$name"
    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
 
    when:
@@ -732,9 +734,9 @@ process fastq_screen {
    file fastq_screen_config from ch_fastq_screen_config.collect()
 
    output:
-   file "*_screen.txt" into fastq_screen_txt
-   file "*_screen.html" into fastq_screen_html
-   file "*tagged_filter.fastq.gz" into nohits_fastq
+   file("*_screen.txt") into fastq_screen_txt
+   file("*_screen.html") into fastq_screen_html
+   file("*tagged_filter.fastq.gz") into nohits_fastq
 
    script:
    """
@@ -833,3 +835,4 @@ process multiqc {
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
+
