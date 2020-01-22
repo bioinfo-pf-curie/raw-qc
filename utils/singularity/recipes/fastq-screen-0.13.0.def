@@ -1,0 +1,17 @@
+Bootstrap: docker
+From: conda/miniconda3
+
+%environment
+  LC_ALL=C.UTF-8
+  LANG=C.UTF-8
+  export LANG LC_ALL
+
+%post
+ conda update -n base -c defaults conda
+ conda config --add channels defaults \
+ && conda config --add channels conda-forge \
+ && conda config --add channels bioconda
+ conda install -y which 
+ apt-get update && apt-get install -y procps
+ conda install -y fastq-screen=0.13.0
+ conda clean -a
