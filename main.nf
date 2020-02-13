@@ -722,7 +722,7 @@ process makeFastqScreenGenomeConfig {
     return result
 }
 
-process fastq_screen {
+process fastqScreen {
    tag "$name"
    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
 
