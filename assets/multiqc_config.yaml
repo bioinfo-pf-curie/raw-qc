@@ -365,6 +365,10 @@ module_order:
 #############################
 ## Display
 
+remove_sections:
+  - fastqc_overrepresented_sequences
+  - fastqc_status_checks
+
 custom_content:
   order:
     - basic_metrics_SE
