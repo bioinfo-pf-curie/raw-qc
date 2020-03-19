@@ -12,7 +12,7 @@ The fact that you are presently reading this means that you have had knowledge o
 
 /*
 ========================================================================================
-                         Raw-QC
+i                         Raw-QC
 ========================================================================================
  Raw QC Pipeline.
  #### Homepage / Documentation
@@ -157,7 +157,7 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
    }else{
       Channel
          .from(file("${params.samplePlan}"))
@@ -578,9 +578,10 @@ if (!params.skip_trimming){
   }
 }
 
+
 /*
  * Trimming reports
- */
+*/ 
 
 if (!params.skip_trimming){
 
@@ -599,31 +600,36 @@ if (!params.skip_trimming){
     output:
     file '*_Basic_Metrics.trim.txt' into trim_report
     file "*_Adaptor_seq.trim.txt" into trim_adaptor
-
     script:
     prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    isPE = params.singleEnd ? 0 : 1
     if (params.singleEnd) {
       if(params.trimtool == "fastp"){
       """
-      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
       """
       } else {
       """
-      trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
       """
       }
     } else {
       if(params.trimtool == "trimgalore"){
       """
-      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
       """
       } else if (params.trimtool == "fastp"){
       """
-      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
       """
       } else {
       """
-      trimming_report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
       """
       }
     }
@@ -703,10 +709,13 @@ if (!params.skip_fastqc_trim && !params.skip_trimming){
 
 process makeFastqScreenGenomeConfig {
     publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+    
+    when:
+    !params.skip_fastq_screen
 
     input:
     val(fastqScreenGenome) from fastqScreenGenomeCh
-
+    
     output:
     file(outputFile) into ch_fastq_screen_config
 
@@ -746,7 +755,7 @@ process fastqScreen {
 
 /*
  * MulitQC report
- */
+*/ 
 
  process get_software_versions {
   output:
@@ -765,6 +774,7 @@ process fastqScreen {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
+
 
 process workflow_summary_mqc {
   when:

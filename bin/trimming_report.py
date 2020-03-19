@@ -100,9 +100,11 @@ class Trimming_Report(object):
           Store read length for a seed of 1000 reads befor trimming.
         """
         try:
+           print(reads)
            if len(reads)==1:
               l_list = list()
               raw_fastq = reads[0]
+              print(raw_fastq)
               with FastqReader(raw_fastq) as f:
                   for i, record in enumerate(f,1000):
                       l = len(record)
@@ -274,8 +276,8 @@ class Trimming_Report(object):
                       total_bases_2 = int(re.search('Total basepairs processed:[^"]*',line).group().split(':')[1].split('bp')[0].strip().replace(",", ""))
                    if re.findall('Reads with adapters', line.strip()):
                       trimmed_reads_2 = float(re.search('Reads with adapters:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
-                   if re.findall('Quality-trimmed:[^"]', line):
-                      q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
+                   #if re.findall('Quality-trimmed:[^"]', line):
+                   #   q20_reads1 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Quality-trimmed:[^"]', line):
                       q20_reads2 = 100-float(re.search('Quality-trimmed:[^"]*',line).group().strip().split('(')[1].split(')')[0].split('%')[0])
                    if re.findall('Number of sequence pairs removed', line.strip()):
