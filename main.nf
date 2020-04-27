@@ -585,7 +585,7 @@ if (!params.skip_trimming){
 
 if (!params.skip_trimming){
 
-  rawdata_report = Channel.empty()
+  //rawdata_report = Channel.empty()
 
   process makeReport {
     publishDir "${params.outdir}/makeReport", mode: 'copy',
@@ -636,18 +636,18 @@ if (!params.skip_trimming){
   }
 }else{
 
-  trim_report = Channel.empty()
   trim_adaptor = Channel.empty()
 
   process makeReport4RawData {
     publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
-    //when:
-    //params.skip_trimming
 
     input:
     set val(name), file(reads) from read_files_rawdatareport
+
+    output:
+    file '*_Basic_Metrics_rawdata.txt' into trim_report
 
     script:
     prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -753,9 +753,10 @@ process fastqScreen {
    """
 }
 
+
 /*
  * MulitQC report
-*/ 
+ */
 
  process get_software_versions {
   output:
@@ -774,7 +775,6 @@ process fastqScreen {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-
 
 process workflow_summary_mqc {
   when:
@@ -799,6 +799,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 }
 
 
+
 /*
  *  MultiQC
  */
@@ -813,13 +814,13 @@ process multiqc {
   file multiqc_config from ch_multiqc_config
   file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
   file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
-  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
-  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.map{items->items[1]}.collect().ifEmpty([])
+  file ('fastp/*') from trim_results_fastp.map{items->items[1]}.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
   file ('fastq_screen/*') from fastq_screen_txt.collect().ifEmpty([])
   file ('makeReport/*') from trim_report.collect().ifEmpty([])
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
-  file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
+  //file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
   file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
