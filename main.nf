@@ -12,7 +12,7 @@ The fact that you are presently reading this means that you have had knowledge o
 
 /*
 ========================================================================================
-                         Raw-QC
+i                         Raw-QC
 ========================================================================================
  Raw QC Pipeline.
  #### Homepage / Documentation
@@ -65,6 +65,7 @@ def helpMessage() {
       --skip_fastqc_raw             Skip FastQC on raw sequencing reads
       --skip_trimming               Skip trimming step
       --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+      --skip_fastq_sreeen           Skip FastQScreen on trimmed sequencing reads
       --skip_multiqc                Skip MultiQC step
 
     =======================================================
@@ -138,6 +139,11 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
+// FastqScreen
+Channel
+    .from(params.fastqScreenGenomes)
+    .set{ fastqScreenGenomeCh }
+
 /*
  * CHANNELS
  */
@@ -151,13 +157,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
-         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
    }
    params.reads=false
 }
@@ -167,13 +173,13 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
     }
 } else {
     Channel
@@ -299,8 +305,8 @@ workflow.onComplete {
 }
 
 /*
- * STEP 1 - FastQC
-*/
+ * First QC on raw data [FastQC]
+ */
 
 
 process fastqc {
@@ -325,8 +331,8 @@ process fastqc {
 
 
 /*
- * STEP 2 - Reads Trimming
-*/
+ * Reads Trimming
+ */
 
 process trimGalore {
   tag "$name" 
@@ -339,7 +345,7 @@ process trimGalore {
   set val(name), file(reads) from read_files_trimgalore
 
   output:
-  set val(name), file("*fastq.gz") into trim_reads_trimgalore, fastqc_trimgalore_reads
+  set val(name), file("*fastq.gz") into trim_reads_trimgalore, trimgalore_reads
   set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
 
   script:
@@ -433,26 +439,27 @@ process atroposTrim {
   file sequences from ch_adaptor_file_defult.collect()
 
   output:
+
   file("*trimming_report*") into trim_results_atropos
-  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, fastqc_atropos_reads
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, atropos_reads
   set val(name), file("*.json") into report_results_atropos
 
-   script:
-   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-   ntrim = params.ntrim ? "--trim-n" : ""
-   nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
-   polyA_opts = params.polyA ? "-a A{10}" : ""
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  ntrim = params.ntrim ? "--trim-n" : ""
+  nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
+  polyA_opts = params.polyA ? "-a A{10}" : ""
 
-   if (params.singleEnd) {
-   """
-   if  [ "${params.adapter}" == "truseq" ]; then
-      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
-   elif [ "${params.adapter}" == "nextera" ]; then
-      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
-   elif [ "${params.adapter}" == "smallrna" ]; then
-      echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
-   fi
-   atropos trim -se ${reads} \
+  if (params.singleEnd) {
+  """
+  if  [ "${params.adapter}" == "truseq" ]; then
+     echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+  elif [ "${params.adapter}" == "nextera" ]; then
+     echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+  elif [ "${params.adapter}" == "smallrna" ]; then
+     echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
+  fi
+  atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
          --times 3 --overlap 1 \
          --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
@@ -461,17 +468,17 @@ process atroposTrim {
          -o ${prefix}_trimmed_R1.fastq.gz \
          --report-file ${prefix}_trimming_report \
          --report-formats txt yaml json
-   """
-   } else {
-   """
-   if [ "${params.adapter}" == "truseq" ]; then
-      echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
-      echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
-   elif [ "${params.adapter}" == "nextera" ]; then
-      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
-      echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
-   fi
-   atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
+  """
+  } else {
+  """
+  if [ "${params.adapter}" == "truseq" ]; then
+     echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+     echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
+  elif [ "${params.adapter}" == "nextera" ]; then
+     echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+     echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
+  fi
+  atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_trimmed_R1.fastq.gz -p ${prefix}_trimmed_R2.fastq.gz  \
          --times 3 --overlap 1 \
@@ -480,8 +487,8 @@ process atroposTrim {
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
          --report-formats txt yaml json
-   """
-   }
+  """
+  }
 }
 
 process fastp {
@@ -495,7 +502,8 @@ process fastp {
   set val(name), file(reads) from read_files_fastp
   
   output:
-  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastqc_fastp_reads
+
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastp_reads
   set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
 
   script:
@@ -557,118 +565,198 @@ process fastp {
 }
 
 
-if(params.trimtool == "atropos"){
-  trim_reads = trim_reads_atropos
-  trim_reports = report_results_atropos
-}else if (params.trimtool == "trimgalore"){
-  trim_reads = trim_reads_trimgalore
-  trim_reports = report_results_trimgalore
-}else{
-  trim_reads = trim_reads_fastp
-  trim_reports = report_results_fastp
+if (!params.skip_trimming){
+  if(params.trimtool == "atropos"){
+    trim_reads = trim_reads_atropos
+    trim_reports = report_results_atropos
+  }else if (params.trimtool == "trimgalore"){
+    trim_reads = trim_reads_trimgalore
+    trim_reports = report_results_trimgalore
+  }else if (params.trimtool == "fastp"){
+    trim_reads = trim_reads_fastp
+    trim_reports = report_results_fastp
+  }
 }
 
-process makeReport {
-  publishDir "${params.outdir}/makeReport", mode: 'copy',
+
+/*
+ * Trimming reports
+*/ 
+
+if (!params.skip_trimming){
+
+  //rawdata_report = Channel.empty()
+
+  process makeReport {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
-  when:
-  !params.skip_trimming
+    when:
+    !params.skip_trimming
 
-  input:
-  set val(name), file(reads), file(trims), file(reports) from read_files_trimreport.join(trim_reads).join(trim_reports)
+    input:
+    set val(name), file(reads), file(trims), file(reports) from read_files_trimreport.join(trim_reads).join(trim_reports)
 
-  output:
-  file '*_Basic_Metrics.trim.txt' into trim_report
-  file "*_Adaptor_seq.trim.txt" into trim_adaptor
-
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
-     if(params.trimtool == "fastp"){
-       """
-       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
-       """
+    output:
+    file '*_Basic_Metrics.trim.txt' into trim_report
+    file "*_Adaptor_seq.trim.txt" into trim_adaptor
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    isPE = params.singleEnd ? 0 : 1
+    if (params.singleEnd) {
+      if(params.trimtool == "fastp"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
       } else {
-       """
-       trimming_report.py --tr1 ${reports} --r1 ${reads} --t1 ${trims} --u ${params.trimtool} --b ${name} --o ${prefix}
-       """
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
       }
-  } else {
-
-    if(params.trimtool == "trimgalore"){
-       """
-       trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
-       """
-    } else if (params.trimtool == "fastp"){
-       """
-       trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
-       """
     } else {
-       """
-       trimming_report.py --tr1 ${reports[0]} --r1 ${reads[0]} --r2 ${reads[1]} --t1 ${trims[0]} --t2 ${trims[1]} --u ${params.trimtool} --b ${name} --o ${prefix}
-       """
+      if(params.trimtool == "trimgalore"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      } else if (params.trimtool == "fastp"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      } else {
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      }
+    }
+  }
+}else{
+
+  trim_adaptor = Channel.empty()
+
+  process makeReport4RawData {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+
+    input:
+    set val(name), file(reads) from read_files_rawdatareport
+
+    output:
+    file '*_Basic_Metrics_rawdata.txt' into trim_report
+
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    if (params.singleEnd) {
+     """
+     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+     """
+    } else {
+     """
+     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+     """
     }
   }
 }
 
-
-process makeReport4RawData {
-  publishDir "${params.outdir}/makeReport", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
-
-  when:
-  params.skip_trimming
-
-  input:
-  set val(name), file(reads) from read_files_rawdatareport
-
-  output:
-  file "*_Basic_Metrics_rawdata.txt" into rawdata_report
-
-  script:
-  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  if (params.singleEnd) {
-      """
-     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
-     """
-  } else {
-     """
-     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
-     """
-  }
-}
-
 /*
- * STEP 3 - FastQC after Trim!
-*/
-if(params.trimtool == "atropos"){
-  fastqc_trim_reads = fastqc_atropos_reads
-}else if (params.trimtool == "trimgalore"){
-  fastqc_trim_reads = fastqc_trimgalore_reads
+ * QC on trim data [FastQC]
+ */
+
+
+if (!params.skip_trimming){
+  if (params.trimtool == "atropos"){
+    atropos_reads.into{fastqc_trim_reads; fastq_screen_reads} 
+  }else if (params.trimtool == "trimgalore"){
+    trimgalore_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }else{
+    fastp_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }
 }else{
-  fastqc_trim_reads = fastqc_fastp_reads
+  fastq_screen_reads = read_fastqscreen  
+  fastqc_trim_reads = Channel.empty()
 }
- 
-process fastqcTrimmed {
-  publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
+
+
+if (!params.skip_fastqc_trim && !params.skip_trimming){
+  process fastqcTrimmed {
+    publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-  when:
-  !params.skip_fastqc_trim
+    input:
+    set val(name), file(reads) from fastqc_trim_reads
 
-  input:
-  set val(name), file(reads) from fastqc_trim_reads
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_after_trim_results
 
-  output:
-  file "*_fastqc.{zip,html}" into fastqc_after_trim_results
-
-  script:
-  """
-  fastqc -q $reads -t ${task.cpus}
-  """
+    script:
+    """
+    fastqc -q $reads -t ${task.cpus}
+    """
+  }
+}else{
+  fastqc_after_trim_results = Channel.empty()
 }
 
+
+/*
+ * FastqScreen
+ */
+
+process makeFastqScreenGenomeConfig {
+    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+    
+    when:
+    !params.skip_fastq_screen
+
+    input:
+    val(fastqScreenGenome) from fastqScreenGenomeCh
+    
+    output:
+    file(outputFile) into ch_fastq_screen_config
+
+    script:
+    outputFile = 'fastq_screen_databases.config'
+
+    String result = ''
+    for (Map.Entry entry: fastqScreenGenome.entrySet()) {
+        result += """
+        echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
+    }
+
+    return result
+}
+
+process fastqScreen {
+   tag "$name"
+   publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+
+   when:
+   !params.skip_fastq_screen
+
+   input:
+   set val(name), file(reads) from fastq_screen_reads
+   file fastq_screen_config from ch_fastq_screen_config.collect()
+
+   output:
+   file("*_screen.txt") into fastq_screen_txt
+   file("*_screen.html") into fastq_screen_html
+   file("*tagged_filter.fastq.gz") into nohits_fastq
+
+   script:
+   """
+   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --nohits --aligner bowtie2 ${reads}
+   """
+}
+
+
+/*
+ * MulitQC report
+ */
 
  process get_software_versions {
   output:
@@ -679,6 +767,7 @@ process fastqcTrimmed {
   echo $workflow.manifest.version &> v_rawqc.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
+  fastq_screen --version &> v_fastqscreen.txt
   trim_galore --version &> v_trimgalore.txt
   echo "lol" &> v_atropos.txt
   fastp --version &> v_fastp.txt
@@ -709,8 +798,10 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
+
+
 /*
- * * STEP 4 - MultiQC
+ *  MultiQC
  */
 
 
@@ -723,14 +814,18 @@ process multiqc {
   file multiqc_config from ch_multiqc_config
   file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
   file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
-  file ('trimGalore/*') from trim_results_trimgalore.collect().ifEmpty([])
-  file ('fastp/*') from trim_results_fastp.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.map{items->items[1]}.collect().ifEmpty([])
+  file ('fastp/*') from trim_results_fastp.map{items->items[1]}.collect().ifEmpty([])
   file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
+  file ('fastq_screen/*') from fastq_screen_txt.collect().ifEmpty([])
   file ('makeReport/*') from trim_report.collect().ifEmpty([])
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
-  file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
+  //file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
   file ('software_versions/*') from software_versions_yaml.collect()
   file ('workflow_summary/*') from workflow_summary_yaml.collect()
+
+  when:
+  !params.skip_multiqc
   
   output:
   file splan
@@ -748,6 +843,7 @@ process multiqc {
   """
   mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
-  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
+

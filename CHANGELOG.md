@@ -1,4 +1,15 @@
 ***********************************
+CHANGES IN VERSION 2.1.0
+
+NEW FEATURES
+
+   o Add FastqScreen module
+
+BUG FIXES
+
+   o Fix bug with --skip_trimming option where MultiQC was stuck
+
+***********************************
 CHANGES IN VERSION 2.0.0
 
 NEW FEATURES
