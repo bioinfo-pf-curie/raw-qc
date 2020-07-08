@@ -1,4 +1,12 @@
 ***********************************
+CHANGES IN VERSION 2.1.1
+
+BUG FIXES
+
+   o Fix typo in fastqscreen annotation path
+
+
+***********************************
 CHANGES IN VERSION 2.1.0
 
 NEW FEATURES
