@@ -52,7 +52,7 @@ process {
   withName:output_documentation {
     container = "${params.containerPath}/r-markdown-${params.rmarkdown_version}.simg"
   }
-  withName:fastq_screen {
+  withName:fastqScreen {
     container = "${params.containerPath}/fastq-screen-${params.fastq_screen_version}.simg"
   }
 }
