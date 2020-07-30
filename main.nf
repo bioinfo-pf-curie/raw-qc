@@ -141,7 +141,7 @@ ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.f
 
 // FastqScreen
 Channel
-    .of(params.fastqScreenGenomes)
+    .from(params.fastqScreenGenomes)
     .set{ fastqScreenGenomeCh }
 
 /*
@@ -467,7 +467,7 @@ process atroposTrim {
          --threads ${task.cpus} \
          -o ${prefix}_trimmed_R1.fastq.gz \
          --report-file ${prefix}_trimming_report \
-         --report-formats txt yaml json
+         --report-formats txt json
   """
   } else {
   """
@@ -486,7 +486,7 @@ process atroposTrim {
          ${ntrim} ${nextseq_trim} ${polyA_opts} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
-         --report-formats txt yaml json
+         --report-formats txt json
   """
   }
 }
