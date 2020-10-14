@@ -1,148 +1,192 @@
 #!/usr/bin/env nextflow
 
 /*
-Copyright Institut Curie 2020
+Copyright Institut Curie 2019
 This software is a computer program whose purpose is to analyze high-throughput sequencing data.
 You can use, modify and/ or redistribute the software under the terms of license (see the LICENSE file for more details).
-The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
-Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data.
+The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND. 
+Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. 
 The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
-
-This script is based on the nf-core guidelines. See https://nf-co.re/ for more information
 */
+
 
 /*
 ========================================================================================
-<!-- TODO - Pipeline Name -->
+i                         Raw-QC
 ========================================================================================
+ Raw QC Pipeline.
  #### Homepage / Documentation
-<!-- TODO - Pipeline code url -->
+ https://gitlab.curie.fr/data-analysis/raw-qc
 ----------------------------------------------------------------------------------------
 */
 
-// File with text to display when a developement version is used
-devMessageFile = file("$baseDir/assets/devMessage.txt")
 
 def helpMessage() {
-  if ("${workflow.manifest.version}" =~ /dev/ ){
-     log.info devMessageFile.text
-  }
+    if ("${workflow.manifest.version}" =~ /dev/ ){
+       dev_mess = file("$baseDir/assets/dev_message.txt")
+       log.info dev_mess.text
+    }
 
-  log.info """
-  v${workflow.manifest.version}
-  ======================================================================
+    log.info"""
+    raw-qc v${workflow.manifest.version}
+    ==========================================================
 
-  Usage:
-  nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
-  nextflow run main.nf --samplePlan samplePlan --genome hg19 -profile conda
+    Usage:
+    nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
+    nextflow run main.nf --samplePlan sample_plan -profile conda
 
-  Mandatory arguments:
-    --reads [file]                Path to input data (must be surrounded with quotes)
-    --samplePlan [file]           Path to sample plan input file (cannot be used with --reads)
-    --design [file]               Path to design input file
-    --genome [str]                Name of genome reference
-    -profile [str]                Configuration profile to use. test / conda / multiconda / path / multipath / singularity / docker / cluster (see below)
+    Mandatory arguments:
+      --reads 'READS'               Path to input data (must be surrounded with quotes)
+      --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
+      -profile PROFILE              Configuration profile to use. test / conda / singularity / cluster (see below)
 
-  =======================================================
-  Available Profiles
+    Options:
+      --singleEnd                   Specifies that the input is single end reads
+      --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
 
-    -profile test                Set up the test dataset
-    -profile conda               Build a new conda environment per process before running the pipeline
-    -profile multiconda          Build a single conda for all processes before running the pipeline
-    -profile path                Use the path defined in configuration for all tool
-    -profile multipath           USe the paths defined in configuration for each tool
-    -profile singularity         Use the Singularity images for each process
-    -profile cluster             Run the workflow on the cluster, instead of locally
+    Trimming options:
+      --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
+      --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
+      --ntrim                       Trim 'N' bases from either side of the reads
+      --two_colour                  Trimming for NextSeq/NovaSeq sequencers
+      --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
 
-  """.stripIndent()
+    Presets:
+      --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+      --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+      --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
+
+    Other options:
+      --outdir 'PATH'               The output directory where the results will be saved
+      -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+      --metadata 'FILE'             Add metadata file for multiQC report
+
+    Skip options:
+      --skip_fastqc_raw             Skip FastQC on raw sequencing reads
+      --skip_trimming               Skip trimming step
+      --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
+      --skip_fastq_sreeen           Skip FastQScreen on trimmed sequencing reads
+      --skip_multiqc                Skip MultiQC step
+
+    =======================================================
+    Available Profiles
+
+      -profile test                Set up the test dataset
+      -profile conda               Build a new conda environment before running the pipeline
+      -profile condaPath           Use a pre-build conda environment already installed on our cluster
+      -profile singularity         Use the Singularity images for each process
+      -profile cluster             Run the workflow on the cluster, instead of locally
+
+    """.stripIndent()
 }
 
-/************************************
- * SET UP CONFIGURATION VARIABLES
- */
 
 // Show help emssage
 if (params.help){
-  helpMessage()
-  exit 0
+    helpMessage()
+    exit 0
 }
 
-// Configurable reference genomes
-
-// TODO - ADD HERE ANY ANNOTATION 
-
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
-}
 
 // Has the run name been specified by the user?
-// this has the bonus effect of catching both -name and --name
-customRunName = params.name
+//  this has the bonus effect of catching both -name and --name
+custom_runName = params.name
 if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
-  customRunName = workflow.runName
+  custom_runName = workflow.runName
 }
 
-// Stage config files
-multiqcConfigCh = Channel.fromPath(params.multiqcConfig)
-OutputDocsCh = Channel.fromPath("$baseDir/docs/output.md")
 
-/***********************************
- * CHANNELS
- */
+// Validate inputs 
+if (params.trimtool != 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
+    exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
+} 
 
-// Validate inputs
-if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
-  exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
+if (params.adapter != 'truseq' && params.adapter != 'nextera' && params.adapter != 'smallrna' && params.adapter!= 'auto' ){
+    exit 1, "Invalid adaptator seq tool option: ${params.adapter}. Valid options: 'truseq', 'nextera', 'smallrna', 'auto'"
 }
 
-if ( params.metadata ){
-  Channel
-    .fromPath( params.metadata )
-    .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
-    .set { metadataCh }
-}else{
-  metadataCh = Channel.empty()
+if (params.adapter == 'auto' && params.trimtool == 'atropos') {
+   exit 1, "Cannot use Atropos without specifying --adapter sequence."
+}
+
+if (params.adapter == 'smallrna' && !params.singleEnd){
+    exit 1, "smallRNA requires singleEnd data."
 }
 
 /*
- * Create a channel for input read files
+if (params.ntrim && params.trimtool == 'fastp') {
+  log.warn "[raw-qc] The 'ntrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
+}
+*/
+
+if (params.pico_v1 && params.pico_v2){
+    exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2"
+}
+
+if (params.pico_v1 && params.pico_v2 && params.trimtool == 'atropos'){
+    exit 1, "Cannot use Atropos for pico preset"
+}
+
+if (params.singleEnd && params.pico_v2){
+   exit 1, "Cannot use --pico_v2 for single end."
+}
+
+
+
+// Stage config files
+ch_multiqc_config = Channel.fromPath(params.multiqc_config)
+ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+
+// FastqScreen
+Channel
+    .from(params.fastqScreenGenomes)
+    .set{ fastqScreenGenomeCh }
+
+/*
+ * CHANNELS
  */
+if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
+   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
+}
 
 if(params.samplePlan){
-  if(params.singleEnd){
-    Channel
-      .from(file("${params.samplePlan}"))
-      .splitCsv(header: false)
-      .map{ row -> [ row[0], [file(row[2])]] }
-      .set { rawReadsFastqc }
-  }else{
-    Channel
-      .from(file("${params.samplePlan}"))
-      .splitCsv(header: false)
-      .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-      .set { rawReadsFastqc }
+   if(params.singleEnd){
+      Channel
+         .from(file("${params.samplePlan}"))
+         .splitCsv(header: false)
+         .map{ row -> [ row[1], [file(row[2])]] }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
+   }else{
+      Channel
+         .from(file("${params.samplePlan}"))
+         .splitCsv(header: false)
+         .map{ row -> [ row[1], [file(row[2]), file(row[3])]] }
+         .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
    }
-  params.reads=false
+   params.reads=false
 }
 else if(params.readPaths){
-  if(params.singleEnd){
-    Channel
-      .from(params.readPaths)
-      .map { row -> [ row[0], [file(row[1][0])]] }
-      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .set { rawReadsFastqc }
-  } else {
-    Channel
-      .from(params.readPaths)
-      .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-      .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-      .set { rawReadsFastqc }
-  }
+    if(params.singleEnd){
+        Channel
+            .from(params.readPaths)
+            .map { row -> [ row[0], [file(row[1][0])]] }
+            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen}
+    } else {
+        Channel
+            .from(params.readPaths)
+            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+            .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport; read_fastqscreen }
+    }
 } else {
-  Channel
-    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .set { rawReadsFastqc }
+    Channel
+        .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line\
+." }
+        .into { read_files_fastqc; read_files_trimgalore; read_files_atropos_detect; read_files_atropos_trim; read_files_fastp; read_files_trimreport; read_files_rawdatareport }
 }
 
 /*
@@ -150,230 +194,104 @@ else if(params.readPaths){
  */
 
 if (params.samplePlan){
-  samplePlanCh = Channel.fromPath(params.samplePlan)
+  ch_splan = Channel.fromPath(params.samplePlan)
 }else if(params.readPaths){
   if (params.singleEnd){
     Channel
-      .from(params.readPaths)
-      .collectFile() {
-        item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
-       }
-      .set{ samplePlanCh }
+       .from(params.readPaths)
+       .collectFile() {
+         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+        }
+       .set{ ch_splan }
   }else{
      Channel
        .from(params.readPaths)
        .collectFile() {
-         item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
         }
-       .set{ samplePlanCh }
+       .set{ ch_splan }
   }
 }else{
   if (params.singleEnd){
     Channel
-      .fromFilePairs( params.reads, size: 1 )
-      .collectFile() {
-        item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
-       }     
-      .set { samplePlanCh }
+       .fromFilePairs( params.reads, size: 1 )
+       .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+       }
+       .set { ch_splan }
   }else{
     Channel
-      .fromFilePairs( params.reads, size: 2 )
-      .collectFile() {
-        item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
-      }     
-      .set { samplePlanCh }
+       .fromFilePairs( params.reads, size: 2 )
+       .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+       }
+       .set { ch_splan }
    }
 }
 
-
-/******************************
- * Design file
- */
-
-// TODO - UPDATE BASED ON YOUR DESIGN
-
-if (params.design){
-  Channel
-    .fromPath(params.design)
-    .ifEmpty { exit 1, "Design file not found: ${params.design}" }
-    .into { chDesignCheck }
-
-  chDesignControl
-    .splitCsv(header:true)
-    .map { row ->
-      if(row.CONTROLID==""){row.CONTROLID='NO_INPUT'}
-      return [ row.SAMPLEID, row.CONTROLID, row.SAMPLENAME, row.GROUP, row.PEAKTYPE ]
-     }
-    .set { chDesignControl }
-}else{
-  chDesignCheck = Channel.empty()
+if ( params.metadata ){
+   Channel
+       .fromPath( params.metadata )
+       .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
+       .set { ch_metadata }
 }
 
-/********************************
- * Header log info
- */
 
+// Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
-   log.info devMessageFile.text
+   dev_mess = file("$baseDir/assets/dev_message.txt")
+   log.info dev_mess.text
 }
 
 log.info """=======================================================
 
-workflow v${workflow.manifest.version}
+raw-qc v${workflow.manifest.version}"
 ======================================================="""
 def summary = [:]
-
-summary['Max Memory']     = params.maxMemory
-summary['Max CPUs']       = params.maxCpus
-summary['Max Time']       = params.maxTime
+summary['Pipeline Name']  = 'rawqc'
+summary['Pipeline Version'] = workflow.manifest.version
+summary['Run Name']     = custom_runName ?: workflow.runName
+summary['Metadata']     = params.metadata
+if (params.samplePlan) {
+   summary['SamplePlan']   = params.samplePlan
+}else{
+   summary['Reads']        = params.reads
+}
+summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
+summary['Trimming tool']= params.trimtool
+summary['Adapter']= params.adapter
+summary['Min quality']= params.qualtrim
+summary['Min len']= params.minlen
+summary['N trim']= params.ntrim ? 'True' : 'False'
+summary['Two colour']= params.two_colour ? 'True' : 'False'
+if (params.pico_v1) {
+   summary['Pico_v1'] = 'True'
+}
+if(params.pico_v2) {
+   summary['Pico_v2'] = 'True'
+}
+if (!params.pico_v1 && !params.pico_v2) {
+   summary['Pico'] = 'False'
+}
+summary['PolyA']= params.polyA ? 'True' : 'False'
+summary['Max Memory']   = params.max_memory
+summary['Max CPUs']     = params.max_cpus
+summary['Max Time']     = params.max_time
 summary['Container Engine'] = workflow.containerEngine
 summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outputDir
+summary['Output dir']     = params.outdir
 summary['Config Profile'] = workflow.profile
 
 if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-// TODO - ADD YOUR NEXTFLOW PROCESS HERE
-
-/*
- * MultiQC
- */
-
-process getSoftwareVersions{
-  label 'python'
-  label 'lowCpu'
-  label 'lowMem'
-  publishDir path: "${params.outdir}/software_versions", mode: "copy"
-
-  when:
-  !params.skipSoftVersions
-
-  input:
-  file 'v_fastqc.txt' from chFastqcVersion.first().ifEmpty([])
-
-  output:
-  file 'software_versions_mqc.yaml' into softwareVersionsYaml
-
-  script:
-  """
-  echo $workflow.manifest.version &> v_pipeline.txt
-  echo $workflow.nextflow.version &> v_nextflow.txt
-  scrape_software_versions.py &> software_versions_mqc.yaml
-  """
-}
-
-process multiqc {
-  label 'multiqc'
-  label 'lowCpu'
-  label 'lowMem'
-  publishDir "${params.outdir}/MultiQC", mode: 'copy'
-
-  when:
-  !params.skipMultiQC
-
-  input:
-  file splan from chSplan.collect()
-  file multiqcConfig from chMultiqcConfig
-  file design from chDesignMqc.collect().ifEmpty([])
-  file metadata from chMetadata.ifEmpty([])
-  file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
-  file ('workflow_summary/*') from workflowSummaryYaml.collect()
-
-  output: 
-  file splan
-  file "*_report.html" into multiqc_report
-  file "*_data"
-
-  script:
-  rtitle = customRunName ? "--title \"$customRunName\"" : ''
-  rfilename = customRunName ? "--filename " + customRunName + "_report" : "--filename report"
-  metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
-  //isPE = params.singleEnd ? "" : "-p"
-  designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content"
-  """
-  mqc_header.py --splan ${splan} --name "PIPELINE" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
-  multiqc . -f $rtitle $rfilename -c multiqc-config-header.yaml -c $multiqcConfig $modules_list
-  """
-}
-
-/*
- * Sub-routine
- */
-
-process outputDocumentation {
-  label 'python'
-  label 'lowCpu'
-  label 'lowMem'
-
-  publishDir "${params.outdir}/pipeline_info", mode: 'copy'
-
-  input:
-  file output_docs from chOutputDocs
-  file images from chOutputDocsImages
-
-  output:
-  file "results_description.html"
-
-  script:
-  """
-  markdown_to_html.py $output_docs -o results_description.html
-  """
-}
-         
-
+/* Creates a file at the end of workflow execution */
 workflow.onComplete {
-
-  /* pipeline_report.html */
-
-  def reportFields = [:]
-  reportFields['version'] = workflow.manifest.version
-  reportFields['runName'] = customRunName ?: workflow.runName
-  reportFields['success'] = workflow.success
-  reportFields['dateComplete'] = workflow.complete
-  reportFields['duration'] = workflow.duration
-  reportFields['exitStatus'] = workflow.exitStatus
-  reportFields['errorMessage'] = (workflow.errorMessage ?: 'None')
-  reportFields['errorReport'] = (workflow.errorReport ?: 'None')
-  reportFields['commandLine'] = workflow.commandLine
-  reportFields['projectDir'] = workflow.projectDir
-  reportFields['summary'] = summary
-  reportFields['summary']['Date Started'] = workflow.start
-  reportFields['summary']['Date Completed'] = workflow.complete
-  reportFields['summary']['Pipeline script file path'] = workflow.scriptFile
-  reportFields['summary']['Pipeline script hash ID'] = workflow.scriptId
-  if(workflow.repository) reportFields['summary']['Pipeline repository Git URL'] = workflow.repository
-  if(workflow.commitId) reportFields['summary']['Pipeline repository Git Commit'] = workflow.commitId
-  if(workflow.revision) reportFields['summary']['Pipeline Git branch/tag'] = workflow.revision
-
-  // Render the TXT template
-  def engine = new groovy.text.GStringTemplateEngine()
-  def tf = new File("$baseDir/assets/onCompleteTemplate.txt")
-  def txtTemplate = engine.createTemplate(tf).make(reportFields)
-  def reportTxt = txtTemplate.toString()
-    
-  // Render the HTML template
-  def hf = new File("$baseDir/assets/onCompleteTemplate.html")
-  def htmlTemplate = engine.createTemplate(hf).make(reportFields)
-  def reportHtml = htmlTemplate.toString()
-
-  // Write summary e-mail HTML to a file
-  def outputSummaryDir = new File( "${params.summaryDir}/" )
-  if( !outputSummaryDir.exists() ) {
-    outputSummaryDir.mkdirs()
-  }
-  def outputHtmlFile = new File( outputSummaryDir, "pipelineReport.html" )
-  outputHtmlFile.withWriter { w -> w << reportHtml }
-  def outputTxtFile = new File( outputSummaryDir, "pipelineReport.txt" )
-  outputTxtFile.withWriter { w -> w << reportTxt }
-
-  // onComplete file
-  File woc = new File("${params.outputDir}/onComplete.txt")
+  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
   Map endSummary = [:]
   endSummary['Completed on'] = workflow.complete
   endSummary['Duration']     = workflow.duration
@@ -382,23 +300,551 @@ workflow.onComplete {
   endSummary['Error report'] = workflow.errorReport ?: '-'
   String endWfSummary = endSummary.collect { k,v -> "${k.padRight(30, '.')}: $v" }.join("\n")
   println endWfSummary
-  String execInfo = "${fullSum}\nExecution summary\n${logSep}\n${endWfSummary}\n${logSep}\n"
+  String execInfo = "Summary\n${endWfSummary}\n"
   woc.write(execInfo)
+}
 
-  // final logs
-  if(workflow.success){
-      log.info "Pipeline Complete"
-  }else{
-    log.info "FAILED: $workflow.runName"
-    if( workflow.profile == 'test'){
-        log.error "====================================================\n" +
-                  "  WARNING! You are running with the profile 'test' only\n" +
-                  "  pipeline config profile, which runs on the head node\n" +
-                  "  and assumes all software is on the PATH.\n" +
-                  "  This is probably why everything broke.\n" +
-                  "  Please use `-profile test,conda` or `-profile test,singularity` to run on local.\n" +
-                  "  Please use `-profile test,conda,cluster` or `-profile test,singularity,cluster` to run on your cluster.\n" +
-                  "============================================================"
+/*
+ * First QC on raw data [FastQC]
+ */
+
+
+process fastqc {
+    tag "$name (raw)"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    when:
+    !params.skip_fastqc_raw
+
+    input:
+    set val(name), file(reads) from read_files_fastqc
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_results
+
+    script:
+    """
+    fastqc -q $reads -t ${task.cpus}
+    """
+}
+
+
+/*
+ * Reads Trimming
+ */
+
+process trimGalore {
+  tag "$name" 
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  when:
+  params.trimtool == "trimgalore" && !params.skip_trimming
+
+  input:
+  set val(name), file(reads) from read_files_trimgalore
+
+  output:
+  set val(name), file("*fastq.gz") into trim_reads_trimgalore, trimgalore_reads
+  set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  ntrim = params.ntrim ? "--trim-n" : ""
+  qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
+  adapter = ""
+  pico_opts = ""
+  if (params.singleEnd) {
+    println params.pico_v1
+    if (params.pico_v1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
+    }
+
+    if (params.adapter == 'truseq'){
+      adapter = "--adapter ${params.truseq_r1}"
+    }else if (params.adapter == 'nextera'){
+      adapter = "--adapter ${params.nextera_r1}"
+    }else if (params.adapter == 'smallrna'){
+      adapter = "--adapter ${params.smallrna_r1}"
+    }
+
+    if (!params.polyA){
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
+                --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    """
+    }else{
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+    		--length ${params.minlen} ${pico_opts} \
+                --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
+                --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
+    rm ${prefix}_trimmed.fq.gz
+    mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_trimmed.fq.gz_trimming_report.txt ${prefix}_polyA_trimmingreport.txt
+    """
+    }
+  }else {
+    if (params.pico_v1) {
+       pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
+    }
+    if (params.pico_v2) {
+       pico_opts = "--clip_r2 3 --three_prime_clip_r1 3"
+    }
+
+    if (params.adapter == 'truseq'){
+      adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
+    }else if (params.adapter == 'nextera'){
+      adapter ="--adapter ${params.nextera_r1} --adapter2 ${params.nextera_r2}"
+    }
+    
+    if (!params.polyA){
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
+                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
+    """
+    }else{
+    """
+    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+                --length ${params.minlen} ${pico_opts} \
+                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
+      	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
+    mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
+    mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimmingreport.txt
+    mv ${prefix}_R2_val_2.fq.gz_trimming_report.txt ${prefix}_R2_polyA_trimmingreport.txt
+    rm ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz
+    """
     }
   }
 }
+
+
+process atroposTrim {
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  
+  when:
+  params.trimtool == "atropos" && !params.skip_trimming && params.adapter != ""
+  
+  input:
+  set val(name), file(reads) from read_files_atropos_trim
+  file sequences from ch_adaptor_file_defult.collect()
+
+  output:
+
+  file("*trimming_report*") into trim_results_atropos
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, atropos_reads
+  set val(name), file("*.json") into report_results_atropos
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  ntrim = params.ntrim ? "--trim-n" : ""
+  nextseq_trim = params.two_colour ? "--nextseq-trim" : ""
+  polyA_opts = params.polyA ? "-a A{10}" : ""
+
+  if (params.singleEnd) {
+  """
+  if  [ "${params.adapter}" == "truseq" ]; then
+     echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+  elif [ "${params.adapter}" == "nextera" ]; then
+     echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+  elif [ "${params.adapter}" == "smallrna" ]; then
+     echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
+  fi
+  atropos trim -se ${reads} \
+         --adapter file:${prefix}_detect.0.fasta \
+         --times 3 --overlap 1 \
+         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
+         ${ntrim} ${nextseq_trim} ${polyA_opts} \
+         --threads ${task.cpus} \
+         -o ${prefix}_trimmed_R1.fastq.gz \
+         --report-file ${prefix}_trimming_report \
+         --report-formats txt json
+  """
+  } else {
+  """
+  if [ "${params.adapter}" == "truseq" ]; then
+     echo -e ">truseq_adapter_r1\n${params.truseq_r1}" > ${prefix}_detect.0.fasta
+     echo -e ">truseq_adapter_r2\n${params.truseq_r2}" > ${prefix}_detect.1.fasta
+  elif [ "${params.adapter}" == "nextera" ]; then
+     echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
+     echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
+  fi
+  atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
+         --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
+         -o ${prefix}_trimmed_R1.fastq.gz -p ${prefix}_trimmed_R2.fastq.gz  \
+         --times 3 --overlap 1 \
+         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
+         ${ntrim} ${nextseq_trim} ${polyA_opts} \
+         --threads ${task.cpus} \
+         --report-file ${prefix}_trimming_report \
+         --report-formats txt json
+  """
+  }
+}
+
+process fastp {
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+  when:
+  params.trimtool == "fastp" && !params.skip_trimming
+  
+  input:
+  set val(name), file(reads) from read_files_fastp
+  
+  output:
+
+  set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastp_reads
+  set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  nextseq_trim = params.two_colour ? "--trim_poly_g" : "--disable_trim_poly_g"
+  ntrim = params.ntrim ? "" : "--n_base_limit 0"
+  pico_opts = ""
+  polyA_opts = params.polyA ? "--trim_poly_x" : ""
+  adapter = ""
+
+  if (params.singleEnd) {
+    // we don't usually have pico_version2 for single-end.
+    if (params.pico_v1) {
+       pico_opts = "--trim_front1 3 --trim_tail1 3"
+    } 
+
+    if (params.adapter == 'truseq'){
+      adapter ="--adapter_sequence ${params.truseq_r1}"
+    }else if (params.adapter == 'nextera'){
+      adapter ="--adapter_sequence ${params.nextera_r1}"
+    }else if (params.adapter == 'smallrna'){
+      adapter ="--adapter_sequence ${params.smallrna_r1}"
+    }
+    """
+    fastp ${adapter} \
+    --qualified_quality_phred ${params.qualtrim} \
+    ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    ${ntrim} \
+    --length_required ${params.minlen} \
+    -i ${reads} -o ${prefix}_trimmed_R1.fastq.gz \
+    -j ${prefix}.fastp.json -h ${prefix}.fastp.html\
+    --thread ${task.cpus} 2> ${prefix}_fasp.log
+    """
+  } else {
+    if (params.pico_v1) {
+       pico_opts = "--trim_front1 3 --trim_tail2 3"
+    }
+    if (params.pico_v2) {
+       pico_opts = "--trim_front2 3 --trim_tail1 3"
+    }
+
+    if (params.adapter == 'truseq'){
+      adapter ="--adapter_sequence ${params.truseq_r1} --adapter_sequence_r2 ${params.truseq_r2}"
+    }
+    else if (params.adapter == 'nextera'){
+      adapter ="--adapter_sequence ${params.nextera_r1} --adapter_sequence_r2 ${params.nextera_r2}"
+    }
+    """
+    fastp ${adapter} \
+    --qualified_quality_phred ${params.qualtrim} \
+    ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    ${ntrim} \
+    --length_required ${params.minlen} \
+    -i ${reads[0]} -I ${reads[1]} -o ${prefix}_trimmed_R1.fastq.gz -O ${prefix}_trimmed_R2.fastq.gz \
+    --detect_adapter_for_pe -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
+    --thread ${task.cpus} 2> ${prefix}_fasp.log
+    """
+  }
+}
+
+
+if (!params.skip_trimming){
+  if(params.trimtool == "atropos"){
+    trim_reads = trim_reads_atropos
+    trim_reports = report_results_atropos
+  }else if (params.trimtool == "trimgalore"){
+    trim_reads = trim_reads_trimgalore
+    trim_reports = report_results_trimgalore
+  }else if (params.trimtool == "fastp"){
+    trim_reads = trim_reads_fastp
+    trim_reports = report_results_fastp
+  }
+}
+
+
+/*
+ * Trimming reports
+*/ 
+
+if (!params.skip_trimming){
+
+  //rawdata_report = Channel.empty()
+
+  process makeReport {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+    when:
+    !params.skip_trimming
+
+    input:
+    set val(name), file(reads), file(trims), file(reports) from read_files_trimreport.join(trim_reads).join(trim_reports)
+
+    output:
+    file '*_Basic_Metrics.trim.txt' into trim_report
+    file "*_Adaptor_seq.trim.txt" into trim_adaptor
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    isPE = params.singleEnd ? 0 : 1
+    if (params.singleEnd) {
+      if(params.trimtool == "fastp"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      } else {
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      }
+    } else {
+      if(params.trimtool == "trimgalore"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      } else if (params.trimtool == "fastp"){
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      } else {
+      """
+      create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
+      trimming_report.py --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      """
+      }
+    }
+  }
+}else{
+
+  trim_adaptor = Channel.empty()
+
+  process makeReport4RawData {
+    publishDir "${params.outdir}/makeReport", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+
+
+    input:
+    set val(name), file(reads) from read_files_rawdatareport
+
+    output:
+    file '*_Basic_Metrics_rawdata.txt' into trim_report
+
+    script:
+    prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+    if (params.singleEnd) {
+     """
+     rawdata_stat_report.py --r1 ${reads} --b ${name} --o ${prefix}
+     """
+    } else {
+     """
+     rawdata_stat_report.py --r1 ${reads[0]} --r2 ${reads[1]} --b ${name} --o ${prefix}
+     """
+    }
+  }
+}
+
+/*
+ * QC on trim data [FastQC]
+ */
+
+
+if (!params.skip_trimming){
+  if (params.trimtool == "atropos"){
+    atropos_reads.into{fastqc_trim_reads; fastq_screen_reads} 
+  }else if (params.trimtool == "trimgalore"){
+    trimgalore_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }else{
+    fastp_reads.into{fastqc_trim_reads; fastq_screen_reads}
+  }
+}else{
+  fastq_screen_reads = read_fastqscreen  
+  fastqc_trim_reads = Channel.empty()
+}
+
+
+if (!params.skip_fastqc_trim && !params.skip_trimming){
+  process fastqcTrimmed {
+    publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
+      saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    input:
+    set val(name), file(reads) from fastqc_trim_reads
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqc_after_trim_results
+
+    script:
+    """
+    fastqc -q $reads -t ${task.cpus}
+    """
+  }
+}else{
+  fastqc_after_trim_results = Channel.empty()
+}
+
+
+/*
+ * FastqScreen
+ */
+
+process makeFastqScreenGenomeConfig {
+    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+    
+    when:
+    !params.skip_fastq_screen
+
+    input:
+    val(fastqScreenGenome) from fastqScreenGenomeCh
+    
+    output:
+    file(outputFile) into ch_fastq_screen_config
+
+    script:
+    outputFile = 'fastq_screen_databases.config'
+
+    String result = ''
+    for (Map.Entry entry: fastqScreenGenome.entrySet()) {
+        result += """
+        echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
+    }
+
+    return result
+}
+
+process fastqScreen {
+   tag "$name"
+   publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+
+   when:
+   !params.skip_fastq_screen
+
+   input:
+   file fastqScreenGenomes from Channel.fromList(params.fastqScreenGenomes.values().collect{file(it)})
+   set val(name), file(reads) from fastq_screen_reads
+   file fastq_screen_config from ch_fastq_screen_config.collect()
+
+   output:
+   file("*_screen.txt") into fastq_screen_txt
+   file("*_screen.html") into fastq_screen_html
+   file("*tagged_filter.fastq.gz") into nohits_fastq
+
+   script:
+   """
+   fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --nohits --aligner bowtie2 ${reads}
+   """
+}
+
+
+/*
+ * MulitQC report
+ */
+
+ process get_software_versions {
+  output:
+  file 'software_versions_mqc.yaml' into software_versions_yaml
+
+  script:
+  """
+  echo $workflow.manifest.version &> v_rawqc.txt
+  echo $workflow.nextflow.version &> v_nextflow.txt
+  fastqc --version &> v_fastqc.txt
+  fastq_screen --version &> v_fastqscreen.txt
+  trim_galore --version &> v_trimgalore.txt
+  echo "lol" &> v_atropos.txt
+  fastp --version &> v_fastp.txt
+  multiqc --version &> v_multiqc.txt
+  scrape_software_versions.py &> software_versions_mqc.yaml
+  """
+}
+
+process workflow_summary_mqc {
+  when:
+  !params.skip_multiqc
+
+  output:
+  file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
+
+  exec:
+  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
+  yaml_file.text  = """
+  id: 'summary'
+  description: " - this information is collected when the pipeline is started."
+  section_name: 'Workflow Summary'
+  section_href: 'https://gitlab.curie.fr/rawqc'
+  plot_type: 'html'
+  data: |
+      <dl class=\"dl-horizontal\">
+${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+      </dl>
+  """.stripIndent()
+}
+
+
+
+/*
+ *  MultiQC
+ */
+
+
+process multiqc {
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+  input:
+  file splan from ch_splan.collect()
+  file metadata from ch_metadata.ifEmpty([])
+  file multiqc_config from ch_multiqc_config
+  file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([]) 
+  file ('atropos/*') from trim_results_atropos.collect().ifEmpty([])
+  file ('trimGalore/*') from trim_results_trimgalore.map{items->items[1]}.collect().ifEmpty([])
+  file ('fastp/*') from trim_results_fastp.map{items->items[1]}.collect().ifEmpty([])
+  file (fastqc:'fastqc_trimmed/*') from fastqc_after_trim_results.collect().ifEmpty([])
+  file ('fastq_screen/*') from fastq_screen_txt.collect().ifEmpty([])
+  file ('makeReport/*') from trim_report.collect().ifEmpty([])
+  file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
+  //file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
+  file ('software_versions/*') from software_versions_yaml.collect()
+  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+
+  when:
+  !params.skip_multiqc
+  
+  output:
+  file splan
+  file "*_report.html" into multiqc_report
+  file "*_data"
+
+  script:
+  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+  rfilename = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : '--filename rawqc_report'
+  isPE = params.singleEnd ? 0 : 1
+  isSkipTrim = params.skip_trimming ? 0 : 1
+  metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
+  splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
+
+  """
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
+  stats2multiqc.sh ${isPE} ${isSkipTrim}
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  """
+}
+
