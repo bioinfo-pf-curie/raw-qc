@@ -12,7 +12,7 @@ Build a new conda environment before running the pipeline. Use the option `--con
 
 ###  `multiconda`
 
-Build a new conda environment for each process before running the pipeline. Use the option ``--condaCacheDir` to change the default conda cache directory.
+Build a new conda environment for each process before running the pipeline. Use the option `--condaCacheDir` to change the default conda cache directory.
 
 ###  `path`
 
@@ -56,10 +56,10 @@ By default, the pipline runs locally. If you want to run it on a computing clust
 
 ###  `cluster`
 
-Run the workflow on the cluster, instead of locally.
+Run the workflow on the cluster, instead of locally. Use the option `--queue` to specify the queue where the job will be submitted.
 
 ## Test the pipeline
 
 ### `test`
 
-Set up the test dataset
+Set up the test dataset.

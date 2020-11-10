@@ -1,12 +1,14 @@
 # Outputs
 
+<!-- TODO update with the output of your pipeline -->
+
 This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
 ## Pipeline overview
 
 The pipeline is built using [Nextflow](https://www.nextflow.io/)
-and processes ChIP-seq data using the steps presented in the main README file.  
-Briefly, its goal is to process ChIP-seq data for any protocol, with or without control samples, and with or without spike-ins.
+and processes the data using the steps presented in the main README file.  
+Briefly, its goal is to process <!-- TODO --> data for any protocol, with or without control samples, and with or without spike-ins.
 
 The directories listed below will be created in the output directory after the pipeline has finished. 
 
@@ -20,9 +22,9 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 **Output directory: `fastqc`**
 
 * `sample_fastqc.html`
-  * FastQC report, containing quality metrics for your untrimmed raw fastq files
+  * FastQC report, containing quality metrics for your untrimmed raw fastq files.
 * `zips/sample_fastqc.zip`
-  * zip file containing the FastQC report, tab-delimited data file and plot images
+  * zip file containing the FastQC report, tab-delimited data file and plot images.
 
 ## Read mapping
 
@@ -49,16 +51,14 @@ In general, we expect more than 80% of aligned reads. Samples with less than 50%
 ### Duplicates
 
 [Picard MarkDuplicates](https://broadinstitute.github.io/picard/command-line-overview.html) is used to mark and remove the duplicates. 
-The results are presented in the `General Metrics` table. Duplicate reads are **removed** by default from the aligned reads to mitigate for fragments in the library that may have been sequenced more than once due to PCR biases. There is an option to keep duplicate reads with the `--keepDups` parameter but its generally recommended to remove them to avoid the wrong interpretation of the results.	
+The results are presented in the `General Metrics` table. Duplicate reads are **removed** by default from the aligned reads to mitigate for fragments in the library that may have been sequenced more than once due to PCR biases. There is an option to keep duplicate reads with the `--keepDups` parameter but it is generally recommended to remove them to avoid the wrong interpretation of the results.	
 
 **Output directory: `mapping`**
 
 * `sample_filtered.bam`
-  * Aligned reads after filtering (`--mapq`, `--keepDups`)
-  * `sample_filtered.bam.bai`
-    * Index of aligned reads after filtering
-	
-From our experience, a ChIP-seq sample with less than 25% of duplicates is usually of good quality. Samples with more than 50% of duplicates should be interpreted with caution.
+  * Aligned reads after filtering (`--mapq`, `--keepDups`).
+* `sample_filtered.bam.bai`
+  * Index of aligned reads after filtering.
 
 ![MultiQC - Picard MarkDup stats plot](images/picard_deduplication.png)
 
@@ -82,11 +82,11 @@ The [Preseq](http://smithlabresearch.org/software/preseq/) package aims at predi
 
 The pipeline has special steps which allow the software versions used to be reported in the MultiQC output for future traceability.
 
-**Output directory: `results/multiqc`**
+**Output directory: `multiqc`**
 
-* `chipseq_report.html`
-  * MultiQC report - a standalone HTML file that can be viewed in your web browser
+* `multiqc_report.html`
+  * MultiQC report - a standalone HTML file that can be viewed in your web browser.
 * `multiqc_data/`
-  * Directory containing parsed statistics from the different tools used in the pipeline
+  * Directory containing parsed statistics from the different tools used in the pipeline.
 
-For more information about how to use MultiQC reports, see http://multiqc.info
+For more information about how to use MultiQC reports, see http://multiqc.info.

@@ -12,23 +12,24 @@ The `geniac` module allows the automatic generation of the [Nextflow](https://ww
 
 First, the user can defined the following environment variables:
 
-```shell
+```bash
 #!/usr/bin/env bash
-export WORK_DIR=/data/tmp/$USER/sandbox/nf-CRISPR
-export SRC_DIR=$WORK_DIR/src
-export INSTALL_DIR=$WORK_DIR/install
-export BUILD_DIR=$WORK_DIR/build
+export WORK_DIR="${HOME}/tmp/myPipeline"
+export SRC_DIR="${WORK_DIR}/src"
+export INSTALL_DIR="${WORK_DIR}/install"
+export BUILD_DIR="${WORK_DIR}/build"
+export GIT_URL="https://myPipeline/myPipeline.git"
 ```
 
 ## Initialization
 
 Using the default behavior, only the installation folder where the pipeline will be deployed is required through the `CMAKE_INSTALL_PREFIX` option.
 
-```shell
-git clone --recursive https://gitlab.curie.fr/data-analysis/nf-CRISPR $SRC_DIR
-mkdir -p $INSTALL_DIR $BUILD_DIR
-cd $BUILD_DIR
-cmake $SRC_DIR/geniac -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR
+```bash
+mkdir -p ${INSTALL_DIR} ${BUILD_DIR}
+git clone --recursive ${GIT_URL} ${SRC_DIR}
+cd ${BUILD_DIR}
+cmake ${SRC_DIR}/geniac -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 ```
 
 The `cmake` command can be used with the following options ;
@@ -43,11 +44,11 @@ The `cmake` command can be used with the following options ;
 
 ## Example 
 
-In the following example, the `singularity` images are available in the `SING_DIR` folder, and will thus be used during the  deployment of the pipeline 
+In the following example, the `singularity` images are available in the `SING_DIR` folder, and will thus be used during the  deployment of the pipeline
 using the options `ap_singularity_image_path` et `ap_use_singularity_image_link`.
 
-```shell
-cmake $SRC_DIR/geniac -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -Dap_singularity_image_path="${SING_DIR}" -Dap_use_singularity_image_link="ON"  
+```bash
+cmake ${SRC_DIR}/geniac -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -Dap_singularity_image_path="SING_DIR" -Dap_use_singularity_image_link="ON"
 ```
 
 ## Installation
@@ -55,8 +56,8 @@ cmake $SRC_DIR/geniac -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -Dap_singularity_image
 Note that if the installation of `singularity` or `docker` images has been activated at the previous stage, the `make` command needs to be
 run with the `root` rights.
 
-```shell
-cd $BUILD_DIR
+```bash
+cd ${BUILD_DIR}
 make
 make install
 ```
@@ -66,8 +67,8 @@ make install
 ## Singularity
 
 
-```shell
-cd ${INSTALL_DIR}/pipeline  
+```bash
+cd ${INSTALL_DIR}/pipeline
 
 nextflow run main.nf --singleEnd 'true' --genome 'hg38' --library 'GW-KO-Sabatini-Human-10' --samplePlan 'test/sample_plan.csv' -profile singularity
 ```
@@ -76,8 +77,8 @@ nextflow run main.nf --singleEnd 'true' --genome 'hg38' --library 'GW-KO-Sabatin
 
 The `multiconda` profile generates a `conda` environment for each tool listed in the `conf/geniac.conf` configuration.
 
-```shell
-cd ${INSTALL_DIR}/pipeline  
+```bash
+cd ${INSTALL_DIR}/pipeline
 
 nextflow run main.nf --singleEnd 'true' --genome 'hg38' --library 'GW-KO-Sabatini-Human-10' --samplePlan 'test/sample_plan.csv' -profile multiconda
 ```
