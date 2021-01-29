@@ -1,7 +1,8 @@
-name: fastqc
+name: fastqScreen
 channels:
   - defaults
   - conda-forge
   - bioconda
 dependencies:
-  - fastqc=0.11.8
+  - fastq-screen=0.13.0
+  - bowtie2=2.3.5

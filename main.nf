@@ -310,6 +310,7 @@ workflow.onComplete {
 
 
 process fastqc {
+  label "fastqc"
     tag "$name (raw)"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -335,6 +336,7 @@ process fastqc {
  */
 
 process trimGalore {
+  label "trimgalore"
   tag "$name" 
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
@@ -428,6 +430,7 @@ process trimGalore {
 
 
 process atroposTrim {
+  label "atropos"
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   
@@ -492,6 +495,7 @@ process atroposTrim {
 }
 
 process fastp {
+  label "fastp"
   publishDir "${params.outdir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
@@ -588,6 +592,7 @@ if (!params.skip_trimming){
   //rawdata_report = Channel.empty()
 
   process makeReport {
+    label "python"
     publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
@@ -639,6 +644,7 @@ if (!params.skip_trimming){
   trim_adaptor = Channel.empty()
 
   process makeReport4RawData {
+    label "python"
     publishDir "${params.outdir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
@@ -684,6 +690,7 @@ if (!params.skip_trimming){
 
 if (!params.skip_fastqc_trim && !params.skip_trimming){
   process fastqcTrimmed {
+    label "fastqc"
     publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
@@ -708,6 +715,7 @@ if (!params.skip_fastqc_trim && !params.skip_trimming){
  */
 
 process makeFastqScreenGenomeConfig {
+    label "onlyLinux"
     publishDir "${params.outdir}/fastq_screen", mode: 'copy'
     
     when:
@@ -732,6 +740,7 @@ process makeFastqScreenGenomeConfig {
 }
 
 process fastqScreen {
+   label "fastqScreen"
    tag "$name"
    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
 
@@ -759,7 +768,8 @@ process fastqScreen {
  * MulitQC report
  */
 
- process get_software_versions {
+process get_software_versions {
+  label "python"
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
 
@@ -778,6 +788,7 @@ process fastqScreen {
 }
 
 process workflow_summary_mqc {
+  label "onlyLinux"
   when:
   !params.skip_multiqc
 
@@ -807,6 +818,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 
 process multiqc {
+  label "multiqc"
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
   input:

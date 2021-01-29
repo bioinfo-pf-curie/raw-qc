@@ -1,7 +1,7 @@
-name: fastqc
+name: trimgalore
 channels:
   - defaults
   - conda-forge
   - bioconda
 dependencies:
-  - fastqc=0.11.8
+  - trim-galore=0.6.2
