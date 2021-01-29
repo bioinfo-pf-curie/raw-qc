@@ -282,7 +282,7 @@ summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outdir
+summary['Output dir']     = params.outDir
 summary['Config Profile'] = workflow.profile
 
 if(params.email) summary['E-mail Address'] = params.email
@@ -291,7 +291,7 @@ log.info "========================================="
 
 /* Creates a file at the end of workflow execution */
 workflow.onComplete {
-  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
+  File woc = new File("${params.outDir}/raw-qc.workflow.oncomplete.txt")
   Map endSummary = [:]
   endSummary['Completed on'] = workflow.complete
   endSummary['Duration']     = workflow.duration
@@ -312,7 +312,7 @@ workflow.onComplete {
 process fastqc {
   label "fastqc"
     tag "$name (raw)"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
+    publishDir "${params.outDir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     when:
@@ -338,7 +338,7 @@ process fastqc {
 process trimGalore {
   label "trimgalore"
   tag "$name" 
-  publishDir "${params.outdir}/trimming", mode: 'copy',
+  publishDir "${params.outDir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   when:
   params.trimtool == "trimgalore" && !params.skip_trimming
@@ -431,7 +431,7 @@ process trimGalore {
 
 process atroposTrim {
   label "atropos"
-  publishDir "${params.outdir}/trimming", mode: 'copy',
+  publishDir "${params.outDir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
   
   when:
@@ -496,7 +496,7 @@ process atroposTrim {
 
 process fastp {
   label "fastp"
-  publishDir "${params.outdir}/trimming", mode: 'copy',
+  publishDir "${params.outDir}/trimming", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
   when:
@@ -593,7 +593,7 @@ if (!params.skip_trimming){
 
   process makeReport {
     label "python"
-    publishDir "${params.outdir}/makeReport", mode: 'copy',
+    publishDir "${params.outDir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
     when:
@@ -645,7 +645,7 @@ if (!params.skip_trimming){
 
   process makeReport4RawData {
     label "python"
-    publishDir "${params.outdir}/makeReport", mode: 'copy',
+    publishDir "${params.outDir}/makeReport", mode: 'copy',
               saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
 
 
@@ -691,7 +691,7 @@ if (!params.skip_trimming){
 if (!params.skip_fastqc_trim && !params.skip_trimming){
   process fastqcTrimmed {
     label "fastqc"
-    publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
+    publishDir "${params.outDir}/fastqc_trimmed", mode: 'copy',
       saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     input:
@@ -716,7 +716,7 @@ if (!params.skip_fastqc_trim && !params.skip_trimming){
 
 process makeFastqScreenGenomeConfig {
     label "onlyLinux"
-    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+    publishDir "${params.outDir}/fastq_screen", mode: 'copy'
     
     when:
     !params.skip_fastq_screen
@@ -742,7 +742,7 @@ process makeFastqScreenGenomeConfig {
 process fastqScreen {
    label "fastqScreen"
    tag "$name"
-   publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+   publishDir "${params.outDir}/fastq_screen", mode: 'copy'
 
    when:
    !params.skip_fastq_screen
@@ -819,7 +819,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 process multiqc {
   label "multiqc"
-  publishDir "${params.outdir}/MultiQC", mode: 'copy'
+  publishDir "${params.outDir}/MultiQC", mode: 'copy'
 
   input:
   file splan from ch_splan.collect()
