@@ -141,7 +141,7 @@ ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.f
 
 // FastqScreen
 Channel
-    .from(params.fastqScreenGenomes)
+    .from(params.genomes.fastqScreenGenomes)
     .set{ fastqScreenGenomeCh }
 
 /*
