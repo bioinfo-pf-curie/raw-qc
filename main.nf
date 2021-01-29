@@ -134,7 +134,7 @@ if (params.singleEnd && params.pico_v2){
 
 
 // Stage config files
-ch_multiqc_config = Channel.fromPath(params.multiqc_config)
+ch_multiqc_config = Channel.fromPath(params.multiqcConfig)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
