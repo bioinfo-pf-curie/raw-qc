@@ -778,12 +778,12 @@ process get_software_versions {
   """
   echo $workflow.manifest.version &> v_rawqc.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
-  //fastqc --version &> v_fastqc.txt
-  //fastq_screen --version &> v_fastqscreen.txt
-  //trim_galore --version &> v_trimgalore.txt
-  //echo "lol" &> v_atropos.txt
-  //fastp --version &> v_fastp.txt
-  //multiqc --version &> v_multiqc.txt
+  #fastqc --version &> v_fastqc.txt
+  #fastq_screen --version &> v_fastqscreen.txt
+  #trim_galore --version &> v_trimgalore.txt
+  #echo "lol" &> v_atropos.txt
+  #fastp --version &> v_fastp.txt
+  #multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
