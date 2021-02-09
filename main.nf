@@ -748,7 +748,7 @@ process fastqScreen {
    !params.skip_fastq_screen
 
    input:
-   file fastqScreenGenomes from Channel.fromList(params.fastqScreenGenomes.values().collect{file(it)})
+   file fastqScreenGenomes from Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)})
    set val(name), file(reads) from fastq_screen_reads
    file fastq_screen_config from ch_fastq_screen_config.collect()
 
