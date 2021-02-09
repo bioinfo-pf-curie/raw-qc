@@ -3,50 +3,23 @@ from __future__ import print_function
 from collections import OrderedDict
 import re
 
-# TODO Add additional regexes for new tools in process get_software_versions
 regexes = {
-    'Pipeline': ['v_pipeline.txt', r"(\S+)"],
-    'Nextflow': ['v_nextflow.txt', r"(\S+)"]
+    'Raw-qc': ['v_rawqc.txt', r"(\S+)"],
+    'Nextflow': ['v_nextflow.txt', r"(\S+)"],
+    'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
+    'TrimGalore': ['v_trimgalore.txt', r"version (\S+)"],
+    'Fastp': ['v_fastp.txt', r"fastp (\S+)"],
+    'Atropos': ['v_atropos.txt', r"Atropos version (\S+)"],
+    'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
-
-#    'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
-#    'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
-#    'BWA': ['v_bwa.txt', r"Version: (\S+)"],
-#    'Bowtie2': ['v_bowtie2.txt', r"version (\S+)"],
-#    'STAR': ['v_star.txt', r"STAR(\S+)"],
-#    'samtools': ['v_samtools.txt', r"samtools (\S+)"],
-#    'bedtools': ['v_bedtools.txt', r"bedtools v(\S+)"],
-#    'bamtools': ['v_bamtools.txt', r"bamtools (\S+)"],
-#    'picard': ['v_picard.txt', r"([\d\.]+)-SNAPSHOT"],
-#    'preseq': ['v_preseq.txt', r"Version: (\S+)"],
-#    'deeptools': ['v_deeptools.txt', r"plotFingerprint (\S+)"],
-#    'R': ['v_R.txt', r"R version (\S+)"],
-#    'MACS2': ['v_macs2.txt', r"macs2 (\S+)"],
-#    'epic2': ['v_epic2.txt', r"(\S+)"],
-#    'idr': ['v_idr.txt', r"IDR (\S+)"]
-
-
-
 results = OrderedDict()
-results['Pipeline'] = '<span style="color:#999999;\">N/A</span>'
+results['Raw-QC'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
-#results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
-#results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
-#results['BWA'] = '<span style="color:#999999;\">N/A</span>'
-#results['Bowtie2'] = '<span style="color:#999999;\">N/A</span>'
-#results['STAR'] = '<span style="color:#999999;\">N/A</span>'
-#results['samtools'] = '<span style="color:#999999;\">N/A</span>'
-#results['bedtools'] = '<span style="color:#999999;\">N/A</span>'
-#results['bamtools'] = '<span style="color:#999999;\">N/A</span>'
-#results['picard'] = '<span style="color:#999999;\">N/A</span>'
-#results['preseq'] = '<span style="color:#999999;\">N/A</span>'
-#results['deeptools'] = '<span style="color:#999999;\">N/A</span>'
-#results['R'] = '<span style="color:#999999;\">N/A</span>'
-#results['MACS2'] = '<span style="color:#999999;\">N/A</span>'
-#results['epic2'] = '<span style="color:#999999;\">N/A</span>'
-#results['idr'] = '<span style="color:#999999;\">N/A</span>'
-
-
+results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
+results['TrimGalore'] = '<span style="color:#999999;\">N/A</span>'
+results['Fastp'] = '<span style="color:#999999;\">N/A</span>'
+results['Atropos'] = '<span style="color:#999999;\">N/A</span>'
+results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
 for k, v in regexes.items():
@@ -58,9 +31,9 @@ for k, v in regexes.items():
 
 # Dump to YAML
 print ('''
-id: 'software_versions'
+id: 'software-versions'
 section_name: 'Software Versions'
-section_href: ''
+section_href: 'https://github.com/raw-qc'
 plot_type: 'html'
 description: 'are collected at run time from the software output.'
 data: |

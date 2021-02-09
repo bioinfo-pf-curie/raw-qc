@@ -770,6 +770,7 @@ process fastqScreen {
 
 process get_software_versions {
   label "python"
+
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
 
