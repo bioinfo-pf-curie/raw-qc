@@ -7,3 +7,4 @@ dependencies:
   # Add required software dependencies here
   - python=3.7.6
   - pymdown-extensions=7.1
+  - numpy=1.19.5
