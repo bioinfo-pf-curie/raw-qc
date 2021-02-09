@@ -8,3 +8,4 @@ dependencies:
   - python=3.7.6
   - pymdown-extensions=7.1
   - numpy=1.19.5
+  - atropos=1.1.16
