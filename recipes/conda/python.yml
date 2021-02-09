@@ -5,7 +5,7 @@ channels:
   - defaults
 dependencies:
   # Add required software dependencies here
-  - python=3.7.6
+  - python=3.6.12
   - pymdown-extensions=7.1
   - numpy=1.19.5
   - atropos=1.1.16
