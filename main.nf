@@ -23,7 +23,7 @@ i                         Raw-QC
 
 def helpMessage() {
     if ("${workflow.manifest.version}" =~ /dev/ ){
-       dev_mess = file("$baseDir/assets/dev_message.txt")
+       dev_mess = file("$baseDir/assets/devMessage.txt")
        log.info dev_mess.text
     }
 
@@ -136,8 +136,8 @@ if (params.singleEnd && params.pico_v2){
 // Stage config files
 ch_multiqc_config = Channel.fromPath(params.multiqcConfig)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
-ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
-ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencingAdapters.fa")
+ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencingAdapters.fa")
 
 // FastqScreen
 Channel
@@ -239,7 +239,7 @@ if ( params.metadata ){
 
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
-   dev_mess = file("$baseDir/assets/dev_message.txt")
+   dev_mess = file("$baseDir/assets/devMessage.txt")
    log.info dev_mess.text
 }
 
