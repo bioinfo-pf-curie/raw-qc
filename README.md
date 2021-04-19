@@ -73,6 +73,7 @@ Trimming options:
 Presets:
   --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
   --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+  --rna_lig                     Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
   --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
 
 Other options:
