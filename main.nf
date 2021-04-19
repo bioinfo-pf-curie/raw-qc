@@ -417,10 +417,10 @@ process trimGalore {
     """
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} ${lig_opts} \
-                --paired --gzip $reads --basename ${prefix} --cores 10
+                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
 
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
-                 --paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores 10
+                 --paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
 
     mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
