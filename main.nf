@@ -54,6 +54,7 @@ def helpMessage() {
     Presets:
       --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
       --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+      --rna_lig                     Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
       --polyA                       Sets trimming setting for 3'-seq analysis with polyA tail detection
 
     Other options:
@@ -119,8 +120,8 @@ if (params.ntrim && params.trimtool == 'fastp') {
 }
 */
 
-if (params.pico_v1 && params.pico_v2){
-    exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2"
+if (params.pico_v1 && params.pico_v2 && params.rna_lig){
+    exit 1, "Invalid SMARTer kit option at the same time for pico_v1 && pico_v2 && rna_lig"
 }
 
 if (params.pico_v1 && params.pico_v2 && params.trimtool == 'atropos'){
@@ -273,6 +274,7 @@ if(params.pico_v2) {
 if (!params.pico_v1 && !params.pico_v2) {
    summary['Pico'] = 'False'
 }
+summary['RNA_Lig']=params.rna_lig ? 'True' : 'False'
 summary['PolyA']= params.polyA ? 'True' : 'False'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -355,11 +357,9 @@ process trimGalore {
   adapter = ""
   pico_opts = ""
   if (params.singleEnd) {
-    println params.pico_v1
     if (params.pico_v1) {
        pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
     }
-
     if (params.adapter == 'truseq'){
       adapter = "--adapter ${params.truseq_r1}"
     }else if (params.adapter == 'nextera'){
@@ -395,6 +395,10 @@ process trimGalore {
        pico_opts = "--clip_r2 3 --three_prime_clip_r1 3"
     }
 
+    if (params.rna_lig) {
+       lig_opts = "--clip_r1 1 --three_prime_clip_r2 2 --clip_r2 1 --three_prime_clip_r1 2"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter ${params.truseq_r1} --adapter2 ${params.truseq_r2}"
     }else if (params.adapter == 'nextera'){
@@ -404,7 +408,7 @@ process trimGalore {
     if (!params.polyA){
     """
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
-                --length ${params.minlen} ${pico_opts} \
+                --length ${params.minlen} ${pico_opts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
@@ -412,10 +416,12 @@ process trimGalore {
     }else{
     """
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
-                --length ${params.minlen} ${pico_opts} \
-                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
+                --length ${params.minlen} ${pico_opts} ${lig_opts} \
+                --paired --gzip $reads --basename ${prefix} --cores 10
+
     trim_galore -a "A{10}" ${qual_trim} --length ${params.minlen} \
-      	      	--paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
+                 --paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores 10
+
     mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_polyA_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
     mv ${prefix}_R1_val_1.fq.gz_trimming_report.txt ${prefix}_R1_polyA_trimmingreport.txt
@@ -426,6 +432,7 @@ process trimGalore {
   }
 }
 
+//--clip_r1 1 --three_prime_clip_r2 2 --clip_r2 1 --three_prime_clip_r1 2
 
 process atroposTrim {
   publishDir "${params.outdir}/trimming", mode: 'copy',
@@ -545,6 +552,10 @@ process fastp {
        pico_opts = "--trim_front2 3 --trim_tail1 3"
     }
 
+    if (params.rna_lig) {
+       lig_opts = "--trim_front1 1 --trim_tail2 2 --trim_front2 1 --trim_tail1 2"
+    }
+
     if (params.adapter == 'truseq'){
       adapter ="--adapter_sequence ${params.truseq_r1} --adapter_sequence_r2 ${params.truseq_r2}"
     }
@@ -554,7 +565,7 @@ process fastp {
     """
     fastp ${adapter} \
     --qualified_quality_phred ${params.qualtrim} \
-    ${nextseq_trim} ${pico_opts} ${polyA_opts} \
+    ${nextseq_trim} ${pico_opts} ${polyA_opts} ${lig_opts} \
     ${ntrim} \
     --length_required ${params.minlen} \
     -i ${reads[0]} -I ${reads[1]} -o ${prefix}_trimmed_R1.fastq.gz -O ${prefix}_trimmed_R2.fastq.gz \
@@ -757,7 +768,6 @@ process fastqScreen {
 
 /*
  * MulitQC report
- */
 
  process get_software_versions {
   output:
@@ -776,7 +786,8 @@ process fastqScreen {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-
+*/
+/*
 process workflow_summary_mqc {
   when:
   !params.skip_multiqc
@@ -799,7 +810,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
   """.stripIndent()
 }
 
-
+*/
 
 /*
  *  MultiQC
@@ -822,8 +833,8 @@ process multiqc {
   file ('makeReport/*') from trim_report.collect().ifEmpty([])
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
   //file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
-  file ('software_versions/*') from software_versions_yaml.collect()
-  file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  //file ('software_versions/*') from software_versions_yaml.collect()
+  //file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
   when:
   !params.skip_multiqc
@@ -842,9 +853,10 @@ process multiqc {
   splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
 
   """
-  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
+  ##mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
-  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  ##multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
 
