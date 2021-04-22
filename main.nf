@@ -312,23 +312,24 @@ workflow.onComplete {
 
 
 process fastqc {
-    tag "$name (raw)"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+   label 'fastqc'
+   label 'lowCpu'
+   label 'minMem'
+   publishDir "${params.outdir}/fastqc", mode: 'copy'
 
-    when:
-    !params.skip_fastqc_raw
+   when:
+   !params.skip_fastqc_raw
 
-    input:
-    set val(name), file(reads) from read_files_fastqc
+   input:
+   set val(name), file(reads) from read_files_fastqc
 
-    output:
-    file "*_fastqc.{zip,html}" into fastqc_results
+   output:
+   file "*_fastqc.{zip,html}" into fastqc_results
 
-    script:
-    """
-    fastqc -q $reads -t ${task.cpus}
-    """
+   script:
+   """
+   fastqc -q $reads -t ${task.cpus}
+   """
 }
 
 
@@ -337,9 +338,11 @@ process fastqc {
  */
 
 process trimGalore {
-  tag "$name" 
-  publishDir "${params.outdir}/trimming", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  label 'trimgalore'
+  label 'lowCpu'
+  label 'minMem'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
+
   when:
   params.trimtool == "trimgalore" && !params.skip_trimming
 
@@ -356,6 +359,7 @@ process trimGalore {
   qual_trim = params.two_colour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
   adapter = ""
   pico_opts = ""
+  lig_opts = ""
   if (params.singleEnd) {
     if (params.pico_v1) {
        pico_opts = "--clip_r1 3 --three_prime_clip_r2 3"
@@ -394,7 +398,6 @@ process trimGalore {
     if (params.pico_v2) {
        pico_opts = "--clip_r2 3 --three_prime_clip_r1 3"
     }
-
     if (params.rna_lig) {
        lig_opts = "--clip_r1 1 --three_prime_clip_r2 2 --clip_r2 1 --three_prime_clip_r1 2"
     }
@@ -435,8 +438,11 @@ process trimGalore {
 //--clip_r1 1 --three_prime_clip_r2 2 --clip_r2 1 --three_prime_clip_r1 2
 
 process atroposTrim {
-  publishDir "${params.outdir}/trimming", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  label 'atropos'
+  label 'lowCpu'
+  label 'minMem'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
+
   
   when:
   params.trimtool == "atropos" && !params.skip_trimming && params.adapter != ""
@@ -499,8 +505,11 @@ process atroposTrim {
 }
 
 process fastp {
-  publishDir "${params.outdir}/trimming", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  label 'fastp'
+  label 'lowCpu'
+  label 'minMem'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
+
 
   when:
   params.trimtool == "fastp" && !params.skip_trimming
@@ -599,8 +608,10 @@ if (!params.skip_trimming){
   //rawdata_report = Channel.empty()
 
   process makeReport {
-    publishDir "${params.outdir}/makeReport", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+    label 'python'
+    label 'lowCpu'
+    label 'extraMem'
+    publishDir "${params.outdir}/makeReport", mode: 'copy'
 
     when:
     !params.skip_trimming
@@ -650,9 +661,10 @@ if (!params.skip_trimming){
   trim_adaptor = Channel.empty()
 
   process makeReport4RawData {
-    publishDir "${params.outdir}/makeReport", mode: 'copy',
-              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
-
+    label 'python'
+    label 'lowCpu'
+    label 'extraMem'
+    publishDir "${params.outdir}/makeReport", mode: 'copy'
 
     input:
     set val(name), file(reads) from read_files_rawdatareport
@@ -694,9 +706,14 @@ if (!params.skip_trimming){
 
 
 if (!params.skip_fastqc_trim && !params.skip_trimming){
-  process fastqcTrimmed {
-    publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy',
-      saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+
+process fastqcTrimmed {
+   label 'fastqc'
+   label 'lowCpu'
+   label 'minMem'
+   publishDir "${params.outdir}/fastqc_trimmed", mode: 'copy'
+
 
     input:
     set val(name), file(reads) from fastqc_trim_reads
@@ -719,7 +736,10 @@ if (!params.skip_fastqc_trim && !params.skip_trimming){
  */
 
 process makeFastqScreenGenomeConfig {
+    label 'lowCpu'
+    label 'extraMem'
     publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+   
     
     when:
     !params.skip_fastq_screen
@@ -743,8 +763,11 @@ process makeFastqScreenGenomeConfig {
 }
 
 process fastqScreen {
-   tag "$name"
+   label 'fastqScreen'
+   label 'lowCpu'
+   label 'extraMem'
    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
+
 
    when:
    !params.skip_fastq_screen
@@ -768,8 +791,12 @@ process fastqScreen {
 
 /*
  * MulitQC report
+ 
+process get_software_versions {
+  label 'python'
+  label 'minCpu'
+  label 'minMem'
 
- process get_software_versions {
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
 
@@ -786,8 +813,7 @@ process fastqScreen {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-*/
-/*
+
 process workflow_summary_mqc {
   when:
   !params.skip_multiqc
@@ -816,9 +842,14 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
  *  MultiQC
  */
 
-
 process multiqc {
+  label 'multiqc'
+  label 'minCpu'
+  label 'minMem'
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+  when:
+  !params.skip_multiqc
 
   input:
   file splan from ch_splan.collect()
@@ -836,8 +867,6 @@ process multiqc {
   //file ('software_versions/*') from software_versions_yaml.collect()
   //file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
-  when:
-  !params.skip_multiqc
   
   output:
   file splan
@@ -853,10 +882,10 @@ process multiqc {
   splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
 
   """
-  ##mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
+  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
-  ##multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
-  multiqc . -f $rtitle $rfilename -c $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  ##multiqc . -f $rtitle $rfilename -c $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
 

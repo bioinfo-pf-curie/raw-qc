@@ -4,6 +4,10 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  # Add required software dependencies here
-  - python=3.7.6=cpython_h8356626_6
-  - pymdown-extensions=7.1=pyh9f0ad1d_0
+    - atropos
+    - bioconda::pysam
+    - conda-forge::matplotlib
+    - conda-forge::numpy
+    - conda-forge::pandas
+    - conda-forge::python=3.7
+    - conda-forge::seaborn
