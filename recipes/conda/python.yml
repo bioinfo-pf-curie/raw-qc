@@ -5,9 +5,9 @@ channels:
   - defaults
 dependencies:
     - atropos
-    - bioconda::pysam
-    - conda-forge::matplotlib
-    - conda-forge::numpy
-    - conda-forge::pandas
-    - conda-forge::python=3.7
-    - conda-forge::seaborn
+    - pysam
+    - matplotlib
+    - numpy
+    - pandas
+    - python=3.7
+    - seaborn
