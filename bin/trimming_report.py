@@ -183,7 +183,6 @@ class Trimming_Report(object):
         try:
            base = os.path.basename(reports[0])
            sample = os.path.splitext(base)[0].rsplit('.', 3)[0]
-           print("adap" , sample)
            if len(reports)==1:
               l_list = list()
               trim_report = reports[0]
@@ -192,26 +191,41 @@ class Trimming_Report(object):
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq)
+                      try:
+                           kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
+                      except IndexError:
+                           kit_name = 'unknown'
+                      l_list.append(kit_name)
 
            if len(reports) == 2:
               l_list = list()
               trim_report_1= reports[0]
               trim_report_2 = reports[1]
+              ### in paire end we have unique kit_name for R1,R2.
               with open(trim_report_1) as f:
                  for line in f:
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq_R1 = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq_R1)
+                      try:
+                         kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
+                      except IndexError:
+                         kit_name = 'unknown'
 
               with open(trim_report_2) as f:
                  for line in f:
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq_R2 = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq_R2)
+                      try:
+                         kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
+                      except IndexError:
+                         kit_name = 'unknown'
+                      l_list.append(kit_name)
 
            adapter_seq_dict = dict(
               sample_name = sample,
-              adapter_seq = l_list
+              adapter_seq = l_list,
             )
            print(adapter_seq_dict)
            return adapter_seq_dict
@@ -474,14 +488,14 @@ class Trimming_Report(object):
        This file is read by MultiQC to summarize results of the trimming.
        """
        for key, value in adapter_seq_dict.items():
-           if len(adapter_seq_dict[key]) == 1:
-               with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
-                   out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\n')
-                   out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
            if len(adapter_seq_dict[key]) == 2:
-               with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
-                   out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t'+"Adapter_sequence_read_2_regular_3'"+'\n')
-                   out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
+             with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
+                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t' + "kit_name"+'\n')
+                out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
+           if len(adapter_seq_dict[key]) == 3:
+             with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
+                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t'+"Adapter_sequence_read_2_regular_3'"+ '\t' + "kit_name"+'\n')
+                out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
 
     def write_stats_txt(self, stats_dict, prefixname):
        """ Write json stats file.

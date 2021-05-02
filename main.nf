@@ -23,7 +23,7 @@ i                         Raw-QC
 
 def helpMessage() {
     if ("${workflow.manifest.version}" =~ /dev/ ){
-       dev_mess = file("$baseDir/assets/devMessage.txt")
+       dev_mess = file("$baseDir/assets/dev_message.txt")
        log.info dev_mess.text
     }
 
@@ -135,14 +135,14 @@ if (params.singleEnd && params.pico_v2){
 
 
 // Stage config files
-ch_multiqc_config = Channel.fromPath(params.multiqcConfig)
+ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
-ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencingAdapters.fa")
-ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencingAdapters.fa")
+ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
+ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
 // FastqScreen
 Channel
-    .from(params.genomes.fastqScreenGenomes)
+    .from(params.fastqScreenGenomes)
     .set{ fastqScreenGenomeCh }
 
 /*
@@ -240,7 +240,7 @@ if ( params.metadata ){
 
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
-   dev_mess = file("$baseDir/assets/devMessage.txt")
+   dev_mess = file("$baseDir/assets/dev_message.txt")
    log.info dev_mess.text
 }
 
@@ -284,7 +284,7 @@ summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
 summary['Current path']   = "$PWD"
 summary['Working dir']    = workflow.workDir
-summary['Output dir']     = params.outDir
+summary['Output dir']     = params.outdir
 summary['Config Profile'] = workflow.profile
 
 if(params.email) summary['E-mail Address'] = params.email
@@ -293,7 +293,7 @@ log.info "========================================="
 
 /* Creates a file at the end of workflow execution */
 workflow.onComplete {
-  File woc = new File("${params.outDir}/raw-qc.workflow.oncomplete.txt")
+  File woc = new File("${params.outdir}/raw-qc.workflow.oncomplete.txt")
   Map endSummary = [:]
   endSummary['Completed on'] = workflow.complete
   endSummary['Duration']     = workflow.duration
@@ -315,7 +315,7 @@ process fastqc {
    label 'fastqc'
    label 'lowCpu'
    label 'minMem'
-   publishDir "${params.outDir}/fastqc", mode: 'copy'
+   publishDir "${params.outdir}/fastqc", mode: 'copy'
 
    when:
    !params.skip_fastqc_raw
@@ -341,7 +341,7 @@ process trimGalore {
   label 'trimgalore'
   label 'lowCpu'
   label 'minMem'
-  publishDir "${params.outDir}/trimming", mode: 'copy'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
 
   when:
   params.trimtool == "trimgalore" && !params.skip_trimming
@@ -441,7 +441,7 @@ process atroposTrim {
   label 'atropos'
   label 'lowCpu'
   label 'minMem'
-  publishDir "${params.outDir}/trimming", mode: 'copy'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
 
   
   when:
@@ -508,7 +508,7 @@ process fastp {
   label 'fastp'
   label 'lowCpu'
   label 'minMem'
-  publishDir "${params.outDir}/trimming", mode: 'copy'
+  publishDir "${params.outdir}/trimming", mode: 'copy'
 
 
   when:
@@ -611,7 +611,7 @@ if (!params.skip_trimming){
     label 'python'
     label 'lowCpu'
     label 'extraMem'
-    publishDir "${params.outDir}/makeReport", mode: 'copy'
+    publishDir "${params.outdir}/makeReport", mode: 'copy'
 
     when:
     !params.skip_trimming
@@ -664,7 +664,7 @@ if (!params.skip_trimming){
     label 'python'
     label 'lowCpu'
     label 'extraMem'
-    publishDir "${params.outDir}/makeReport", mode: 'copy'
+    publishDir "${params.outdir}/makeReport", mode: 'copy'
 
     input:
     set val(name), file(reads) from read_files_rawdatareport
@@ -738,7 +738,7 @@ process fastqcTrimmed {
 process makeFastqScreenGenomeConfig {
     label 'lowCpu'
     label 'extraMem'
-    publishDir "${params.outDir}/fastq_screen", mode: 'copy'
+    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
    
     
     when:
@@ -766,14 +766,14 @@ process fastqScreen {
    label 'fastqScreen'
    label 'lowCpu'
    label 'extraMem'
-   publishDir "${params.outDir}/fastq_screen", mode: 'copy'
+   publishDir "${params.outdir}/fastq_screen", mode: 'copy'
 
 
    when:
    !params.skip_fastq_screen
 
    input:
-   file fastqScreenGenomes from Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)})
+   file fastqScreenGenomes from Channel.fromList(params.fastqScreenGenomes.values().collect{file(it)})
    set val(name), file(reads) from fastq_screen_reads
    file fastq_screen_config from ch_fastq_screen_config.collect()
 
@@ -804,18 +804,17 @@ process get_software_versions {
   """
   echo $workflow.manifest.version &> v_rawqc.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
-  #fastqc --version &> v_fastqc.txt
-  #fastq_screen --version &> v_fastqscreen.txt
-  #trim_galore --version &> v_trimgalore.txt
-  #echo "lol" &> v_atropos.txt
-  #fastp --version &> v_fastp.txt
-  #multiqc --version &> v_multiqc.txt
+  fastqc --version &> v_fastqc.txt
+  fastq_screen --version &> v_fastqscreen.txt
+  trim_galore --version &> v_trimgalore.txt
+  echo "lol" &> v_atropos.txt
+  fastp --version &> v_fastp.txt
+  multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
 
 process workflow_summary_mqc {
-  label "onlyLinux"
   when:
   !params.skip_multiqc
 
@@ -847,7 +846,7 @@ process multiqc {
   label 'multiqc'
   label 'minCpu'
   label 'minMem'
-  publishDir "${params.outDir}/MultiQC", mode: 'copy'
+  publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
   when:
   !params.skip_multiqc
@@ -886,7 +885,6 @@ process multiqc {
   mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
-  ##multiqc . -f $rtitle $rfilename -c $multiqc_config -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
 
