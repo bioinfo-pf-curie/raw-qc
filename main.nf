@@ -141,9 +141,14 @@ ch_adaptor_file_detect = Channel.fromPath("$baseDir/assets/sequencing_adapters.f
 ch_adaptor_file_defult = Channel.fromPath("$baseDir/assets/sequencing_adapters.fa")
 
 // FastqScreen
+
 Channel
-    .from(params.fastqScreenGenomes)
+    .from(params.genomes.fastqScreenGenomes)
     .set{ fastqScreenGenomeCh }
+
+//Channel
+//    .fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)})
+//    .set{ fastqScreenGenomeCh }
 
 /*
  * CHANNELS
@@ -276,9 +281,9 @@ if (!params.pico_v1 && !params.pico_v2) {
 }
 summary['RNA_Lig']=params.rna_lig ? 'True' : 'False'
 summary['PolyA']= params.polyA ? 'True' : 'False'
-summary['Max Memory']   = params.max_memory
-summary['Max CPUs']     = params.max_cpus
-summary['Max Time']     = params.max_time
+summary['Max Memory']   = params.maxMemory
+summary['Max CPUs']     = params.maxCpus
+summary['Max Time']     = params.maxTime
 summary['Container Engine'] = workflow.containerEngine
 summary['Current home']   = "$HOME"
 summary['Current user']   = "$USER"
@@ -730,7 +735,6 @@ process fastqcTrimmed {
   fastqc_after_trim_results = Channel.empty()
 }
 
-
 /*
  * FastqScreen
  */
@@ -746,7 +750,7 @@ process makeFastqScreenGenomeConfig {
 
     input:
     val(fastqScreenGenome) from fastqScreenGenomeCh
-    
+
     output:
     file(outputFile) into ch_fastq_screen_config
 
@@ -773,7 +777,7 @@ process fastqScreen {
    !params.skip_fastq_screen
 
    input:
-   file fastqScreenGenomes from Channel.fromList(params.fastqScreenGenomes.values().collect{file(it)})
+   file fastqScreenGenomes from Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)})
    set val(name), file(reads) from fastq_screen_reads
    file fastq_screen_config from ch_fastq_screen_config.collect()
 
