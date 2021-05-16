@@ -312,8 +312,10 @@ workflow.onComplete {
 }
 
 /*
- * First QC on raw data [FastQC]
- */
+================================================================================
+                                   First QC on raw data [FastQC]
+================================================================================
+*/
 
 
 process fastqc {
@@ -329,18 +331,22 @@ process fastqc {
    set val(name), file(reads) from read_files_fastqc
 
    output:
-   file "*_fastqc.{zip,html}" into fastqc_results
+   file( "*_fastqc.{zip,html}") into fastqc_results
+   file("v_fastqc.txt") into fastqc_version
 
    script:
    """
    fastqc -q $reads -t ${task.cpus}
+   fastqc --version &> v_fastqc.txt 2>&1 || true
    """
 }
 
-
 /*
- * Reads Trimming
- */
+================================================================================
+                                   Reads Trimming
+================================================================================
+*/
+
 
 process trimGalore {
   label 'trimgalore'
@@ -357,6 +363,7 @@ process trimGalore {
   output:
   set val(name), file("*fastq.gz") into trim_reads_trimgalore, trimgalore_reads
   set val(name), file("*trimming_report.txt") into trim_results_trimgalore, report_results_trimgalore
+  file("v_trimgalore.txt") into trimgalore_version
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -379,6 +386,7 @@ process trimGalore {
 
     if (!params.polyA){
     """
+    trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -386,6 +394,7 @@ process trimGalore {
     """
     }else{
     """
+    trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
     		--length ${params.minlen} ${pico_opts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -415,6 +424,7 @@ process trimGalore {
     
     if (!params.polyA){
     """
+    trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -423,6 +433,7 @@ process trimGalore {
     """
     }else{
     """
+    trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${ntrim} ${qual_trim} \
                 --length ${params.minlen} ${pico_opts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
@@ -438,6 +449,7 @@ process trimGalore {
     """
     }
   }
+   
 }
 
 //--clip_r1 1 --three_prime_clip_r2 2 --clip_r2 1 --three_prime_clip_r1 2
@@ -461,6 +473,7 @@ process atroposTrim {
   file("*trimming_report*") into trim_results_atropos
   set val(name), file("*trimmed*fastq.gz") into trim_reads_atropos, atropos_reads
   set val(name), file("*.json") into report_results_atropos
+  file("v_atropos.txt") into atropos_version
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -477,6 +490,7 @@ process atroposTrim {
   elif [ "${params.adapter}" == "smallrna" ]; then
      echo -e ">smallrna_adapter_r1\n${params.smallrna_r1}" > ${prefix}_detect.0.fasta
   fi
+  atropos &> v_atropos.txt 2>&1 || true
   atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
          --times 3 --overlap 1 \
@@ -496,6 +510,7 @@ process atroposTrim {
      echo -e ">nextera_adapter_r1\n${params.nextera_r1}" > ${prefix}_detect.0.fasta
      echo -e ">nextera_adapter_r2\n${params.nextera_r2}" > ${prefix}_detect.1.fasta
   fi
+  atropos &> v_atropos.txt 2>&1 || true
   atropos -pe1 ${reads[0]} -pe2 ${reads[1]} \
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_trimmed_R1.fastq.gz -p ${prefix}_trimmed_R2.fastq.gz  \
@@ -526,6 +541,7 @@ process fastp {
 
   set val(name), file("*trimmed*fastq.gz") into trim_reads_fastp, fastp_reads
   set val(name), file("*.{json,log}") into trim_results_fastp, report_results_fastp
+  file("v_fastp.txt") into fastp_version
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -549,6 +565,7 @@ process fastp {
       adapter ="--adapter_sequence ${params.smallrna_r1}"
     }
     """
+    fastp --version &> v_fastp.txt 2>&1 || true
     fastp ${adapter} \
     --qualified_quality_phred ${params.qualtrim} \
     ${nextseq_trim} ${pico_opts} ${polyA_opts} \
@@ -577,6 +594,7 @@ process fastp {
       adapter ="--adapter_sequence ${params.nextera_r1} --adapter_sequence_r2 ${params.nextera_r2}"
     }
     """
+    fastp --version &> v_fastp.txt 2>&1 || true
     fastp ${adapter} \
     --qualified_quality_phred ${params.qualtrim} \
     ${nextseq_trim} ${pico_opts} ${polyA_opts} ${lig_opts} \
@@ -603,10 +621,12 @@ if (!params.skip_trimming){
   }
 }
 
-
 /*
- * Trimming reports
-*/ 
+================================================================================
+                                   Make Reports
+================================================================================
+*/
+
 
 if (!params.skip_trimming){
 
@@ -692,8 +712,10 @@ if (!params.skip_trimming){
 }
 
 /*
- * QC on trim data [FastQC]
- */
+================================================================================
+                                     QC on trim data [FastQC]
+================================================================================
+*/
 
 
 if (!params.skip_trimming){
@@ -725,10 +747,12 @@ process fastqcTrimmed {
 
     output:
     file "*_fastqc.{zip,html}" into fastqc_after_trim_results
+    file("v_fastqc.txt") into fastqctrimmed_version
 
     script:
     """
     fastqc -q $reads -t ${task.cpus}
+    fastqc --version &> v_fastqc.txt 2>&1 || true
     """
   }
 }else{
@@ -736,8 +760,10 @@ process fastqcTrimmed {
 }
 
 /*
- * FastqScreen
- */
+================================================================================
+                                     FastqScreen
+================================================================================
+*/
 
 process makeFastqScreenGenomeConfig {
     label 'lowCpu'
@@ -785,35 +811,50 @@ process fastqScreen {
    file("*_screen.txt") into fastq_screen_txt
    file("*_screen.html") into fastq_screen_html
    file("*tagged_filter.fastq.gz") into nohits_fastq
+   file("v_fastqscreen.txt") into fastqscreen_version
 
    script:
    """
    fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --nohits --aligner bowtie2 ${reads}
+   fastq_screen --version &> v_fastqscreen.txt 2>&1 || true
    """
 }
 
+/*
+================================================================================
+                                     MultiQC
+================================================================================
+*/
+
+/*
+ * Parse software version numbers
+ * @output software_versions_mqc.yaml
+ */
 
 /*
  * MulitQC report
- 
+*/
 process get_software_versions {
   label 'python'
   label 'minCpu'
   label 'minMem'
 
+  publishDir path:"${params.outdir}/softwareVersions", mode: 'copy'
+
+  input:
+  file('v_trimgalore.txt') from trimgalore_version.first().ifEmpty([])
+  file('v_fastp.txt') from fastp_version.first().ifEmpty([])
+  file('v_atropos.txt') from atropos_version.first().ifEmpty([])
+  file('v_fastqscreen.txt') from fastqscreen_version.first().ifEmpty([])
+  file('v_fastqc.txt') from fastqc_version.mix(fastqctrimmed_version).first().ifEmpty([])
+
   output:
-  file 'software_versions_mqc.yaml' into software_versions_yaml
+  file('software_versions_mqc.yaml') into software_versions_yaml
 
   script:
   """
-  echo $workflow.manifest.version &> v_rawqc.txt
-  echo $workflow.nextflow.version &> v_nextflow.txt
-  fastqc --version &> v_fastqc.txt
-  fastq_screen --version &> v_fastqscreen.txt
-  trim_galore --version &> v_trimgalore.txt
-  echo "lol" &> v_atropos.txt
-  fastp --version &> v_fastp.txt
-  multiqc --version &> v_multiqc.txt
+  echo "${workflow.manifest.version}" &> v_pipeline.txt 2>&1 || true
+  echo "${workflow.nextflow.version}" &> v_nextflow.txt 2>&1 || true
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
@@ -839,8 +880,6 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
       </dl>
   """.stripIndent()
 }
-
-*/
 
 /*
  *  MultiQC
@@ -868,14 +907,15 @@ process multiqc {
   file ('makeReport/*') from trim_report.collect().ifEmpty([])
   file ('makeReport/*') from trim_adaptor.collect().ifEmpty([])
   //file ('makeReport/*') from rawdata_report.collect().ifEmpty([])
-  //file ('software_versions/*') from software_versions_yaml.collect()
-  //file ('workflow_summary/*') from workflow_summary_yaml.collect()
+  file ('software_versions/*') from software_versions_yaml.collect()
+  file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
   
   output:
   file splan
   file "*_report.html" into multiqc_report
   file "*_data"
+  file("v_multiqc.txt") into multiqc_version
 
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
@@ -886,6 +926,7 @@ process multiqc {
   splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
 
   """
+  multiqc --version &> v_multiqc.txt 2>&1 || true
   mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
   multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen

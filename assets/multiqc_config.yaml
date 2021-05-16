@@ -386,7 +386,7 @@ custom_content:
     - adapter_seq
 
 report_section_order: 
-  software-versions:
+  software_versions:
     order: -1000
   summary:
     order: -1100
