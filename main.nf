@@ -767,7 +767,7 @@ process fastqcTrimmed {
 
 process makeFastqScreenGenomeConfig {
     label 'lowCpu'
-    label 'extraMem'
+    label 'minMem'
     publishDir "${params.outdir}/fastq_screen", mode: 'copy'
    
     
@@ -860,6 +860,7 @@ process get_software_versions {
 }
 
 process workflow_summary_mqc {
+
   when:
   !params.skip_multiqc
 
