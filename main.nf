@@ -860,7 +860,9 @@ process get_software_versions {
 }
 
 process workflow_summary_mqc {
-
+  label 'python'
+  label 'minCpu'
+  label 'minMem'
   when:
   !params.skip_multiqc
 
