@@ -350,8 +350,8 @@ process fastqc {
 
 process trimGalore {
   label 'trimgalore'
-  label 'lowCpu'
-  label 'minMem'
+  label 'medCpu'
+  label 'medMem'
   publishDir "${params.outdir}/trimming", mode: 'copy'
 
   when:
@@ -456,8 +456,8 @@ process trimGalore {
 
 process atroposTrim {
   label 'atropos'
-  label 'lowCpu'
-  label 'minMem'
+  label 'medCpu'
+  label 'medMem'
   publishDir "${params.outdir}/trimming", mode: 'copy'
 
   
@@ -526,8 +526,9 @@ process atroposTrim {
 
 process fastp {
   label 'fastp'
-  label 'lowCpu'
-  label 'minMem'
+  label 'medCpu'
+  label 'medMem'
+
   publishDir "${params.outdir}/trimming", mode: 'copy'
 
 
@@ -687,8 +688,8 @@ if (!params.skip_trimming){
 
   process makeReport4RawData {
     label 'python'
-    label 'lowCpu'
-    label 'extraMem'
+    label 'medCpu'
+    label 'medMem'
     publishDir "${params.outdir}/makeReport", mode: 'copy'
 
     input:
@@ -794,8 +795,8 @@ process makeFastqScreenGenomeConfig {
 
 process fastqScreen {
    label 'fastqScreen'
-   label 'lowCpu'
-   label 'extraMem'
+   label 'medCpu'
+   label 'medMem'
    publishDir "${params.outdir}/fastq_screen", mode: 'copy'
 
 
