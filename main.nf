@@ -864,6 +864,7 @@ process workflow_summary_mqc {
   label 'python'
   label 'minCpu'
   label 'minMem'
+
   when:
   !params.skip_multiqc
 
@@ -892,7 +893,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 process multiqc {
   label 'multiqc'
   label 'minCpu'
-  label 'minMem'
+  label 'lowMem'
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
   when:
