@@ -892,8 +892,8 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 
 process multiqc {
   label 'multiqc'
-  label 'minCpu'
-  label 'lowMem'
+  label 'medCpu'
+  label 'medMem'
   publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
   when:
