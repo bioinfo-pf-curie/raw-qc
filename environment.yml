@@ -5,6 +5,7 @@ channels:
   - defaults
 dependencies:
   - which
+  - conda-forge::tbb=2020.2=hc9558a2_0
   - fastqc=0.11.8
   - trim-galore=0.6.2
   - atropos=1.1.16

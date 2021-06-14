@@ -4,5 +4,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - conda-forge::tbb=2020.2=hc9558a2_0
   - fastq-screen=0.13.0
   - bowtie2=2.3.5
