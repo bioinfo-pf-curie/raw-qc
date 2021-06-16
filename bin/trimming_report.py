@@ -191,11 +191,11 @@ class Trimming_Report(object):
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq)
-                      try:
-                           kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
-                      except IndexError:
-                           kit_name = 'unknown'
-                      l_list.append(kit_name)
+                     # try:
+                     #      kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
+                     # except IndexError:
+                     #      kit_name = 'unknown'
+                     # l_list.append(kit_name)
 
            if len(reports) == 2:
               l_list = list()
@@ -207,21 +207,12 @@ class Trimming_Report(object):
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq_R1 = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq_R1)
-                      try:
-                         kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
-                      except IndexError:
-                         kit_name = 'unknown'
 
               with open(trim_report_2) as f:
                  for line in f:
                    if re.findall('Adapter sequence:[^"]', line):
                       self_adapter_seq_R2 = re.search('Adapter sequence:[^"]*',line).group().split(':')[1].split('(')[0].strip()
                       l_list.append(self_adapter_seq_R2)
-                      try:
-                         kit_name = re.search('Adapter sequence:[^"]*',line).group().split('(Illumina')[1].split(',')[0].strip()
-                      except IndexError:
-                         kit_name = 'unknown'
-                      l_list.append(kit_name)
 
            adapter_seq_dict = dict(
               sample_name = sample,
@@ -231,6 +222,7 @@ class Trimming_Report(object):
            return adapter_seq_dict
 
         except ValueError: return False
+
 
     def get_stat_trimgalore(self, reports, biological_name):
         try:
@@ -488,13 +480,13 @@ class Trimming_Report(object):
        This file is read by MultiQC to summarize results of the trimming.
        """
        for key, value in adapter_seq_dict.items():
+           if len(adapter_seq_dict[key]) == 1:
+             with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
+                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\n')
+                out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
            if len(adapter_seq_dict[key]) == 2:
              with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
-                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t' + "kit_name"+'\n')
-                out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
-           if len(adapter_seq_dict[key]) == 3:
-             with open(prefixname + "_Adaptor_seq.trim.txt", 'w') as out:
-                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t'+"Adapter_sequence_read_2_regular_3'"+ '\t' + "kit_name"+'\n')
+                out.write('sample_name'+'\t'+"Adapter_sequence_read_1_regular_3'"+'\t'+"Adapter_sequence_read_2_regular_3'"+ '\n')
                 out.write(adapter_seq_dict.get('sample_name')+'\t'+'\t'.join(map(str,adapter_seq_dict.get('adapter_seq')))+'\n')
 
     def write_stats_txt(self, stats_dict, prefixname):
@@ -543,5 +535,7 @@ if __name__ == '__main__':
     if trim_tool == "atropos":
         adapter_seq_dict = TR.get_adatptor_atropos(reports)
         stat_dict = TR.get_stat_atropos(reports, biological_name)
+
+
     TR.write_adapter_txt(adapter_seq_dict,prefixname)
     TR.write_stats_txt(stat_dict,prefixname)

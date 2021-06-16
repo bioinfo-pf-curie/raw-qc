@@ -250,11 +250,6 @@ custom_data:
               scale: false
               format: '{:.0f}'
               placement: 1000
-            kit_name:
-              title: "Kit name"
-              scale: false
-              format: '{:.0f}'
-              placement: 2000
   
 
 sp:
