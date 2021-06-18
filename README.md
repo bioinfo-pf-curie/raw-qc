@@ -6,6 +6,7 @@
 [![MultiQC](https://img.shields.io/badge/MultiQC-1.8-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
+[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
 ### Introduction
 
@@ -47,55 +48,57 @@ It means that Atropos currently requires the specification of the adapter to rem
 ```bash
 N E X T F L O W  ~  version 19.04.0
 Launching `main.nf` [cheesy_fermi] - revision: 8038a4770c
-raw-qc v1.0dev
+raw-qc v1.2.0
 =======================================================
-
+	
 Usage:
 nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
 nextflow run main.nf --samplePlan sample_plan -profile conda
-
+				
 Mandatory arguments:
-  --reads 'READS'               Path to input data (must be surrounded with quotes)
-  --samplePlan 'SAMPLEPLAN'     Path to sample plan input file (cannot be used with --reads)
-  -profile PROFILE              Configuration profile to use. test / conda / singularity / cluster (see below)
-
+--reads [file]                Path to input data (must be surrounded with quotes)
+--samplePlan [file]           Path to sample plan input file (cannot be used with --reads)
+-profile [str]                Configuration profile to use. test / conda / singularity / cluster (see below)
+									  
 Options:
-  --singleEnd                   Specifies that the input is single end reads
-  --trimtool 'TOOL'             Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
-
+--singleEnd [bool]            Specifies that the input is single end reads
+--trimtool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
+								  
 Trimming options:
-  --adapter 'ADAPTER'           Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
-  --qualtrim QUAL               Minimum mapping quality for trimming. Default is '20'
-  --ntrim                       Trim 'N' bases from either side of the reads
-  --two_colour                  Trimming for NextSeq/NovaSeq sequencers
-  --minlen LEN                  Minimum length of trimmed sequences. Default is '10'
-
+--adapter [str]               Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
+--qualtrim [int]              Minimum mapping quality for trimming. Default is '20'
+--ntrim [bool]                Trim 'N' bases from either side of the reads
+--twoColour [bool]            Trimming for NextSeq/NovaSeq sequencers
+--minlen [int]                Minimum length of trimmed sequences. Default is '10'
+																						
 Presets:
-  --pico_v1                     Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
-  --pico_v2                     Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
-  --rna_lig                     Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
-  --polyA                       Sets trimming setting for 3-seq analysis with polyA tail detection
-
+--picoV1 [bool]               Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+--picoV2 [bool]               Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
+--rnaLig [bool]               Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
+--polyA [bool]                Sets trimming setting for 3'-seq analysis with polyA tail detection
+																													
 Other options:
-  --outdir 'PATH'               The output directory where the results will be saved
-  -name 'NAME'                  Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-  --metadata 'FILE'             Add metadata file for multiQC report
-
+--outDir [dir]                The output directory where the results will be saved
+-name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+--metadata [file]             Add metadata file for multiQC report
+																																		  
 Skip options:
-  --skip_fastqc_raw             Skip FastQC on raw sequencing reads
-  --skip_trimming               Skip trimming step
-  --skip_fastqc_trim            Skip FastQC on trimmed sequencing reads
-  --skip_fastq_sreeen           Skip FastQScreen on trimmed sequencing reads
-  --skip_multiqc                Skip MultiQC step
-
+--skipFastqcRaw [bool]        Skip FastQC on raw sequencing reads
+--skipTrimming [bool]         Skip trimming step
+--skipFastqcTrim [bool]       Skip FastQC on trimmed sequencing reads
+--skipFastqSreeen [bool]      Skip FastQScreen on trimmed sequencing reads
+--skipMultiqc [bool]          Skip MultiQC step
+																																											
 =======================================================
 Available Profiles
-
-  -profile test                 Set up the test dataset
-  -profile conda                Build a new conda environment before running the pipeline
-  -profile toolsPath            Use the paths defined in configuration for each tool
-  -profile singularity          Use the Singularity images for each process
-  -profile cluster              Run the workflow on the cluster, instead of locally
+-profile test                 Run the test dataset
+-profile conda                Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+-profile multiconda           Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+-profile path                 Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
+-profile multipath            Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
+-profile docker               Use the Docker images for each process
+-profile singularity          Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+-profile cluster              Run the workflow on the cluster, instead of locally
 
 ```
 
@@ -107,14 +110,14 @@ The pipeline can be run on any infrastructure from a list of input files or from
 See the conf/test.conf to set your test dataset.
 
 ```
-nextflow run main.nf -profile conda,test
+nextflow run main.nf -profile conda,test --genomeAnnotationPaths 'ANNOTATION_FOLDER'
 
 ```
 
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR -profile conda
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR -profile conda --genomeAnnotationPaths 'ANNOTATION_FOLDER'
 
 ```
 
@@ -125,13 +128,40 @@ echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -p
 
 ```
 
-### Documentation
+### Defining the '-profile'
+
+By default (whithout any profile), Nextflow will excute the pipeline locally, expecting that all tools are available from your `PATH` variable.
+
+In addition, we set up a few profiles that should allow you i/ to use containers instead of local installation, ii/ to run the pipeline on a cluster instead of on a local architecture.
+The description of each profile is available on the help message (see above).
+
+Here are a few examples of how to set the profile option. See the [full documentation](docs/profiles.md) for details.
+
+```
+## Run the pipeline locally, using the paths defined in the configuration for each tool (see conf/path.config)
+-profile path --globalPath INSTALLATION_PATH 
+
+## Run the pipeline on the cluster, using the Singularity containers
+-profile cluster,singularity --singularityPath SINGULARITY_PATH 
+
+## Run the pipeline on the cluster, building a new conda environment
+-profile cluster,conda --condaCacheDir CONDA_CACHE 
+```
+
+### Sample Plan
+
+A sample plan is a csv file (comma separated) that list all samples with their biological IDs, **with no header**.
+
+
+SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
+
+### Full Documentation
 
 1. [Installation](docs/installation.md)
-2. [Running the pipeline](docs/usage.md)
-3. [Output and how to interpret the results](docs/output.md)
-4. [Troubleshooting](docs/troubleshooting.md)
-
+2. [Reference genomes](docs/referenceGenomes.md)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](docs/troubleshooting.md)
 
 ### Credits
 

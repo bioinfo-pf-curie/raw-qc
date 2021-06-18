@@ -1,38 +1,31 @@
 ***********************************
-CHANGES IN VERSION 2.1.1
-
-BUG FIXES
-
-   o Fix typo in fastqscreen annotation path
-
-
-***********************************
-CHANGES IN VERSION 2.1.0
+version-2.2.0
 
 NEW FEATURES
-
-   o Add FastqScreen module
+  - Update code template
 
 BUG FIXES
-
-   o Fix bug with --skip_trimming option where MultiQC was stuck
+  - Fix typo in fastqscreen annotation path
 
 ***********************************
-CHANGES IN VERSION 2.0.0
+version-2.1.0
 
 NEW FEATURES
+  - Add FastqScreen module
 
-  o Add '-adapter' option to skip the detect step
+BUG FIXES
+  - Fix bug with --skip_trimming option where MultiQC was stuck
 
-  o Add options '--ntrim', '--two_colour', '--qualtrim', '--minlen'. Note that '--ntrim' does not work with fastp 
+***********************************
+version-2.0.0
 
-  o Add preset for 3'seq protocol
-
-  o Add preset for 'pico' protocol. Do not work for atropos
-
-  o Add MultiQC report
-
-  o Add support for Atropos, TrimGalore!, and fastp trimmers
+NEW FEATURES
+  - Add '-adapter' option to skip the detect step
+  - Add options '--ntrim', '--two_colour', '--qualtrim', '--minlen'. Note that '--ntrim' does not work with fastp 
+  - Add preset for 3'seq protocol
+  - Add preset for 'pico' protocol. Do not work for atropos
+  - Add MultiQC report
+  - Add support for Atropos, TrimGalore!, and fastp trimmers
 
 
 
