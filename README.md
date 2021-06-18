@@ -75,7 +75,7 @@ Presets:
 --picoV1 [bool]               Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
 --picoV2 [bool]               Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
 --rnaLig [bool]               Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
---polyA [bool]                Sets trimming setting for 3'-seq analysis with polyA tail detection
+--polyA [bool]                Sets trimming setting for 3-seq analysis with polyA tail detection
 																													
 Other options:
 --outDir [dir]                The output directory where the results will be saved
