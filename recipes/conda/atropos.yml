@@ -1,7 +1,5 @@
-name: atropos
+name: atropos-1.1.16
 channels:
-  - defaults
-  - conda-forge
   - bioconda
 dependencies:
-  - atropos=1.1.16
+  - bioconda::atropos=1.1.16=py36_0

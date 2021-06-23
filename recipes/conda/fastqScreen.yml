@@ -1,9 +1,8 @@
-name: fastqScreen
+name: fastqScreen-0.13.0
 channels:
-  - defaults
   - conda-forge
   - bioconda
 dependencies:
   - conda-forge::tbb=2020.2=hc9558a2_0
-  - fastq-screen=0.13.0
-  - bowtie2=2.3.5
+  - bioconda::fastq-screen=0.13.0=pl526_0
+  - bioconda::bowtie2=2.3.5=py27he860b03_0
