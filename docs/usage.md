@@ -14,9 +14,6 @@
 * [Inputs](#inputs)
     * [`--singleEnd`](#--singleend)
 * [Reference genomes](#reference-genomes)
-    * [`--genome`](#-genome)
-* [Annotations](#annotations)
-    * [`--genomeAnnotationPath`](#-genomeannotationpath)
 * [Nextflow profiles](#nextflow-profiles)
 * [Job resources](#job-resources)
 * [Other command line parameters](#other-command-line-parameters)
@@ -140,27 +137,39 @@ in quotation marks, can then be used for `--reads`. For example:
 ```
 
 ## Reference Genomes
-
-All information about genomes and annotation are available in [ReferenceGenome](referenceGenome.md).
-
-### `-genome`
-
-There are different species supported in the genomes references file. To run the pipeline, you must specify which to use with the `--genome` flag.
+The pipeline config files come bundled with paths to the genomes reference files.
 
 You can find the keys to specify the genomes in the [genomes config file](../conf/genomes.config). Common genomes that are supported are:
 
 * Human
-  * `--genome hg38`
 * Mouse
-   * `--genome mm10`
 	
 > There are numerous others - check the config file for more.
 
-## Annotations
+The syntax for this reference configuration is as follows:
 
-### `--genomeAnnotationPath`
-
-The path where the genome annotations are available (and organized as specified in the ``conf/genomes.config`` file) can be changed at runtine with the ``--genomeAnnotationPath`` option.
+```nextflow
+params {
+  genomes {
+    fastqScreenGenomes {
+      Human = "/path/to/Human/Homo_sapiens.GRCh38"
+      Mouse = "/path/to/Mouse/Mus_musculus.GRCm38"
+      Rat = "/path/to/Rat/Rnor_6.0"
+      Drosophila = "/path/to/Drosophila/BDGP6"
+      Worm = "/path/to/Worm/Caenorhabditis_elegans.WBcel235"
+      Yeast = "/path/to/Yeast/Saccharomyces_cerevisiae.R64-1-1"
+      Arabidopsis = "/path/to/Arabidopsis/Arabidopsis_thaliana.TAIR10"
+      Ecoli = "/path/to/E_coli/Ecoli"
+      rRNA = "/path/to/rRNA/GRCm38_rRNA"
+      MT = "/path/to/Mitochondria/mitochondria"
+      PhiX = "/path/to/PhiX/phi_plus_SNPs"
+      Lambda = "/path/to/Lambda/Lambda"
+      Vectors = "$/path/to/Vectors/Vectors"
+      Adapters = "$/path/to/Adapters/Contaminants"
+    }
+  }
+}
+```
 
 ## Nextflow profiles
 
@@ -177,7 +186,10 @@ For most of the steps in the pipeline, if the job exits with an error code of `1
 
 The pipeline is made with a few *skip* options that allow to skip optional steps in the workflow.
 The following options can be used:
-* `--skipFastqc`
+* `--skipFastqcRaw`
+* `--skipTrimming`
+* `--skipFastqcTrim`
+* `--skipFastqSreeen`
 * `--skipMultiqc`
 				
 ### `--metadata`
