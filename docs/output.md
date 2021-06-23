@@ -1,3 +1,4 @@
+
 # Outputs
 
 <!-- TODO update with the output of your pipeline -->
@@ -6,11 +7,55 @@ This document describes the output produced by the pipeline. Most of the plots a
 
 ## Pipeline overview
 
-The pipeline is built using [Nextflow](https://www.nextflow.io/)
-and processes the data using the steps presented in the main README file.  
-Briefly, its goal is to process <!-- TODO --> data for any protocol, with or without control samples, and with or without spike-ins.
+The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes the data using the steps presented in the main README file.
 
-The directories listed below will be created in the output directory after the pipeline has finished. 
+Briefly, the workflow runs adapter trimming on fastq files. The user can choose [Trim Galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/), [Fastp](https://github.com/OpenGene/fastp) or [Atropos](https://github.com/jdidion/atropos) in order to detect and remove adapters. Further,  It peforms quality controls and multi-genome mapping on raw sequencing reads. 
+
+The directories listed below will be created in the output directory after the pipeline has finished.
+
+## Sequence trimming
+
+### Trim Galore
+
+[Trim Galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/) is a wrapper tool around [Cutadapt](https://github.com/marcelm/cutadapt/) to peform quality and adapter trimming on FastQ files. By default, Trim Galore will automatically detect and trim the appropriate adapter sequence. By default, `raw-qc` is using `TrimGalore`
+
+**Output directory: `trimming`**
+
+* `sample_trimmed_R[1,2].gz`
+  * trimmed Reads [1,2] . 
+* `sample.json`
+  * report JSON format result for further interpreting..
+* `sample.log`
+  * statistical reports.
+
+### Fastp
+[Fastp] (https://github.com/OpenGene/fastp) is another tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
+
+**Output directory: `trimming`**
+
+* `sample_trimmed_R[1,2].gz`
+  * trimmed Reads [1,2] . 
+* `sample.json`
+  * report JSON format result for further interpreting..
+* `sample.log`
+  * statistical reports.
+
+
+### Atropos
+
+[Atropos](https://github.com/jdidion/atropos) is tool for specific, sensitive, and speedy trimming of NGS reads.
+
+**Output directory: `trimming`**
+
+* `sample_trimmed_R[1,2].gz`
+  * trimmed Reads [1,2] . 
+* `sample.json`
+  * report JSON format result for further interpreting..
+* `sample.log`
+  * statistical reports.
+
+The `General Metrics` are presented in the MultiQC report as a statistical information on sequences before and after trimming.
+
 
 ## Sequencing quality
 
@@ -26,56 +71,20 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 * `zips/sample_fastqc.zip`
   * zip file containing the FastQC report, tab-delimited data file and plot images.
 
-## Read mapping
+### FastQ Screen
+[FastQ Screen](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/) maps sample reads on a list of reference genomes for assessing sample contamination and the ratio of the excepted genome in the sample. It creates a report file with values for each genome.
 
-### Alignment
+**Output directory: `fastqScreen`**
 
-Different tools can be used for read alignment (`STAR`, `BWA-mem`, `Bowtie2`). The mapping statistics (`Total Reads`, `Aligned Reads`, `Unique Reads`, `Multiple Reads`) are also presented in the main summary table.
+* `sample_trimmed_R[1,2]_screen.html`
+  * FastqScreen report, containing multi-genome mapping for your trimmed raw fastq files in html format.
+* `sample_trimmed_R[1,2]_screen.txt`
+  * FastqScreen report, containing multi-genome mapping for your trimmed raw fastq files in txt format.
+* `fastq_screen_databases.config`
+  * a list of reference genomes for assessing sample contamination.
+* `sample_trimmed_R[1,2].tagged_filter.fastq.gz`
+  * a library of sequences in Fastq format against a set of sequence databases.
 
-> **NB:** by default, one alignment is randomly reported in case of multiple mapping sites. If necessary, these reads can be filtered using the `--mapq` option. In addition, in case of paired-end sequencing reads, singleton are discarded from the analysis.
-
-**Output directory: `mapping`**
-
-* `sample.bam`
-  * Aligned reads. Available only if (`--saveAlignedIntermediates`) is used.
-* `sample_sorted.bam`
-  * Aligned reads sorted by chromosome position. Available only if (`--saveAlignedIntermediates`) is used.
-* `sample_sorted.bam.bai`
-  * Index of aligned and sorted reads. Available only if (`--saveAlignedIntermediates`) is used.
-
-The mapping statistics are presented in the MultiQC report as follows.  
-In general, we expect more than 80% of aligned reads. Samples with less than 50% of mapped reads should be further investigated, and checked for adapter content, contamination, etc.
-
-![MultiQC - Bowtie2 stats plot](images/bowtie2.png)
-
-### Duplicates
-
-[Picard MarkDuplicates](https://broadinstitute.github.io/picard/command-line-overview.html) is used to mark and remove the duplicates. 
-The results are presented in the `General Metrics` table. Duplicate reads are **removed** by default from the aligned reads to mitigate for fragments in the library that may have been sequenced more than once due to PCR biases. There is an option to keep duplicate reads with the `--keepDups` parameter but it is generally recommended to remove them to avoid the wrong interpretation of the results.	
-
-**Output directory: `mapping`**
-
-* `sample_filtered.bam`
-  * Aligned reads after filtering (`--mapq`, `--keepDups`).
-* `sample_filtered.bam.bai`
-  * Index of aligned reads after filtering.
-
-![MultiQC - Picard MarkDup stats plot](images/picard_deduplication.png)
-
-## Quality controls
-
-From the filtered and aligned read files, the pipeline runs several quality control steps presented below.
-
-### Sequencing complexity
-
-The [Preseq](http://smithlabresearch.org/software/preseq/) package aims at predicting and estimating the complexity of a genomic sequencing library, equivalent to predicting and estimating the number of redundant reads from a given sequencing depth and how many will be expected from additional sequencing using an initial sequencing experiment. The estimates can then be used to examine the utility of further sequencing, optimize the sequencing depth, or to screen multiple libraries to avoid low complexity samples. The dashed line shows a perfectly complex library where total reads = unique reads. Note that these are predictive numbers only, not absolute. The MultiQC plot can sometimes give extreme sequencing depth on the X axis - click and drag from the left side of the plot to zoom in on more realistic numbers.
-
-**Output directory: `preseq`**
-
-* `sample_ccurve.txt`
-  * Preseq expected future yield file.
-
-![MultiQC - Preseq library complexity plot](images/preseq_plot.png)
 
 ## MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available within the report data directory.
@@ -88,5 +97,3 @@ The pipeline has special steps which allow the software versions used to be repo
   * MultiQC report - a standalone HTML file that can be viewed in your web browser.
 * `multiqc_data/`
   * Directory containing parsed statistics from the different tools used in the pipeline.
-
-For more information about how to use MultiQC reports, see http://multiqc.info.
