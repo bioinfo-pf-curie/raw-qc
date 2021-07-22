@@ -117,14 +117,14 @@ nextflow run main.nf -profile conda,test --genomeAnnotationPaths 'ANNOTATION_FOL
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outdir MY_OUTPUT_DIR -profile conda --genomeAnnotationPaths 'ANNOTATION_FOLDER'
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --outDir MY_OUTPUT_DIR -profile conda --genomeAnnotationPaths 'ANNOTATION_FOLDER'
 
 ```
 
 #### Run the pipeline on a cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rawqc
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --outDir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rawqc
 
 ```
 
