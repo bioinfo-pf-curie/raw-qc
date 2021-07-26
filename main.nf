@@ -404,7 +404,7 @@ process trimGalore {
     if (!params.polyA){
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
-    trim_galore ${adapter} ${ntrim} ${qual_trim} \
+    trim_galore ${adapter} ${ntrim} ${qualTrim} \
                 --length ${params.minlen} ${pico_opts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
