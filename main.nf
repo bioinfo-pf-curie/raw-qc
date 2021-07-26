@@ -40,14 +40,14 @@ def helpMessage() {
 
     Options:
       --singleEnd [bool]            Specifies that the input is single end reads
-      --trimtool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
+      --trimTool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
 
     Trimming options:
       --adapter [str]               Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
-      --qualtrim [int]              Minimum mapping quality for trimming. Default is '20'
-      --ntrim [bool]                Trim 'N' bases from either side of the reads
+      --qualTrim [int]              Minimum mapping quality for trimming. Default is '20'
+      --nTrim [bool]                Trim 'N' bases from either side of the reads
       --twoColour [bool]            Trimming for NextSeq/NovaSeq sequencers
-      --minlen [int]                Minimum length of trimmed sequences. Default is '10'
+      --minLen [int]                Minimum length of trimmed sequences. Default is '10'
 
     Presets:
       --picoV1 [bool]               Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
@@ -97,15 +97,15 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 // Validate inputs 
-if (params.trimtool != 'trimgalore' && params.trimtool != 'atropos' && params.trimtool != 'fastp' ){
-  exit 1, "Invalid trimming tool option: ${params.trimtool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
+if (params.trimTool != 'trimgalore' && params.trimTool != 'atropos' && params.trimTool != 'fastp' ){
+  exit 1, "Invalid trimming tool option: ${params.trimTool}. Valid options: 'trimgalore', 'atropos', 'fastp'"
 } 
 
 if (params.adapter != 'truseq' && params.adapter != 'nextera' && params.adapter != 'smallrna' && params.adapter!= 'auto' ){
   exit 1, "Invalid adaptator seq tool option: ${params.adapter}. Valid options: 'truseq', 'nextera', 'smallrna', 'auto'"
 }
 
-if (params.adapter == 'auto' && params.trimtool == 'atropos') {
+if (params.adapter == 'auto' && params.trimTool == 'atropos') {
   exit 1, "Cannot use Atropos without specifying --adapter sequence."
 }
 
@@ -114,8 +114,8 @@ if (params.adapter == 'smallrna' && !params.singleEnd){
 }
 
 /*
-if (params.ntrim && params.trimtool == 'fastp') {
-  log.warn "[raw-qc] The 'ntrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
+if (params.nTrim && params.trimTool == 'fastp') {
+  log.warn "[raw-qc] The 'nTrim' option is not availabe for the 'fastp' trimmer. Option is ignored."
 }
 */
 
@@ -123,7 +123,7 @@ if (params.picoV1 && params.picoV2 && params.rnaLig){
   exit 1, "Invalid SMARTer kit option at the same time for pico1 && picoV2 && rnaLig"
 }
 
-if (params.picoV1 && params.picoV2 && params.trimtool == 'atropos'){
+if (params.picoV1 && params.picoV2 && params.trimTool == 'atropos'){
   exit 1, "Cannot use Atropos for pico preset"
 }
 
@@ -258,11 +258,11 @@ if (params.samplePlan) {
    summary['Reads']        = params.reads
 }
 summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
-summary['Trimming tool']= params.trimtool
+summary['Trimming tool']= params.trimTool
 summary['Adapter']= params.adapter
-summary['Min quality']= params.qualtrim
-summary['Min len']= params.minlen
-summary['N trim']= params.ntrim ? 'True' : 'False'
+summary['Min quality']= params.qualTrim
+summary['Min len']= params.minLen
+summary['N trim']= params.nTrim ? 'True' : 'False'
 summary['Two colour']= params.twoColour ? 'True' : 'False'
 if (params.picoV1) {
    summary['PicoV1'] = 'True'
@@ -333,7 +333,7 @@ process trimGalore {
   publishDir "${params.outDir}/trimming", mode: 'copy'
 
   when:
-  params.trimtool == "trimgalore" && !params.skipTrimming
+  params.trimTool == "trimgalore" && !params.skipTrimming
 
   input:
   set val(name), file(reads) from readFilesTrimgaloreCh
@@ -345,8 +345,8 @@ process trimGalore {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  ntrim = params.ntrim ? "--trim-n" : ""
-  qualTrim = params.twoColour ?  "--2colour ${params.qualtrim}" : "--quality ${params.qualtrim}"
+  nTrim = params.nTrim ? "--trim-n" : ""
+  qualTrim = params.twoColour ?  "--2colour ${params.qualTrim}" : "--quality ${params.qualTrim}"
   
   adapter = ""
   picoOpts = ""
@@ -366,18 +366,18 @@ process trimGalore {
     if (!params.polyA){
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
-    trim_galore ${adapter} ${ntrim} ${qualTrim} \
-                --length ${params.minlen} ${picoOpts} \
+    trim_galore ${adapter} ${nTrim} ${qualTrim} \
+                --length ${params.minLen} ${picoOpts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
     """
     }else{
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
-    trim_galore ${adapter} ${ntrim} ${qualTrim} \
-    		--length ${params.minlen} ${picoOpts} \
+    trim_galore ${adapter} ${nTrim} ${qualTrim} \
+    		--length ${params.minLen} ${picoOpts} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
-    trim_galore -a "A{10}" ${qualTrim} --length ${params.minlen} \
+    trim_galore -a "A{10}" ${qualTrim} --length ${params.minLen} \
                 --gzip ${prefix}_trimmed.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
     rm ${prefix}_trimmed.fq.gz
     mv ${prefix}_polyA_trimmed_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
@@ -404,8 +404,8 @@ process trimGalore {
     if (!params.polyA){
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
-    trim_galore ${adapter} ${ntrim} ${qualTrim} \
-                --length ${params.minlen} ${pico_opts} ${lig_opts} \
+    trim_galore ${adapter} ${nTrim} ${qualTrim} \
+                --length ${params.minLen} ${pico_opts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
@@ -413,11 +413,11 @@ process trimGalore {
     }else{
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
-    trim_galore ${adapter} ${ntrim} ${qualTrim} \
-                --length ${params.minlen} ${picoOpts} ${ligOpts} \
+    trim_galore ${adapter} ${nTrim} ${qualTrim} \
+                --length ${params.minLen} ${picoOpts} ${ligOpts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
 
-    trim_galore -a "A{10}" ${qualTrim} --length ${params.minlen} \
+    trim_galore -a "A{10}" ${qualTrim} --length ${params.minLen} \
                  --paired --gzip ${prefix}_R1_val_1.fq.gz ${prefix}_R2_val_2.fq.gz --basename ${prefix}_polyA --cores ${task.cpus}
 
     mv ${prefix}_polyA_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
@@ -439,7 +439,7 @@ process atroposTrim {
 
   
   when:
-  params.trimtool == "atropos" && !params.skipTrimming && params.adapter != ""
+  params.trimTool == "atropos" && !params.skipTrimming && params.adapter != ""
   
   input:
   set val(name), file(reads) from readFilesAtroposTrimCh
@@ -453,7 +453,7 @@ process atroposTrim {
 
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
-  ntrim = params.ntrim ? "--trim-n" : ""
+  nTrim = params.nTrim ? "--trim-n" : ""
   nextseqTrim = params.twoColour ? "--nextseq-trim" : ""
   polyAOpts = params.polyA ? "-a A{10}" : ""
 
@@ -470,8 +470,8 @@ process atroposTrim {
   atropos trim -se ${reads} \
          --adapter file:${prefix}_detect.0.fasta \
          --times 3 --overlap 1 \
-         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
-         ${ntrim} ${nextseqTrim} ${polyAOpts} \
+         --minimum-length ${params.minLen} --quality-cutoff ${params.qualTrim} \
+         ${nTrim} ${nextseqTrim} ${polyAOpts} \
          --threads ${task.cpus} \
          -o ${prefix}_trimmed_R1.fastq.gz \
          --report-file ${prefix}_trimming_report \
@@ -491,8 +491,8 @@ process atroposTrim {
          --adapter file:${prefix}_detect.0.fasta -A file:${prefix}_detect.1.fasta \
          -o ${prefix}_trimmed_R1.fastq.gz -p ${prefix}_trimmed_R2.fastq.gz  \
          --times 3 --overlap 1 \
-         --minimum-length ${params.minlen} --quality-cutoff ${params.qualtrim} \
-         ${ntrim} ${nextseqTrim} ${polyAOpts} \
+         --minimum-length ${params.minLen} --quality-cutoff ${params.qualTrim} \
+         ${nTrim} ${nextseqTrim} ${polyAOpts} \
          --threads ${task.cpus} \
          --report-file ${prefix}_trimming_report \
          --report-formats txt json
@@ -509,7 +509,7 @@ process fastp {
 
 
   when:
-  params.trimtool == "fastp" && !params.skipTrimming
+  params.trimTool == "fastp" && !params.skipTrimming
   
   input:
   set val(name), file(reads) from readFilesFastpCh
@@ -522,7 +522,7 @@ process fastp {
   script:
   prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
   nextseqTrim = params.twoColour ? "--trim_poly_g" : "--disable_trim_poly_g"
-  ntrim = params.ntrim ? "" : "--n_base_limit 0"
+  nTrim = params.nTrim ? "" : "--n_base_limit 0"
   picoOpts = ""
   polyAOpts = params.polyA ? "--trim_poly_x" : ""
   adapter = ""
@@ -543,10 +543,10 @@ process fastp {
     """
     fastp --version &> v_fastp.txt 2>&1 || true
     fastp ${adapter} \
-    --qualified_quality_phred ${params.qualtrim} \
+    --qualified_quality_phred ${params.qualTrim} \
     ${nextseqTrim} ${picoOpts} ${polyAOpts} \
-    ${ntrim} \
-    --length_required ${params.minlen} \
+    ${nTrim} \
+    --length_required ${params.minLen} \
     -i ${reads} -o ${prefix}_trimmed_R1.fastq.gz \
     -j ${prefix}.fastp.json -h ${prefix}.fastp.html\
     --thread ${task.cpus} 2> ${prefix}_fasp.log
@@ -572,10 +572,10 @@ process fastp {
     """
     fastp --version &> v_fastp.txt 2>&1 || true
     fastp ${adapter} \
-    --qualified_quality_phred ${params.qualtrim} \
+    --qualified_quality_phred ${params.qualTrim} \
     ${nextseqTrim} ${picoOpts} ${polyAOpts} ${ligOpts} \
-    ${ntrim} \
-    --length_required ${params.minlen} \
+    ${nTrim} \
+    --length_required ${params.minLen} \
     -i ${reads[0]} -I ${reads[1]} -o ${prefix}_trimmed_R1.fastq.gz -O ${prefix}_trimmed_R2.fastq.gz \
     --detect_adapter_for_pe -j ${prefix}.fastp.json -h ${prefix}.fastp.html \
     --thread ${task.cpus} 2> ${prefix}_fasp.log
@@ -584,13 +584,13 @@ process fastp {
 }
 
 if (!params.skipTrimming){
-  if(params.trimtool == "atropos"){
+  if(params.trimTool == "atropos"){
     trimReadsCh = trimReadsAtroposCh
     trimReportsCh = reportResultsAtroposCh
-  }else if (params.trimtool == "trimgalore"){
+  }else if (params.trimTool == "trimgalore"){
     trimReadsCh = trimReadsTrimgaloreCh
     trimReportsCh = reportResultsTrimgaloreCh
-  }else if (params.trimtool == "fastp"){
+  }else if (params.trimTool == "fastp"){
     trimReadsCh = trimReadsFastpCh
     trimReportsCh = reportResultsFastpCh
   }
@@ -622,32 +622,32 @@ if (!params.skipTrimming){
     isPE = params.singleEnd ? 0 : 1
 
     if (params.singleEnd) {
-      if(params.trimtool == "fastp"){
+      if(params.trimTool == "fastp"){
       """
       create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
-      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimTool} --b ${name} --o ${prefix}
       """
       } else {
       """
       create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
-      trimming_report.py --tr1 ${reports} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      trimming_report.py --tr1 ${reports} --r1 subset_${prefix}.R1.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --u ${params.trimTool} --b ${name} --o ${prefix}
       """
       }
     } else {
-      if(params.trimtool == "trimgalore"){
+      if(params.trimTool == "trimgalore"){
       """
       create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
-      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      trimming_report.py --tr1 ${reports[0]} --tr2 ${reports[1]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimTool} --b ${name} --o ${prefix}
       """
-      } else if (params.trimtool == "fastp"){
+      } else if (params.trimTool == "fastp"){
       """
       create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
-      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      trimming_report.py --l ${prefix}_fasp.log --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimTool} --b ${name} --o ${prefix}
       """
       } else {
       """
       create_subset_data.sh ${isPE} ${prefix} ${reads} ${trims}
-      trimming_report.py --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimtool} --b ${name} --o ${prefix}
+      trimming_report.py --tr1 ${reports[0]} --r1 subset_${prefix}.R1.fastq.gz --r2 subset_${prefix}.R2.fastq.gz --t1 subset_${prefix}_trims.R1.fastq.gz --t2 subset_${prefix}_trims.R2.fastq.gz --u ${params.trimTool} --b ${name} --o ${prefix}
       """
       }
     }
@@ -691,9 +691,9 @@ if (!params.skipTrimming){
 
 
 if (!params.skipTrimming){
-  if (params.trimtool == "atropos"){
+  if (params.trimTool == "atropos"){
     atroposReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh} 
-  }else if (params.trimtool == "trimgalore"){
+  }else if (params.trimTool == "trimgalore"){
     trimgaloreReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh}
   }else{
     fastpReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh}

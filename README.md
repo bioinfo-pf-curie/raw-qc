@@ -62,14 +62,14 @@ Mandatory arguments:
 									  
 Options:
 --singleEnd [bool]            Specifies that the input is single end reads
---trimtool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
+--trimTool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
 								  
 Trimming options:
 --adapter [str]               Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
---qualtrim [int]              Minimum mapping quality for trimming. Default is '20'
---ntrim [bool]                Trim 'N' bases from either side of the reads
+--qualTrim [int]              Minimum mapping quality for trimming. Default is '20'
+--nTrim [bool]                Trim 'N' bases from either side of the reads
 --twoColour [bool]            Trimming for NextSeq/NovaSeq sequencers
---minlen [int]                Minimum length of trimmed sequences. Default is '10'
+--minLen [int]                Minimum length of trimmed sequences. Default is '10'
 																						
 Presets:
 --picoV1 [bool]               Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
