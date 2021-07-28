@@ -405,7 +405,7 @@ process trimGalore {
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${nTrim} ${qualTrim} \
-                --length ${params.minLen} ${pico_opts} ${lig_opts} \
+                --length ${params.minLen} ${picoOpts} ${lig_opts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
@@ -553,10 +553,10 @@ process fastp {
     """
   } else {
     if (params.picoV1) {
-       pico_opts = "--trim_front1 3 --trim_tail2 3"
+       picoOpts = "--trim_front1 3 --trim_tail2 3"
     }
     if (params.picoV2) {
-       pico_opts = "--trim_front2 3 --trim_tail1 3"
+       picoOpts = "--trim_front2 3 --trim_tail1 3"
     }
 
     if (params.rnaLig) {
