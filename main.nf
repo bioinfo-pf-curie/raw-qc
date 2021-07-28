@@ -405,7 +405,7 @@ process trimGalore {
     """
     trim_galore --version &> v_trimgalore.txt 2>&1 || true
     trim_galore ${adapter} ${nTrim} ${qualTrim} \
-                --length ${params.minLen} ${picoOpts} ${lig_opts} \
+                --length ${params.minLen} ${picoOpts} ${ligOpts} \
                 --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
     mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
@@ -560,7 +560,7 @@ process fastp {
     }
 
     if (params.rnaLig) {
-       lig_opts = "--trim_front1 1 --trim_tail2 2 --trim_front2 1 --trim_tail1 2"
+       ligOpts = "--trim_front1 1 --trim_tail2 2 --trim_front2 1 --trim_tail1 2"
     }
 
     if (params.adapter == 'truseq'){
