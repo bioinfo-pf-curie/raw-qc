@@ -291,36 +291,6 @@ log.info "========================================="
 
 /*
 ================================================================================
-                                   First QC on raw data [FastQC]
-================================================================================
-*/
-
-
-process fastqc {
-  label 'fastqc'
-  label 'lowCpu'
-  label 'minMem'
-  publishDir "${params.outDir}/fastqc", mode: 'copy'
-
-  when:
-  !params.skipFastqcRaw
-
-  input:
-  set val(name), file(reads) from readFilesFastqcCh
-
-  output:
-  file( "*_fastqc.{zip,html}") into fastqcResultsCh
-  file("v_fastqc.txt") into fastqcVersionCh
-
-  script:
-  """
-  fastqc -q $reads -t ${task.cpus}
-  fastqc --version &> v_fastqc.txt 2>&1 || true
-  """
-}
-
-/*
-================================================================================
                                    Reads Trimming
 ================================================================================
 */
@@ -786,136 +756,68 @@ process fastqScreen {
   """
 }
 
-/*
-================================================================================
-                                     MultiQC
-================================================================================
-*/
 
-process getSoftwareVersions {
-  label 'python'
-  label 'minCpu'
-  label 'minMem'
+// Workflows
+// QC : check actqc
+include { qcFlow } from './nf-modules/local/subworkflow/qc'
 
-  publishDir path:"${params.outDir}/softwareVersions", mode: 'copy'
+// Alignment on reference genome
+// include { mappingFlow } from './nf-modules/common/subworkflow/mapping' addParams( alignerr: params.aligner, bwa_options: bwa_options, bowtie2_options: bowtie2_options, star_options: star_options )
+include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
 
-  input:
-  file('v_trimgalore.txt') from trimgaloreVersionCh.first().ifEmpty([])
-  file('v_fastp.txt') from fastpVersionCh.first().ifEmpty([])
-  file('v_atropos.txt') from atroposVersionCh.first().ifEmpty([])
-  file('v_fastqscreen.txt') from fastqscreenVersionCh.first().ifEmpty([])
-  file('v_fastqc.txt') from fastqcVersionCh.mix(fastqcTrimmedVersionCh).first().ifEmpty([])
+// Processes
+include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
+include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
+include { multiqc } from './nf-modules/local/process/multiqc'
+include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
 
-  output:
-  file('software_versions_mqc.yaml') into softwareVersionsYamlCh
+workflow {
+    main:
 
-  script:
-  """
-  echo "${workflow.manifest.version}" &> v_pipeline.txt 2>&1 || true
-  echo "${workflow.nextflow.version}" &> v_nextflow.txt 2>&1 || true
-  scrape_software_versions.py &> software_versions_mqc.yaml
-  """
+      // subroutines
+      outputDocumentation(
+       outputDocsCh,
+       outputDocsImagesCh
+      )
+
+      // QC : check factqc
+      qcFlow(
+       rawReads
+      )
+
+
+      // MultiQC
+      getSoftwareVersions(
+        trimgaloreVersionCh.first().ifEmpty([]),
+        fastpVersionCh.first().ifEmpty([]),
+        from atroposVersionCh.first().ifEmpty([]),
+        fastqscreenVersionCh.first().ifEmpty([]),
+        qcFlow.out.fastqcVersionCh.mix(fastqcTrimmedVersionCh).first().ifEmpty([])
+      )
+
+      workflowSummaryMqc(
+        summary
+      )
+
+      multiqc(
+        customRunName,
+        splanCh.collect(),
+        metadataCh.ifEmpty([]),
+        multiqcConfigCh, 
+        qcFlow.out.fastqcResultsCh.collect().ifEmpty([]),
+        trimResultsAtroposCh.collect().ifEmpty([]),
+        trimResultsTrimgaloreCh.map{items->items[1]}.collect().ifEmpty([]),
+        trimResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
+        fastqcAfterTrimResultsCh.collect().ifEmpty([]),
+        fastqScreenTxtCh.collect().ifEmpty([]),
+        trimReportCh.collect().ifEmpty([]),
+        trimAdaptorCh.collect().ifEmpty([]),
+        softwareVersionsYamlCh.collect(),
+        workflowSummaryYamlCh.collect()
+      )
 }
 
-process workflowSummaryMqc {
-  label 'python'
-  label 'minCpu'
-  label 'minMem'
-
-  when:
-  !params.skipMultiqc
-
-  output:
-  file 'workflow_summary_mqc.yaml' into workflowSummaryYamlCh
-
-  exec:
-  def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-  yaml_file.text  = """
-  id: 'summary'
-  description: " - this information is collected when the pipeline is started."
-  section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/rawqc'
-  plot_type: 'html'
-  data: |
-      <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-      </dl>
-  """.stripIndent()
-}
-
-/*
- *  MultiQC
- */
-
-process multiqc {
-  label 'multiqc'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/MultiQC", mode: 'copy'
-
-  when:
-  !params.skipMultiqc
-
-  input:
-  file splan from splanCh.collect()
-  file metadata from metadataCh.ifEmpty([])
-  file multiqcConfig from multiqcConfigCh
-  file (fastqc:'fastqc/*') from fastqcResultsCh.collect().ifEmpty([]) 
-  file ('atropos/*') from trimResultsAtroposCh.collect().ifEmpty([])
-  file ('trimGalore/*') from trimResultsTrimgaloreCh.map{items->items[1]}.collect().ifEmpty([])
-  file ('fastp/*') from trimResultsFastpCh.map{items->items[1]}.collect().ifEmpty([])
-  file (fastqc:'fastqc_trimmed/*') from fastqcAfterTrimResultsCh.collect().ifEmpty([])
-  file ('fastq_screen/*') from fastqScreenTxtCh.collect().ifEmpty([])
-  file ('makeReport/*') from trimReportCh.collect().ifEmpty([])
-  file ('makeReport/*') from trimAdaptorCh.collect().ifEmpty([])
-  file ('software_versions/*') from softwareVersionsYamlCh.collect()
-  file ('workflow_summary/*') from workflowSummaryYamlCh.collect()
- 
-  output:
-  file splan
-  file "*_report.html" into multiqcReportCh
-  file "*_data"
-  file("v_multiqc.txt") into multiqcVersionCh
-
-  script:
-  rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rfilename = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : '--filename rawqc_report'
-  isPE = params.singleEnd ? 0 : 1
-  isSkipTrim = params.skipTrimming ? 0 : 1
-  metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
-  splanOpts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
-
-  """
-  multiqc --version &> v_multiqc.txt 2>&1 || true
-  mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} > multiqc-config-header.yaml
-  stats2multiqc.sh ${isPE} ${isSkipTrim}
-  multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
-  """
-}
-
-/*
- * Sub-routine
- */
-/*
-process outputDocumentation {
-  label 'python'
-  label 'minCpu'
-  label 'minMem'
-  publishDir "${params.summaryDir}/", mode: 'copy'
-
-  input:
-  file outputDocs from outputDocsCh
-  file images from outputDocsImagesCh
-
-  output:
-  file "results_description.html"
-
-  script:
-  """
-  markdown_to_html.py $outputDocs -o results_description.html
-  """
-} 
-*/                                                                                                                                                                                                          
+/* Creates a file at the end of workflow execution */
 workflow.onComplete {
   /*pipeline_report.html*/
   def report_fields = [:]
