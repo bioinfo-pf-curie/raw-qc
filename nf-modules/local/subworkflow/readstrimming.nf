@@ -15,7 +15,7 @@ include { fastp } from '../process/fastp'
  */
 
 
-workflow bamsChipFlow {
+workflow readsTrimmingFlow {
     // required inputs
     take:
      readFilesCh
@@ -37,13 +37,16 @@ workflow bamsChipFlow {
 
      emit:
       trimReadsTrimgaloreCh     = trimGalore.out.trimReads
-      trimResultsTrimgaloreCh   = trimGalore.out.trimResults
+      reportResultsTrimgaloreCh = trimGalore.out.trimResults
+      trimgaloreVersionCh       = trimGalore.out.version
+
       trimReadsAtroposCh        = atroposTrim.out.trimReads
       trimResultsAtroposCh      = atroposTrim.out.trimResults
       reportResultsAtroposCh    = atroposTrim.out.reportResults
       atroposVersionCh          = atroposTrim.out.version
+
       trimReadsFastpCh          = fastp.out.trimReads
-      trimResultsFastpCh        = fastp.out.trimResults
+      reportResultsFastpCh      = fastp.out.trimResults
       fastpVersionCh            = fastp.out.version
 }
 
