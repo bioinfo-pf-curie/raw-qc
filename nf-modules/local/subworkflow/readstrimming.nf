@@ -37,7 +37,7 @@ workflow readsTrimmingFlow {
 
      emit:
       trimReadsTrimgaloreCh     = trimGalore.out.trimReads
-      reportResultsTrimgaloreCh = trimGalore.out.trimResults
+      trimResultsTrimgaloreCh = trimGalore.out.trimResults
       trimgaloreVersionCh       = trimGalore.out.version
 
       trimReadsAtroposCh        = atroposTrim.out.trimReads

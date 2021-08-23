@@ -290,71 +290,11 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
-
-/*
-================================================================================
-                                     FastqScreen
-================================================================================
-*/
-
-process makeFastqScreenGenomeConfig {
-  label 'lowCpu'
-  label 'minMem'
-  publishDir "${params.outDir}/fastq_screen", mode: 'copy'
-     
-  when:
-  !params.skipFastqScreen
-
-  input:
-  val(fastqScreenGenome) from fastqScreenGenomeCh
-
-  output:
-  file(outputFile) into fastqScreenConfigCh
-
-  script:
-  outputFile = 'fastq_screen_databases.config'
-
-  String result = ''
-  for (Map.Entry entry: fastqScreenGenome.entrySet()) {
-    result += """
-    echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
-  }
-  return result
-}
-
-process fastqScreen {
-  label 'fastqScreen'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/fastq_screen", mode: 'copy'
-
-  when:
-  !params.skipFastqScreen
-
-  input:
-  file fastqScreenGenomes from Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)})
-  set val(name), file(reads) from fastqScreenReadsCh
-  file fastq_screen_config from fastqScreenConfigCh.collect()
-
-  output:
-  file("*_screen.txt") into fastqScreenTxtCh
-  file("*_screen.html") into fastqScreenHtml
-  file("*tagged_filter.fastq.gz") into nohitsFastqCh
-  file("v_fastqscreen.txt") into fastqscreenVersionCh
-
-  script:
-  """
-  fastq_screen --force --subset 200000 --threads ${task.cpus} --conf ${fastq_screen_config} --nohits --aligner bowtie2 ${reads}
-  fastq_screen --version &> v_fastqscreen.txt 2>&1 || true
-  """
-}
-
-
 // Workflows
 include { qcFlow } from './nf-modules/local/subworkflow/qc'
-include { readsTrimmingFlow } from './nf-modules/local/subworkflow/readsTrimmingFlow'
-include { makeReportsFlow } from './nf-modules/local/subworkflow/makeReportsFlow'
+include { readsTrimmingFlow } from './nf-modules/local/subworkflow/readstrimming'
+include { makeReportsFlow } from './nf-modules/local/subworkflow/makereport'
+include { fastqScreenFlow } from './nf-modules/local/subworkflow/screens'
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
 include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
@@ -408,11 +348,13 @@ workflow {
                                         Make Reports
       ================================================================================
       */
+      
       makeReportsFlow(
         readFilesCh,
         trimReadsCh,
         trimReportsCh
       )
+    
 
       /*
       ================================================================================
@@ -423,13 +365,18 @@ workflow {
       fastqcTrimmed(
         trimReadsCh
       )
-
+      if (params.skipFastqcTrim || params.skipTrimming){
+        fastqcTrimmed.out.fastqcAfterTrimResultsCh = Channel.empty()
+      }
       /*
       ================================================================================
                                           FastqScreen
       ================================================================================
       */
-
+      fastqScreenFlow(
+        fastqScreenGenomeCh,
+        trimReadsCh
+      )
 
       /*
       ================================================================================
@@ -440,8 +387,8 @@ workflow {
         readsTrimmingFlow.out.trimgaloreVersionCh.first().ifEmpty([]),
         qcFlow.out.fastpVersionCh.first().ifEmpty([]),
         readsTrimmingFlow.out.atroposVersionCh.first().ifEmpty([]),
-        fastqscreenVersionCh.first().ifEmpty([]),
-        qcFlow.out.fastqcVersionCh.mix(fastqcTrimmedVersionCh).first().ifEmpty([])
+        fastqScreenFlow.out.fastqscreenVersionCh.first().ifEmpty([]),
+        qcFlow.out.fastqcVersionCh.mix(fastqcTrimmed.out.fastqcTrimmedVersionCh).first().ifEmpty([])
       )
 
       workflowSummaryMqc(
@@ -454,15 +401,15 @@ workflow {
         metadataCh.ifEmpty([]),
         multiqcConfigCh, 
         qcFlow.out.fastqcResultsCh.collect().ifEmpty([]),
-        trimResultsAtroposCh.collect().ifEmpty([]),
-        trimResultsTrimgaloreCh.map{items->items[1]}.collect().ifEmpty([]),
-        trimResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
-        fastqcAfterTrimResultsCh.collect().ifEmpty([]),
-        fastqScreenTxtCh.collect().ifEmpty([]),
+        readsTrimmingFlow.out.trimResultsAtroposCh.collect().ifEmpty([]),
+        readsTrimmingFlow.out.trimResultsTrimgaloreCh.map{items->items[1]}.collect().ifEmpty([]),
+        readsTrimmingFlow.out.trimResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
+        fastqcTrimmed.out.fastqcAfterTrimResultsCh.collect().ifEmpty([]),
+        fastqScreenFlow.out.fastqScreenTxtCh.collect().ifEmpty([]),
         trimReportCh.collect().ifEmpty([]),
-        trimAdaptorCh.collect().ifEmpty([]),
-        softwareVersionsYamlCh.collect(),
-        workflowSummaryYamlCh.collect()
+        makeReportsFlow.out.trimAdaptorCh.collect().ifEmpty([]),
+        getSoftwareVersions.out.softwareVersionsYamlCh.collect(),
+        workflowSummaryMqc.out.workflowSummaryYamlCh.collect()
       )
 }
 

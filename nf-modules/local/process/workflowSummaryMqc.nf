@@ -8,7 +8,7 @@ process workflowSummaryMqc {
   val(summary)
 
   output:
-  path 'workflow_summary_mqc.yaml' 
+  path 'workflow_summary_mqc.yaml', emit: workflowSummaryYamlCh
 
   exec:
   def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')

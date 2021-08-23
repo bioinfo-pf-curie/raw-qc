@@ -13,7 +13,7 @@ process getSoftwareVersions {
   path 'v_fastqc.txt'
 
   output:
-  path 'software_versions_mqc.yaml'
+  path 'software_versions_mqc.yaml', emit : softwareVersionsYamlCh
 
   script:
   """
