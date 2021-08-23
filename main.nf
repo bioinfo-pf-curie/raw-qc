@@ -291,50 +291,6 @@ log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
 
-/*
-================================================================================
-   QC on trim data [FastQC]
-================================================================================
-*/
-
-
-if (!params.skipTrimming){
-  if (params.trimTool == "atropos"){
-    atroposReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh} 
-  }else if (params.trimTool == "trimgalore"){
-    trimgaloreReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh}
-  }else{
-    fastpReadsCh.into{fastqcTrimReadsCh; fastqScreenReadsCh}
-  }
-}else{
-  fastqScreenReadsCh = readFastqscreenCh  
-  fastqcTrimReadsCh = Channel.empty()
-}
-
-
-process fastqcTrimmed {
-  label 'fastqc'
-  label 'lowCpu'
-  label 'minMem'
-  publishDir "${params.outDir}/fastqc_trimmed", mode: 'copy'
-
-  input:
-  set val(name), file(reads) from fastqcTrimReadsCh
-
-  output:
-  file "*_fastqc.{zip,html}" into fastqcAfterTrimResultsCh
-  file("v_fastqc.txt") into fastqcTrimmedVersionCh
-
-  script:
-  """
-  fastqc -q $reads -t ${task.cpus}
-  fastqc --version &> v_fastqc.txt 2>&1 || true
-  """
-}
-
-if (params.skipFastqcTrim || params.skipTrimming){
-  fastqcAfterTrimResultsCh = Channel.empty()
-}
 
 /*
 ================================================================================
@@ -396,18 +352,15 @@ process fastqScreen {
 
 
 // Workflows
-// QC : check actqc
 include { qcFlow } from './nf-modules/local/subworkflow/qc'
-
-// Alignment on reference genome
-// include { mappingFlow } from './nf-modules/common/subworkflow/mapping' addParams( alignerr: params.aligner, bwa_options: bwa_options, bowtie2_options: bowtie2_options, star_options: star_options )
-include { mappingFlow } from './nf-modules/local/subworkflow/mapping'
-
+include { readsTrimmingFlow } from './nf-modules/local/subworkflow/readsTrimmingFlow'
+include { makeReportsFlow } from './nf-modules/local/subworkflow/makeReportsFlow'
 // Processes
 include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
 include { workflowSummaryMqc } from './nf-modules/local/process/workflowSummaryMqc'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
+include { fastqcTrimmed } from './nf-modules/local/process/fastqcTrimmed'
 
 workflow {
     main:
@@ -423,65 +376,70 @@ workflow {
         readFilesCh
       )
 
-/*
-================================================================================
-                                   Reads Trimming
-================================================================================
+      /*
+      ================================================================================
+                                      Reads Trimming
+      ================================================================================
 */
-if (!params.skipTrimming){
- // Reads Trimming 
-      readsTrimmingFlow(
-        readFilesCh,
-        adaptorFileDefaultCh
-      )
-
-  if(params.trimTool == "atropos"){
-    trimReadsCh = readsTrimmingFlow.out.trimReadsAtroposCh
-    trimReportsCh = readsTrimmingFlow.out.reportResultsAtroposCh
-  }else if (params.trimTool == "trimgalore"){
-    trimReadsCh = readsTrimmingFlow.out.trimReadsTrimgaloreCh
-    trimReportsCh = readsTrimmingFlow.out.reportResultsTrimgaloreCh
-  }else if (params.trimTool == "fastp"){
-    trimReadsCh = readsTrimmingFlow.out.trimReadsFastpCh
-    trimReportsCh = readsTrimmingFlow.out.reportResultsFastpCh
-  }
-}
-
-
-/*
-================================================================================
-                                   Make Reports
-================================================================================
-*/
-        makeReportsFlow(
+      trimReadsCh   = Channel.empty()
+      trimReportsCh = Channel.empty()
+      if (!params.skipTrimming){
+        // Reads Trimming 
+        readsTrimmingFlow(
           readFilesCh,
-          trimReadsCh,
-          trimReportsCh
+          adaptorFileDefaultCh
         )
 
-/*
-================================================================================
-                              QC on trim data [FastQC]
-================================================================================
-*/
+        if(params.trimTool == "atropos"){
+          trimReadsCh = readsTrimmingFlow.out.trimReadsAtroposCh
+          trimReportsCh = readsTrimmingFlow.out.reportResultsAtroposCh
+        }else if (params.trimTool == "trimgalore"){
+          trimReadsCh = readsTrimmingFlow.out.trimReadsTrimgaloreCh
+          trimReportsCh = readsTrimmingFlow.out.reportResultsTrimgaloreCh
+        }else if (params.trimTool == "fastp"){
+          trimReadsCh = readsTrimmingFlow.out.trimReadsFastpCh
+          trimReportsCh = readsTrimmingFlow.out.reportResultsFastpCh
+        }
+      }
 
 
-/*
-================================================================================
-                                    FastqScreen
-================================================================================
-*/
+      /*
+      ================================================================================
+                                        Make Reports
+      ================================================================================
+      */
+      makeReportsFlow(
+        readFilesCh,
+        trimReadsCh,
+        trimReportsCh
+      )
+
+      /*
+      ================================================================================
+                                    QC on trim data [FastQC]
+      ================================================================================
+      */
+
+      fastqcTrimmed(
+        trimReadsCh
+      )
+
+      /*
+      ================================================================================
+                                          FastqScreen
+      ================================================================================
+      */
 
 
-/*
-================================================================================
-                                     MultiQC
-================================================================================
-*/
+      /*
+      ================================================================================
+                                           MultiQC
+      ================================================================================
+      */
       getSoftwareVersions(
-        trimgaloreVersionCh.first().ifEmpty([]),
-        fastpVersionCh.first().ifEmpty([]),
-        from atroposVersionCh.first().ifEmpty([]),
+        readsTrimmingFlow.out.trimgaloreVersionCh.first().ifEmpty([]),
+        qcFlow.out.fastpVersionCh.first().ifEmpty([]),
+        readsTrimmingFlow.out.atroposVersionCh.first().ifEmpty([]),
         fastqscreenVersionCh.first().ifEmpty([]),
         qcFlow.out.fastqcVersionCh.mix(fastqcTrimmedVersionCh).first().ifEmpty([])
       )
