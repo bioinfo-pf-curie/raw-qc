@@ -335,7 +335,7 @@ workflow {
           trimReportsCh = readsTrimmingFlow.out.reportResultsAtroposCh
         }else if (params.trimTool == "trimgalore"){
           trimReadsCh = readsTrimmingFlow.out.trimReadsTrimgaloreCh
-          trimReportsCh = readsTrimmingFlow.out.reportResultsTrimgaloreCh
+          trimReportsCh = readsTrimmingFlow.out.trimResultsTrimgaloreCh
         }else if (params.trimTool == "fastp"){
           trimReadsCh = readsTrimmingFlow.out.trimReadsFastpCh
           trimReportsCh = readsTrimmingFlow.out.reportResultsFastpCh
@@ -385,7 +385,7 @@ workflow {
       */
       getSoftwareVersions(
         readsTrimmingFlow.out.trimgaloreVersionCh.first().ifEmpty([]),
-        qcFlow.out.fastpVersionCh.first().ifEmpty([]),
+        readsTrimmingFlow.out.fastpVersionCh.first().ifEmpty([]),
         readsTrimmingFlow.out.atroposVersionCh.first().ifEmpty([]),
         fastqScreenFlow.out.fastqscreenVersionCh.first().ifEmpty([]),
         qcFlow.out.fastqcVersionCh.mix(fastqcTrimmed.out.fastqcTrimmedVersionCh).first().ifEmpty([])
@@ -396,17 +396,17 @@ workflow {
       )
 
       multiqc(
-        customRunName,
+        custom_runName,
         splanCh.collect(),
         metadataCh.ifEmpty([]),
         multiqcConfigCh, 
         qcFlow.out.fastqcResultsCh.collect().ifEmpty([]),
         readsTrimmingFlow.out.trimResultsAtroposCh.collect().ifEmpty([]),
         readsTrimmingFlow.out.trimResultsTrimgaloreCh.map{items->items[1]}.collect().ifEmpty([]),
-        readsTrimmingFlow.out.trimResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
+        readsTrimmingFlow.out.reportResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
         fastqcTrimmed.out.fastqcAfterTrimResultsCh.collect().ifEmpty([]),
         fastqScreenFlow.out.fastqScreenTxtCh.collect().ifEmpty([]),
-        trimReportCh.collect().ifEmpty([]),
+        trimReportsCh.collect().ifEmpty([]),
         makeReportsFlow.out.trimAdaptorCh.collect().ifEmpty([]),
         getSoftwareVersions.out.softwareVersionsYamlCh.collect(),
         workflowSummaryMqc.out.workflowSummaryYamlCh.collect()

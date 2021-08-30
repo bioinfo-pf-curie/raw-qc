@@ -12,15 +12,15 @@ process multiqc {
   !params.skipMultiqc
 
   input:
-  val customRunName
+  val custom_runName
   path splan
   path metadata
   path multiqcConfig
-  path (fastqc:'fastqc/*')
+  path ('fastqc/*')
   path ('atropos/*')
   path ('trimGalore/*')
   path ('fastp/*')
-  path (fastqc:'fastqc_trimmed/*')
+  path ('fastqc_trimmed/*')
   path ('fastq_screen/*')
   path ('makeReport/*')
   path ('makeReport/*')

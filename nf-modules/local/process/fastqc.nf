@@ -11,8 +11,8 @@ process fastqc {
   tuple val(name), path(reads)
 
   output:
-  file( "*_fastqc.{zip,html}"), emit: mqc 
-  file("v_fastqc.txt")        , emit: version 
+  path("*_fastqc.{zip,html}"), emit: mqc 
+  path("v_fastqc.txt")       , emit: version 
 
   script:
   """
