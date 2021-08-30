@@ -221,7 +221,7 @@ if (params.samplePlan){
       }
       .set { splanCh }
   }else{
-    Channel
+   Channel
       .fromFilePairs( params.reads, size: 2 )
       .collectFile() {
         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
@@ -406,7 +406,7 @@ workflow {
         readsTrimmingFlow.out.reportResultsFastpCh.map{items->items[1]}.collect().ifEmpty([]),
         fastqcTrimmed.out.fastqcAfterTrimResultsCh.collect().ifEmpty([]),
         fastqScreenFlow.out.fastqScreenTxtCh.collect().ifEmpty([]),
-        trimReportsCh.collect().ifEmpty([]),
+        makeReportsFlow.out.trimReportCh.collect().ifEmpty([]),
         makeReportsFlow.out.trimAdaptorCh.collect().ifEmpty([]),
         getSoftwareVersions.out.softwareVersionsYamlCh.collect(),
         workflowSummaryMqc.out.workflowSummaryYamlCh.collect()

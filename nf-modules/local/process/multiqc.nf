@@ -35,7 +35,7 @@ process multiqc {
 
   script:
   rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-  rpathname = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : '--filename rawqc_report'
+  rfilename = custom_runName ? "--filename " + custom_runName + "_rawqc_report" : '--filename rawqc_report'
   isPE = params.singleEnd ? 0 : 1
   isSkipTrim = params.skipTrimming ? 0 : 1
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
@@ -45,7 +45,7 @@ process multiqc {
   multiqc --version &> v_multiqc.txt 2>&1 || true
   mqc_header.py --name "Raw-QC" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} > multiqc-config-header.yaml
   stats2multiqc.sh ${isPE} ${isSkipTrim}
-  multiqc . -f $rtitle $rpathname -c $multiqcConfig -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
+  multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
 
