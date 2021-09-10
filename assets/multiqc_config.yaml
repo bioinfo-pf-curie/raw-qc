@@ -371,7 +371,7 @@ remove_sections:
   - fastqc_status_checks
   - fastqc_sequence_counts
   - fastqc_sequence_duplication_levels
-  - trimgalore_filtered_reads
+  - cutadapt_filtered_reads
 
 custom_content:
   order:
