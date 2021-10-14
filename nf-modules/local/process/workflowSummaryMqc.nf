@@ -1,6 +1,9 @@
 
 process workflowSummaryMqc {
-  executor = 'local'
+  label 'python'
+  label 'minCpu'
+  label 'minMem'
+
   when:
   !params.skipMultiqc
 
