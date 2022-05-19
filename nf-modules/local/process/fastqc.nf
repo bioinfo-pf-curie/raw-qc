@@ -1,23 +1,34 @@
-process fastqc {
-  label 'fastqc'
-  label 'lowCpu'
-  label 'minMem'
-  publishDir "${params.outDir}/fastqc", mode: 'copy'
+/*
+ * FastQC - Quality controls on raw reads
+ */
 
-  when:
-  !params.skipFastqcRaw
+process fastqc {
+  tag "${meta.id}"
+  label 'fastqc'
+  label 'medCpu'
+  label 'lowMem'
 
   input:
-  tuple val(name), path(reads)
+  tuple val(meta), path(reads)
 
   output:
-  path("*_fastqc.{zip,html}"), emit: mqc 
-  path("v_fastqc.txt")       , emit: version 
+  path("*_fastqc.{zip,html}"), emit: results
+  path("versions.txt")       , emit: versions
 
   script:
-  """
-  fastqc -q $reads -t ${task.cpus}
-  fastqc --version &> v_fastqc.txt 2>&1 || true
-  """
+  def prefix = task.ext.prefix ?: "${meta.id}"
+  if (meta.singleEnd){
+    """
+    echo \$(fastqc --version) > versions.txt
+    [ ! -f  ${prefix}.fastq.gz ] && ln -s $reads ${prefix}.fastq.gz
+    fastqc -q ${prefix}.fastq.gz --threads ${task.cpus} ${prefix}.fastq.gz
+    """
+  }else{
+    """
+    echo \$(fastqc --version) > versions.txt
+    [ ! -f  ${prefix}_1.fastq.gz ] && ln -s ${reads[0]} ${prefix}_1.fastq.gz
+    [ ! -f  ${prefix}_2.fastq.gz ] && ln -s ${reads[1]} ${prefix}_2.fastq.gz
+    fastqc -q --threads ${task.cpus} ${prefix}_1.fastq.gz ${prefix}_2.fastq.gz
+    """
+  }
 }
-

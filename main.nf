@@ -5,7 +5,7 @@ Copyright Institut Curie 2019-2022
 This software is a computer program whose purpose is to analyze high-throughput sequencing data.
 You can use, modify and/ or redistribute the software under the terms of license (see the LICENSE file for more details).
 The software is distributed in the hope that it will be useful, but "AS IS" WITHOUT ANY WARRANTY OF ANY KIND.
-Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data. 
+Users are therefore encouraged to test the software's suitability as regards their requirements in conditions enabling the security of their systems and/or data.
 The fact that you are presently reading this means that you have had knowledge of the license and that you accept its terms.
 */
 
@@ -80,6 +80,11 @@ if ( params.metadata ){
     .set { metadataCh }
 }
 
+Channel
+  .fromPath('/data/annotations/pipelines/PDX/indexes/xengsort/index_mm10_hg38.h5')
+  .ifEmpty { exit 1, "index file not found "}
+  .set { index }
+
 /*
 ===========================
    SUMMARY
@@ -116,19 +121,20 @@ sPlanCh = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPath
 ==================================
            INCLUDE
 ==================================
-*/ 
+*/metadataCh
 
 // Workflows
 
 // Processes
-include { getSoftwareVersions } from './nf-modules/common/process/getSoftwareVersions'
-include { outputDocumentation } from './nf-modules/common/process/outputDocumentation'
-include { fastqc } from './nf-modules/common/process/fastqc'
+include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
+include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
+include { fastqc } from './nf-modules/local/process/fastqc'
 include { multiqc } from './nf-modules/local/process/multiqc'
+include { xengsort } from './nf-modules/local/process/xengsort'
 
 /*
 =====================================
-            WORKFLOW 
+            WORKFLOW
 =====================================
 */
 
@@ -138,6 +144,7 @@ workflow {
   main:
     // Init Channels
     fastqcMqcCh = Channel.empty()
+    xengsortResCh = Channel.empty()
 
     // subroutines
     outputDocumentation(
@@ -154,9 +161,19 @@ workflow {
       versionsCh = versionsCh.mix(fastqc.out.versions)
     }
 
+    // PROCESS: xengsort
+    if (! params.skipXengsort){
+      xengsort(
+        rawReadsCh, index.collect()
+      )
+      xengsortResCh = xengsort.out.results
+      versionsCh = versionsCh.mix(xengsort.out.versions)
+    }
+
+
     //*******************************************
     // MULTIQC
-  
+
     // Warnings that will be printed in the mqc report
     warnCh = Channel.empty()
 
