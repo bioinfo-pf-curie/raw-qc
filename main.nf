@@ -52,6 +52,8 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 // Initialize variable from the genome.conf file
 //params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
 
+params.indexXengsort = NFTools.getGenomeAttribute(params, 'xengsort', genome='pdx')
+
 // Stage config files
 multiqcConfigCh = Channel.fromPath(params.multiqcConfig)
 outputDocsCh = Channel.fromPath("$projectDir/docs/output.md")
@@ -81,7 +83,7 @@ if ( params.metadata ){
 }
 
 Channel
-  .fromPath('/data/annotations/pipelines/PDX/indexes/xengsort/index_mm10_hg38.h5')
+  .fromPath( params.indexXengsort )
   .ifEmpty { exit 1, "index file not found "}
   .set { index }
 
@@ -162,11 +164,12 @@ workflow {
     }
 
     // PROCESS: xengsort
-    if (! params.skipXengsort){
+    if (params.pdx){
       xengsort(
         rawReadsCh, index.collect()
       )
-      xengsortResCh = xengsort.out.results
+      xengsortResCh = xengsort.out.fastqHuman.collect()
+      xengsortResCh = xengsort.out.fastqMouse.collect()
       versionsCh = versionsCh.mix(xengsort.out.versions)
     }
 

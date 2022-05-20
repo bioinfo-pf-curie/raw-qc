@@ -1,0 +1,47 @@
+May-20 10:31:51.567 [main] DEBUG nextflow.cli.Launcher - $> nextflow run main.nf --samplePlan /data/tmp/fmartin2/PDX_Test/SamplePlan.csv --genome hg19 --pdx --outDir /data/tmp/fmartin2/pdx/result/
+May-20 10:31:51.778 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 21.10.6
+May-20 10:31:51.811 [main] INFO  nextflow.cli.CmdRun - Launching `main.nf` [high_mclean] - revision: 90a8f3f043
+May-20 10:31:51.843 [main] DEBUG nextflow.config.ConfigBuilder - Found config local: /bioinfo/users/fmartin2/git/raw-qc/nextflow.config
+May-20 10:31:51.844 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /bioinfo/users/fmartin2/git/raw-qc/nextflow.config
+May-20 10:31:51.875 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
+May-20 10:31:54.118 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; plugins-dir=/data/users/fmartin2/.nextflow/plugins
+May-20 10:31:54.121 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
+May-20 10:31:54.156 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+May-20 10:31:54.158 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+May-20 10:31:54.163 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.4.1 in 'deployment' mode
+May-20 10:31:54.176 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+May-20 10:31:54.527 [main] DEBUG nextflow.Session - Session uuid: 38ad782d-5932-40da-8467-3ec853e031b9
+May-20 10:31:54.527 [main] DEBUG nextflow.Session - Run name: high_mclean
+May-20 10:31:54.528 [main] DEBUG nextflow.Session - Executor pool size: 2
+May-20 10:31:54.593 [main] DEBUG nextflow.cli.CmdRun - 
+  Version: 21.10.6 build 5661
+  Created: 21-12-2021 17:01 UTC (18:01 CEST)
+  System: Linux 3.10.0-1160.62.1.el7.x86_64
+  Runtime: Groovy 3.0.9 on OpenJDK 64-Bit Server VM 11.0.9.1-internal+0-adhoc..src
+  Encoding: UTF-8 (UTF-8)
+  Process: 61101@shbli028 [10.2.200.82]
+  CPUs: 2 - Mem: 20 GB (19.4 GB) - Swap: 0 (0)
+May-20 10:31:54.650 [main] DEBUG nextflow.Session - Work-dir: /bioinfo/users/fmartin2/git/raw-qc/work [nfs]
+May-20 10:31:54.870 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[GoogleLifeSciencesExecutor, AwsBatchExecutor, IgExecutor]
+May-20 10:31:54.883 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
+May-20 10:31:54.907 [main] DEBUG nextflow.Session - Observer factory: TowerFactory
+May-20 10:31:55.127 [main] DEBUG nextflow.util.CustomThreadPool - Creating default thread pool > poolSize: 3; maxThreads: 1000
+May-20 10:31:55.313 [main] DEBUG nextflow.Session - Session start invoked
+May-20 10:31:55.318 [main] DEBUG nextflow.trace.TraceFileObserver - Flow starting -- trace file: /data/tmp/fmartin2/pdx/result/summary/trace/trace.txt
+May-20 10:31:55.379 [main] DEBUG nextflow.Session - Using default localLib path: /bioinfo/users/fmartin2/git/raw-qc/lib
+May-20 10:31:55.386 [main] DEBUG nextflow.Session - Adding to the classpath library: /bioinfo/users/fmartin2/git/raw-qc/lib
+May-20 10:31:57.430 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
+May-20 10:31:57.614 [main] INFO  nextflow.Nextflow - ------------------------------------------------------------------------[0m[0;34m
+
+  ______                      _____ _____ 
+  | ___ \                    |  _  /  __ \
+  | |_/ /__ ___      ________| | | | /  \/
+  |    // _` \ \ /\ / /______| | | | |    
+  | |\ \ (_| |\ V  V /       \ \/' / \__/\
+  \_| \_\__,_| \_/\_/         \_/\_\\____/
+
+
+[0;32m                   v2.2.0[0m
+[2m------------------------------------------------------------------------[0m
+
+May-20 10:31:57.663 [main] ERROR nextflow.Nextflow - The provided genome 'hg19' is not available in the iGenomes file. Currently the available genomes are fastqScreenGenomes
