@@ -6,11 +6,7 @@ process getSoftwareVersions {
   publishDir path:"${params.outDir}/softwareVersions", mode: 'copy'
 
   input:
-  path 'v_trimgalore.txt'
-  path 'v_fastp.txt'
-  path 'v_atropos.txt'
-  path 'v_fastqscreen.txt'
-  path 'v_fastqc.txt'
+  path versions
 
   output:
   path 'software_versions_mqc.yaml', emit : softwareVersionsYamlCh
@@ -22,4 +18,3 @@ process getSoftwareVersions {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-

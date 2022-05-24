@@ -170,6 +170,7 @@ workflow {
       )
       xengsortResCh = xengsort.out.fastqHuman.collect()
       xengsortResCh = xengsort.out.fastqMouse.collect()
+      xengsortMqcCh = xengsort.out.logs.collect()
       versionsCh = versionsCh.mix(xengsort.out.versions)
     }
 
@@ -192,7 +193,8 @@ workflow {
         metadataCh.ifEmpty([]),
         multiqcConfigCh.ifEmpty([]),
         fastqcMqcCh.ifEmpty([]),
-        getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
+        xengsortMqcCh.ifEmpty([]),
+        getSoftwareVersions.out.softwareVersionsYamlCh.collect().ifEmpty([]),
         workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
         warnCh.collect().ifEmpty([])
       )

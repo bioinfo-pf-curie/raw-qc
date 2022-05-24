@@ -17,19 +17,21 @@ process multiqc {
   path metadata
   path multiqcConfig
   path ('fastqc/*')
-  path ('atropos/*')
-  path ('trimGalore/*')
-  path ('fastp/*')
-  path ('fastqc_trimmed/*')
-  path ('fastq_screen/*')
-  path ('makeReport/*')
-  path ('makeReport/*')
+  path ('xengsort/*')
+  //path ('atropos/*')
+  //path ('trimGalore/*')
+  //path ('fastp/*')
+  //path ('fastqc_trimmed/*')
+  //path ('fastq_screen/*')
+  //path ('makeReport/*')
+  //path ('makeReport/*')
   path ('software_versions/*')
   path ('workflow_summary/*')
+  path warnings
 
   output:
   path splan
-  path "*_report.html", emit: multiqcReport 
+  path "*_report.html", emit: report
   path "*_data"
   path("v_multiqc.txt"), emit: multiqcVersion
 
@@ -48,4 +50,3 @@ process multiqc {
   multiqc . -f $rtitle $rfilename -c $multiqcConfig -c multiqc-config-header.yaml -m custom_content -m cutadapt -m fastqc -m fastp -m fastq_screen
   """
 }
-

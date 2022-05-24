@@ -11,6 +11,7 @@ process xengsort {
   output :
   tuple val(meta),path("*graft*.fq.gz"), emit: fastqHuman
   tuple val(meta),path("*host*.fq.gz"), emit: fastqMouse
+  path("*.log"), emit: logs
   path("versions.txt") , emit: versions
 
   script :
@@ -18,13 +19,13 @@ process xengsort {
     if (meta.singleEnd){
       """
       echo \$(xengsort --version) > versions.txt
-      xengsort classify -T ${task.cpus} --index ${index}  --fastq <(zcat ${reads}) --prefix ${prefix}
+      xengsort classify -T ${task.cpus} --index ${index}  --fastq <(zcat ${reads}) --prefix ${prefix} > ${prefix}_xengsort.log
       gzip *.fq
       """
     }else{
       """
       echo \$(xengsort --version) > versions.txt
-      xengsort classify -T ${task.cpus} --index ${index} --fastq <(zcat ${reads[0]})  --pairs <(zcat ${reads[1]}) --prefix ${prefix}
+      xengsort classify -T ${task.cpus} --index ${index} --fastq <(zcat ${reads[0]})  --pairs <(zcat ${reads[1]}) --prefix ${prefix} > ${prefix}_xengsort.log
       gzip *.fq
       """
     }
