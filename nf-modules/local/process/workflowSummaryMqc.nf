@@ -1,6 +1,7 @@
 
 process workflowSummaryMqc {
-  executor = 'local'
+  label 'onlyLinux'
+
   when:
   !params.skipMultiqc
 
