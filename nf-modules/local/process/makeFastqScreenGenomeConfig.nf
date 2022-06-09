@@ -2,9 +2,6 @@ process makeFastqScreenGenomeConfig {
   label 'lowCpu'
   label 'minMem'
   publishDir "${params.outDir}/fastq_screen", mode: 'copy'
-     
-  when:
-  !params.skipFastqScreen
 
   input:
   val(fastqScreenGenome)
@@ -13,12 +10,12 @@ process makeFastqScreenGenomeConfig {
   path(outputFile), emit: fastqScreenConfigCh
 
   script:
-  outputFile = 'fastq_screen_databases.config'
+    outputFile = 'fastq_screen_databases.config'
 
-  String result = ''
-  for (Map.Entry entry: fastqScreenGenome.entrySet()) {
-    result += """
-    echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
-  }
-  return result
+    String result = ''
+    for (Map.Entry entry: fastqScreenGenome.entrySet()) {
+      result += """
+      echo -e 'DATABASE\\t${entry.key}\\t${entry.value}' >> ${outputFile}"""
+    }
+    return result
 }

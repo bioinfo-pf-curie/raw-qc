@@ -22,7 +22,7 @@ process multiqc {
   //path ('trimGalore/*')
   //path ('fastp/*')
   //path ('fastqc_trimmed/*')
-  //path ('fastq_screen/*')
+  path ('fastq_screen/*')
   //path ('makeReport/*')
   //path ('makeReport/*')
   path ('software_versions/*')

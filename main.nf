@@ -81,6 +81,9 @@ if ( params.metadata ){
     .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
     .set { metadataCh }
 }
+Channel
+  .of( params.genomes.fastqScreenGenomes )
+  .set{ fastqScreenGenomeCh }
 
 Channel
   .fromPath( params.indexXengsort )
@@ -133,6 +136,10 @@ include { outputDocumentation } from './nf-modules/local/process/outputDocumenta
 include { fastqc } from './nf-modules/local/process/fastqc'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { xengsort } from './nf-modules/local/process/xengsort'
+include { fastqScreen } from './nf-modules/local/process/fastqScreen'
+include { makeFastqScreenGenomeConfig } from './nf-modules/local/process/makeFastqScreenGenomeConfig'
+
+
 
 /*
 =====================================
@@ -146,7 +153,8 @@ workflow {
   main:
     // Init Channels
     fastqcMqcCh = Channel.empty()
-    xengsortResCh = Channel.empty()
+    xengsortMqcCh = Channel.empty()
+    fastqScreenMqcCh = Channel.empty()
 
     // subroutines
     outputDocumentation(
@@ -174,6 +182,27 @@ workflow {
       versionsCh = versionsCh.mix(xengsort.out.versions)
     }
 
+    //PROCESS: makeFastqScreenGenomeConfig
+    if(! params.skipFastqScreen){
+      makeFastqScreenGenomeConfig(
+        fastqScreenGenomeCh
+      )
+      fastqScreenConfigCh = makeFastqScreenGenomeConfig.out.fastqScreenConfigCh.collect()
+    }
+
+    // PROCESS: fastqScreen
+    if (! params.skipFastqScreen){
+      fastqScreen(
+        Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)}),
+        rawReadsCh,
+        fastqScreenConfigCh.collect()
+      )
+      versionsCh = versionsCh.mix(fastqScreen.out.versions)
+      fastqScreenMqcCh = fastqScreen.out.fastqScreenTxt.collect()
+      fastqScreenHtml = fastqScreen.out.fastqScreenHtml.collect()
+
+
+    }
 
     //*******************************************
     // MULTIQC
@@ -194,6 +223,7 @@ workflow {
         multiqcConfigCh.ifEmpty([]),
         fastqcMqcCh.ifEmpty([]),
         xengsortMqcCh.ifEmpty([]),
+        fastqScreenMqcCh.ifEmpty([]),
         getSoftwareVersions.out.softwareVersionsYamlCh.collect().ifEmpty([]),
         workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
         warnCh.collect().ifEmpty([])
