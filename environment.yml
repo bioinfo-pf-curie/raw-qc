@@ -16,6 +16,6 @@ dependencies:
   - fastq-screen=0.15.2=pl5321hdfd78af_0
   - fastp=0.23.2=h79da9fb_0
   - pip:
-    - cubic-xengsort==1.1.0
+    - xengsort-cubic==1.1.0
 
 
