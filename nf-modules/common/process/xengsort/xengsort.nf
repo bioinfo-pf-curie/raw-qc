@@ -1,0 +1,33 @@
+/*
+ * Xengsort - deconvolute Human/Mouse reads from PDX samples
+ */
+
+process xengsort {
+  tag "${meta.id}"
+  label 'medCpu'
+  label 'highMem'
+  label 'xengsort'
+
+  input:
+  tuple val(meta),path(reads)
+  path (index)
+
+  output :
+  tuple val(meta),path("*graft*.fq.gz"), emit: fastqHuman
+  tuple val(meta),path("*host*.fq.gz"), emit: fastqMouse
+  path("*.log"), emit: logs
+  path("versions.txt") , emit: versions
+
+  when:
+  task.ext.when == null || task.ext.when
+
+  script :
+  def args = task.ext.args ?: ''
+  def prefix = task.ext.prefix ?: "${meta.id}"
+  def inputs = meta.singleEnd ? "--fastq <(zcat ${reads})" : "--fastq <(zcat ${reads[0]})  --pairs <(zcat ${reads[1]})"
+  """
+  echo \$(xengsort --version) > versions.txt
+  xengsort classify -T ${task.cpus} --index ${index} ${inputs} --prefix ${prefix} ${args} > ${prefix}_xengsort.log
+  gzip *.fq
+  """
+}

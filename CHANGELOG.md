@@ -1,4 +1,16 @@
 ***********************************
+version-3.0.0
+
+NEW FEATURES
+  - DSL2 version of raw-qc
+  - support PDX samples with Xengsort (--pdx)
+  - Support smartSeq v4 trimming
+  
+DEPRECATED
+  - Atropos is not longer supported
+  - Preset '--picoV1' is no longer supported
+
+***********************************
 version-2.2.0
 
 NEW FEATURES

@@ -1,0 +1,36 @@
+/* 
+ * Reads Trimming with TrimGalore
+ */
+
+include { trimGalore } from '../../common/process/trimGalore/trimGalore' 
+include { trimGalore as trimGalorePolyA } from '../../common/process/trimGalore/trimGalore'
+
+workflow trimGaloreFlow {
+
+  take:
+  reads
+
+  main:
+
+  // Trim adapaters sequence + quality
+  trimGalore(
+    reads
+  )
+
+  // Trim polyA tail
+  if (params.polyA){
+    trimGalore.out.fastq.view()
+    trimGalorePolyA(
+      trimGalore.out.fastq
+    )
+    trimReadsCh = trimGalorePolyA.out.fastq
+  }else{
+    trimReadsCh = trimGalore.out.fastq
+  }
+  
+
+  emit:
+  fastq = trimReadsCh
+  versions = trimGalore.out.versions
+}
+

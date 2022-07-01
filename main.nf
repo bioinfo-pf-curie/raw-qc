@@ -41,17 +41,8 @@ include {checkAlignmentPercent} from './lib/functions'
 */
 
 // Genome-based variables
-if (!params.genome){
-  exit 1, "No genome provided. The --genome option is mandatory"
-}
-
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-  exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
-}
 
 // Initialize variable from the genome.conf file
-//params.bowtie2Index = NFTools.getGenomeAttribute(params, 'bowtie2')
-
 params.indexXengsort = NFTools.getGenomeAttribute(params, 'xengsort', genome='pdx')
 
 // Stage config files
@@ -67,6 +58,20 @@ outputDocsImagesCh = file("$projectDir/docs/images/", checkIfExists: true)
 
 if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
+}
+
+// Protocols
+if (params.picoV1 && params.picoV2 && params.rnaLig){
+  exit 1, "Options '--picoV1', '--picoV2', 'rnaLig' cannot be used together. Please choose one option"
+}
+
+// Not available for single-end
+if (params.picoV2 && params.singleEnd){
+  exit 1, "Options '--picoV2' cannot be used with single-end data !"
+}
+
+if (params.rnaLig && params.singleEnd){
+  exit 1, "Options '--rnaLig' cannot be used with single-end data !"
 }
 
 /*
@@ -100,12 +105,16 @@ summary = [
   'Pipeline Release': workflow.revision ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
-  'Genome' : params.genome,
+  'Trimming' : params.trimTool,
+  'Trim N' : params.nTrim ?: null,
+  'Min Len': params.minLen ?: null,
+  'PolyA'  : params.polyA ?: null,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
   'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
   'Profile' : workflow.profile,
   'OutDir' : params.outDir,
-  'WorkDir': workflow.workDir
+  'WorkDir': workflow.workDir,
+  'CommandLine': workflow.commandLine
 ].findAll{ it.value != null }
 
 workflowSummaryCh = NFTools.summarize(summary, workflow, params)
@@ -126,20 +135,20 @@ sPlanCh = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPath
 ==================================
            INCLUDE
 ==================================
-*/metadataCh
+*/
 
 // Workflows
+include { fastqScreenFlow } from './nf-modules/local/subworkflow/fastqScreen'
+include { trimGaloreFlow } from './nf-modules/local/subworkflow/trimGalore'
 
 // Processes
-include { getSoftwareVersions } from './nf-modules/local/process/getSoftwareVersions'
-include { outputDocumentation } from './nf-modules/local/process/outputDocumentation'
-include { fastqc } from './nf-modules/local/process/fastqc'
+include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
+include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
+include { fastqc as fastqcRaw } from './nf-modules/common/process/fastqc/fastqc'
+include { fastqc as fastqcTrim } from './nf-modules/common/process/fastqc/fastqc'
+include { fastp } from './nf-modules/common/process/fastp/fastp'
 include { multiqc } from './nf-modules/local/process/multiqc'
-include { xengsort } from './nf-modules/local/process/xengsort'
-include { fastqScreen } from './nf-modules/local/process/fastqScreen'
-include { makeFastqScreenGenomeConfig } from './nf-modules/local/process/makeFastqScreenGenomeConfig'
-
-
+include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
 
 /*
 =====================================
@@ -162,47 +171,62 @@ workflow {
       outputDocsImagesCh
     )
 
-    // PROCESS: fastqc
-    if (! params.skipFastqc){
-      fastqc(
+    // PROCESS: fastqc on raw data
+    fastqcRaw(
+      rawReadsCh
+    )
+    versionsCh = versionsCh.mix(fastqcRaw.out.versions)
+
+    /*
+    ======================================
+    TRIMMING
+    ======================================
+    */
+
+    // SUBWORKFLOW: TrimGalore!
+    if (params.trimTool == "trimgalore"){
+      trimGaloreFlow(
         rawReadsCh
       )
-      fastqcMqcCh = fastqc.out.results.collect()
-      versionsCh = versionsCh.mix(fastqc.out.versions)
+      versionsCh = versionsCh.mix(trimGaloreFlow.out.versions)
+      trimReadsCh = trimGaloreFlow.out.fastq 
     }
 
+    // PROCESS: fastp
+    if (params.trimTool == "fastp"){
+      fastp(
+        rawReadsCh
+      )
+      versionsCh = versionsCh.mix(fastp.out.versions)
+      trimReadsCh = fastp.out.fastq
+    }
+
+    /*
+    ======================================
+     WORK ON TRIMMED DATA
+    ======================================
+    */
+
+    // PROCESS: fastqc on trimmed reads
+    fastqcTrim(
+      trimReadsCh      
+    )
+    versionsCh = versionsCh.mix(fastqcTrim.out.versions)
+
+    //SUBWORKFLOW: fastqScreen
+    fastqScreenFlow(
+      trimReadsCh,
+      fastqScreenGenomeCh
+    )
+    versionsCh = versionsCh.mix(fastqScreenFlow.out.versions)
+    
     // PROCESS: xengsort
-    if (params.pdx){
-      xengsort(
-        rawReadsCh, index.collect()
-      )
-      xengsortResCh = xengsort.out.fastqHuman.collect()
-      xengsortResCh = xengsort.out.fastqMouse.collect()
-      xengsortMqcCh = xengsort.out.logs.collect()
-      versionsCh = versionsCh.mix(xengsort.out.versions)
-    }
+    xengsort(
+      trimReadsCh,
+      index.collect()
+    )
+    versionsCh = versionsCh.mix(xengsort.out.versions)
 
-    //PROCESS: makeFastqScreenGenomeConfig
-    if(! params.skipFastqScreen){
-      makeFastqScreenGenomeConfig(
-        fastqScreenGenomeCh
-      )
-      fastqScreenConfigCh = makeFastqScreenGenomeConfig.out.fastqScreenConfigCh.collect()
-    }
-
-    // PROCESS: fastqScreen
-    if (! params.skipFastqScreen){
-      fastqScreen(
-        Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)}),
-        rawReadsCh,
-        fastqScreenConfigCh.collect()
-      )
-      versionsCh = versionsCh.mix(fastqScreen.out.versions)
-      fastqScreenMqcCh = fastqScreen.out.fastqScreenTxt.collect()
-      fastqScreenHtml = fastqScreen.out.fastqScreenHtml.collect()
-
-
-    }
 
     //*******************************************
     // MULTIQC
@@ -210,7 +234,7 @@ workflow {
     // Warnings that will be printed in the mqc report
     warnCh = Channel.empty()
 
-    if (!params.skipMultiQC){
+    if (!params.skipMultiqc){
 
       getSoftwareVersions(
         versionsCh.unique().collectFile()
@@ -222,10 +246,10 @@ workflow {
         metadataCh.ifEmpty([]),
         multiqcConfigCh.ifEmpty([]),
         fastqcMqcCh.ifEmpty([]),
-        xengsortMqcCh.ifEmpty([]),
-        fastqScreenMqcCh.ifEmpty([]),
-        getSoftwareVersions.out.softwareVersionsYamlCh.collect().ifEmpty([]),
-        workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
+        xengsort.out.logs.collect().ifEmpty([]),
+        fastqScreenFlow.out.mqc.ifEmpty([]),
+	getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
+	workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
         warnCh.collect().ifEmpty([])
       )
       mqcReport = multiqc.out.report.toList()
