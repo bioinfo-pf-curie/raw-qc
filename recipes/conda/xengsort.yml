@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip=21.3
+  - pip=22.1.2=pyhd8ed1ab_0
   - python=3.7.10=hffdb5ce_100_cpython
   - numpy=1.22.4=py39hc58783e_0
   - numba=0.55.2=py39h66db6d7_0
