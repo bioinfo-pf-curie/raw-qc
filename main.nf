@@ -61,8 +61,8 @@ if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePla
 }
 
 // Protocols
-if (params.picoV1 && params.picoV2 && params.rnaLig){
-  exit 1, "Options '--picoV1', '--picoV2', 'rnaLig' cannot be used together. Please choose one option"
+if (params.picoV2 && params.rnaLig){
+  exit 1, "Options '--picoV2', 'rnaLig' cannot be used together. Please choose one option"
 }
 
 // Not available for single-end
@@ -106,9 +106,12 @@ summary = [
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'Trimming' : params.trimTool,
+  'Adapter' : params.adapter ?: null,
+  'Clipping' : params.picoV2 ? 'picoV2' : params.rnaLig ? 'RNA Lig' : null,
+  'Linker' : params.adapter5 ?: params.smartSeqV4 ? "smartSeqV4" : null,
+  'PolyA'  : params.polyA ?: null,
   'Trim N' : params.nTrim ?: null,
   'Min Len': params.minLen ?: null,
-  'PolyA'  : params.polyA ?: null,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
   'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
   'Profile' : workflow.profile,
@@ -139,14 +142,13 @@ sPlanCh = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPath
 
 // Workflows
 include { fastqScreenFlow } from './nf-modules/local/subworkflow/fastqScreen'
-include { trimGaloreFlow } from './nf-modules/local/subworkflow/trimGalore'
+include { trimmingFlow } from './nf-modules/local/subworkflow/trimming'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
 include { fastqc as fastqcRaw } from './nf-modules/common/process/fastqc/fastqc'
 include { fastqc as fastqcTrim } from './nf-modules/common/process/fastqc/fastqc'
-include { fastp } from './nf-modules/common/process/fastp/fastp'
 include { multiqc } from './nf-modules/local/process/multiqc'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
 
@@ -184,22 +186,11 @@ workflow {
     */
 
     // SUBWORKFLOW: TrimGalore!
-    if (params.trimTool == "trimgalore"){
-      trimGaloreFlow(
-        rawReadsCh
-      )
-      versionsCh = versionsCh.mix(trimGaloreFlow.out.versions)
-      trimReadsCh = trimGaloreFlow.out.fastq 
-    }
-
-    // PROCESS: fastp
-    if (params.trimTool == "fastp"){
-      fastp(
-        rawReadsCh
-      )
-      versionsCh = versionsCh.mix(fastp.out.versions)
-      trimReadsCh = fastp.out.fastq
-    }
+    trimmingFlow(
+      rawReadsCh
+    )
+    versionsCh = versionsCh.mix(trimmingFlow.out.versions)
+    trimReadsCh = trimmingFlow.out.fastq 
 
     /*
     ======================================

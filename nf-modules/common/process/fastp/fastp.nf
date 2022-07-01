@@ -13,7 +13,7 @@ process fastp {
   
   output:
   tuple val(meta), path("*trimmed*fastq.gz"), emit: fastq
-  tuple val(meta), path("*.{json,log}"), emit: log
+  tuple val(meta), path("*.{json,log}"), emit: logs
   path ("versions.txt"), emit: versions
 
   when:
