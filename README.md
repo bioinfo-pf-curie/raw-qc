@@ -16,32 +16,54 @@ It was designed to help sequencing facilities to validate the quality of the gen
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
 It comes with docker / singularity containers making installation trivial and results highly reproducible.
 
-### Short comparison of trimming tools
+### 3'/5' adapter Trimming
 
-By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, but other tools are also available.
+Several steps of trimming can be performed accord to the specified options.
 
-|                      | TrimGalore |  Fastp   | Atropos  |
-|----------------------|------------|----------|----------|
-| pico protocol        |  &#x2611;  | &#x2611; |          | 
-| 3'seq protocol       |  &#x2611;  |          | &#x2611; |
-| 2-colour support     |  &#x2611;  | &#x2611; | &#x2611; |
-| Min adapter overlap  |  &#x2611;  |          | &#x2611; |
-| Adapter detection    |  +++       | ++       | -        |
-| Poly N trimming      |  &#x2611;  |          | &#x2611; |
-| Speed                |  ++        | +++      | +        |
+1. 3' adapter trimming (with `TrimGalore!` or `fastp`)
+
+The adapters can be automatically detected (default, `--adapter 'auto'`).  
+However, one can force the 3' adapter sequence by either specifying the type of library (`truseq`,`nextera`,`smallrna`), 
+or by directly specifying the trimming options (`--adapter '-a CTGTCTCTTATACACATCT'`).
+
+In addition, `raw-qc` also provides a few preset for automatic clipping:
+
+| Options                   | single-end                     | paired-end                               |
+|---------------------------|--------------------------------|------------------------------------------|
+| pico version2 (--picoV2)  |                                | R1: clip 3bp in 3' / R2: clip 3bp in 5'  |
+| RNA ligation (--rnaLig)   | R1: clip 1bp in 5' + 2bp in 3' | R1/R2 :  clip 1bp in 5' + 2bp in 3'      |
+
+Additional available options:
+
+* `--nTrim` - trim N at both read ends
+* `--twoColour` - for two colours sequencing technologies (Novaseq/Nextseq)
+* `--qualTrim` - Minimum base quality (default 20)
+* `--minLen` - Minimum read size (default 10)
+
+2. 5' adapter (linkers)
+
+In addition to 3' end adapter, some protocols can require linkers (such as TSO) which has to be removed from the 5' end of reads.  
+The `cutadapt` can be defined directly using `--adapter5` option, or the following preset
+
+| Options                   | single-end                     | paired-end                                                  |
+|---------------------------|--------------------------------|-------------------------------------------------------------|
+| smartSeqV4                | '-g AAGCAGTGGTATCAACGCAGAGTAC' | '-g AAGCAGTGGTATCAACGCAGAGTAC -G AAGCAGTGGTATCAACGCAGAGTAC' |
 
 
-**/!\ Because of serval issues found in the auto-detection mode of the Atropos software, the `detect` command has been removed from the pipeline. 
-It means that Atropos currently requires the specification of the adapter to remove (`--adapter`) to be used.**
+3. PolyA trimming
+
+Finally, for RNA-seq data, it can usually be useful to trim for polyA tail.  
+This step can specified using the option `--polyA`.
 
 
 ### Pipline summary
 
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) / [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
+2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp)
 3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 4. Run first mapping screen on know references and sources of contamination ([`fastq Screen`](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/))
-5. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+5. Separate host/graft reads for PDX model ([`xengsort`](https://gitlab.com/genomeinformatics/xengsort))
+6. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
