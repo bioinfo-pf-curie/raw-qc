@@ -15,11 +15,10 @@ dependencies:
   - trim-galore=0.6.7=hdfd78af_0
   - fastq-screen=0.15.2=pl5321hdfd78af_0
   - fastp=0.23.2=h79da9fb_0
-  - numpy=1.22.4=py39hc58783e_0
-  - numba=0.55.2=py39h66db6d7_0
-  - h5py=1.10.6=nompi_h6a2412b_1114
-  - pytest=7.1.2=py39hf3d152e_0
-  - snakemake-minimal=7.8.5=pyhdfd78af_0
+  - numpy=1.21.6=py37h976b520_0
+  - numba=0.53.1=py37hb11d6e1_1
+  - h5py=3.6.0=py37ha0f2276_0
+  - pytest=7.1.2=py37h89c1867_0
   - sra-tools=2.11.0=pl5321ha49a11a_3
   - pip:
     - xengsort-cubic==1.1.0
