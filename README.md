@@ -7,7 +7,7 @@
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 [![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
-[![GitHub Actions CI Status](https://gitlab.curie.fr/data-analysis/raw-qc/workflows/geniac%20CI/badge.svg)](https://gitlab.curie.fr/data-analysis/raw-qc/actions?query=geniac_lint)
+
 
 ### Introduction
 
