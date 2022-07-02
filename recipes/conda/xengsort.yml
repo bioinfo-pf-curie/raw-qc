@@ -4,7 +4,13 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip==21.3
-  - python==3.10.0
+  - pip=22.1.2=pyhd8ed1ab_0
+  - python=3.7.10=hffdb5ce_100_cpython
+  - numpy=1.22.4=py39hc58783e_0
+  - numba=0.55.2=py39h66db6d7_0
+  - h5py=1.10.6=nompi_h6a2412b_1114
+  - pytest=7.1.2=py39hf3d152e_0
+  - snakemake-minimal=7.8.5=pyhdfd78af_0
+  - sra-tools=2.11.0=pl5321ha49a11a_3
   - pip:
-    - cubic-xengsort==1.1.0
+    - xengsort-cubic==1.1.0
