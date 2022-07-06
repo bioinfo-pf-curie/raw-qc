@@ -1,7 +1,7 @@
 process makeFastqScreenGenomeConfig {
   label 'lowCpu'
   label 'minMem'
-  label 'fastqscreen'
+  label 'fastqScreen'
 
   input:
   val(fastqScreenGenome)
