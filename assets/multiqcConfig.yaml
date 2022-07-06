@@ -15,7 +15,7 @@ custom_data:
     basic_metrics:
          file_format: 'csv'
          section_name: 'General Metrics'
-         description: 'Calculated basic metric for the raw-qc pipeline'
+         description: 'Calculated quality metric from the raw-qc pipeline. Quality metrics are extracted from the FastQC module before trimming. The fraction of trimmed reads is computed as the fraction of trimmed reads with a size lower than before trimming. The discarded reads represent the reads/pairs with were too short after trimming.'
          plot_type: 'table'
          pconfig:
             id: 'stats'
@@ -115,7 +115,7 @@ custom_data:
     adapter:
          file_format: 'tsv'
          section_name: 'Adapters'
-         description: 'detected from the trimming report.'
+         description: 'detected from the trimming report(s). Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail.'
          plot_type: 'table'
          pconfig:
             id: 'adapter'
@@ -291,14 +291,14 @@ module_order:
 ## Display
 
 remove_sections:
-  - fastqc_overrepresented_sequences
-  - fastqc_status_checks
-  - fastqc_sequence_counts
-  - fastqc_sequence_duplication_levels
-  - fastqc_overrepresented_sequences-1
-  - fastqc_status_checks-1
-  - fastqc_sequence_counts-1
-  - fastqc_sequence_duplication_levels-1
+  - fastqc_raw_fastqc_overrepresented_sequences
+  - fastqc_raw_fastqc_status_checks
+  - fastqc_raw_fastqc_sequence_counts
+  - fastqc_raw_fastqc_sequence_duplication_levels
+  - fastqc_trimmed_fastqc_overrepresented_sequences
+  - fastqc_trimmed_fastqc_status_checks
+  - fastqc_trimmed_fastqc_sequence_counts
+  - fastqc_trimmed_fastqc_sequence_duplication_levels
   - cutadapt_filtered_reads
 
 report_section_order:
