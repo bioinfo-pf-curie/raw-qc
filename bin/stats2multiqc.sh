@@ -5,7 +5,7 @@ is_pe=$2
 
 all_samples=$(awk -F, '{print $1}' $splan)
 n_total=$(cat trimming/*stats.trim.csv | grep -v "Sample_id" |awk -F, '{s+= $2;} END {print s}')
-
+n_header=0
 for sample in $all_samples
 do
     ##id
@@ -15,8 +15,8 @@ do
     stats=$(awk -F, 'NR==2{print}' trimming/${sample}_stats.trim.csv)
     n_frag=$(awk -F, 'NR==2{print $2}' trimming/${sample}_stats.trim.csv)
     sfrac=$(echo "${n_frag} ${n_total}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    header="Sample_name,Sample_id,Number_of_frag,Mean_length,Total_base,Trimmed_Mean_length,Number_trimmed,Percent_trimmed,Number_discarded,Percent_discarded,Sample_representation"
-    output="${sname},${stats},${sfrac}"
+    header="Sample_id,Number_of_frag,Mean_length,Total_base,Trimmed_Mean_length,Number_trimmed,Percent_trimmed,Number_discarded,Percent_discarded,Sample_name,Sample_representation"
+    output="${stats},${sname},${sfrac}"
 
     ##PDX
     if [[ -e xengsort/${sample}_xengsort.log ]]; then
@@ -38,15 +38,18 @@ do
 	header="${header},Q20_R1"
 	output="${output},${q20_R1}"
 
-    elif [[ -e fastqc/${sample}_R1_fastqc.zip && fastqc/${sample}_R2_fastqc.zip ]]; then
-	q20_R1=$(unzip -p fastqc/${sname}_R1_fastqc.zip ${sample}_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
-	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{print "%.*f",2,s*100/nfrag }')
-	q20_R2=$(unzip -p fastqc/${sample}_R2_fastqc.zip ${sample}_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
-	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{print "%.*f",2,s*100/nfrag }')
+    elif [[ -e fastqc/${sample}_1_fastqc.zip && fastqc/${sample}_2_fastqc.zip ]]; then
+	q20_R1=$(unzip -p fastqc/${sample}_1_fastqc.zip ${sample}_1_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
+	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{printf "%.*f",2,s*100/nfrag }')
+	q20_R2=$(unzip -p fastqc/${sample}_2_fastqc.zip ${sample}_2_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
+	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{printf "%.*f",2,s*100/nfrag }')
 	header="${header},Q20_R1,Q20_R2"
 	output="${output},${q20_R1},${q20_R2}"
     fi
 
-    echo -e $header > mq.stats
+    if [ $n_header == 0 ]; then
+	echo -e $header > mq.stats
+	n_header=1
+    fi
     echo -e $output >> mq.stats
 done

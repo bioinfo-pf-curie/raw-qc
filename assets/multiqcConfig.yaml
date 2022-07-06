@@ -53,7 +53,7 @@ custom_data:
                 suffix: '%'
                 placement: 60
               Q20_R2:
-                title: '>Q20 R1 (%)'
+                title: '>Q20 R2 (%)'
                 min: 0
                 max: 100
                 format: '{:,.1f}'
@@ -120,7 +120,6 @@ custom_data:
          pconfig:
             id: 'adapter'
             title: 'Adapter'
-            scale: false
             col1_header: 'Id'
          headers:
             Adapter:
@@ -158,13 +157,20 @@ custom_data:
               format: '{:,.1f}'
               suffix: '%'
               placement: 80
-            Discarded_reads:
-              title: 'Discarded reads (%)'
+            Trimmed_reads_2:
+              title: 'Trimmed reads R2 (%)'
               min: 0
               max: 100
               format: '{:,.1f}'
               suffix: '%'
               placement: 90
+            Too_short:
+              title: 'Too short (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 100
 
     xengsort:
        file_format: 'tsv'
@@ -201,6 +207,37 @@ table_cond_formatting_rules:
             - lt: 95
         fail:
             - lt: 90
+    Qual_trimmed:
+        pass:
+            - lt: 5
+        warn:
+            - gt: 4
+        fail:
+            - gt: 10
+    Qual_trimmed_2:
+        pass:
+            - lt: 5
+        warn:
+            - gt: 4
+        fail:
+            - gt: 10
+    Trimmed_reads:
+        pass:
+            - lt: 20
+        warn:
+            - gt: 19
+    Trimmed_reads_2:
+        pass:
+            - lt: 20
+        warn:
+            - gt: 19
+    Too_short:
+        pass:
+            - lt: 6
+        warn:
+            - gt: 5
+        fail:
+            - gt: 20
     Percent_discarded:
         pass:
             - lt: 6

@@ -6,7 +6,7 @@
 ##
 #################################################
 
-while getopts ":i:I:t:T:sn" OPT
+while getopts ":i:I:t:T:s:n" OPT
 do
     case $OPT in
 	i) FASTQ=$OPTARG;;
@@ -35,6 +35,8 @@ fi
 ## Sample name
 if [[ -z $SAMPLE_NAME ]]; then
     sample=$(basename $FASTQ | sed -e 's/.fastq.gz//')
+else
+    sample=$SAMPLE_NAME
 fi
 
 ## Number of fragment - only need R1 reads
@@ -58,7 +60,7 @@ if [[ -e $FASTQ_TRIMMED ]]; then
     n_trim=$(awk -v l=${mean_length} '$1<l{s=s+$2}END{print s}' trim_size_dist.txt)
     p_trim=$(echo "${n_trim} ${n_frag}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 
-    #rm trim_size_dist.txt
+    rm trim_size_dist.txt
 else
     n_trim='NA'
     p_trim='NA'

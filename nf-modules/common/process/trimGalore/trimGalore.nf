@@ -30,6 +30,7 @@ process trimGalore {
   trim_galore \
     $args \
     --cores ${task.cpus} \
+    --basename ${prefix} \
     --gzip \
     ${prefix}.fastq.gz 2> ${prefix}_trimgalore.log
   mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed.fastq.gz
@@ -42,11 +43,12 @@ process trimGalore {
   trim_galore \
     $args \
     --cores ${task.cpus} \
+    --basename ${prefix} \
     --gzip \
     --paired \
     ${prefix}_1.fastq.gz ${prefix}_2.fastq.gz 2> ${prefix}_trimgalore.log
-  mv ${prefix}_1_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
-  mv ${prefix}_2_trimmed.fq.gz ${prefix}_trimmed_R2.fastq.gz
+  mv ${prefix}_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+  mv ${prefix}_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
   echo "trim-galore "\$(trim_galore --version 2>&1 | grep version | sed 's/^.*version //; s/Last.*\$//') > versions.txt 
   """
   }

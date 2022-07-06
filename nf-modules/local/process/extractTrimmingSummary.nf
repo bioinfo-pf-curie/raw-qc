@@ -20,11 +20,10 @@ process extractTrimmingSummary {
   script:
   def prefix = task.ext.prefix ?: "${meta.id}"
   def args = task.ext.args ?: ''
-  def inputsLogs = meta.singleEnd ? "-r ${logs}" : "-r ${logs[0]} -R ${logs[1]}"
   """
   trimming_report.py \
-    ${inputsLogs} \
     ${args} \
-    -n ${meta.id} -o ${prefix}
+    -n ${meta.id} -o ${prefix} \
+    ${logs}
   """
 }
