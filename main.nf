@@ -106,12 +106,13 @@ summary = [
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'Trimming' : params.trimTool,
-  'Adapter' : params.adapter ?: null,
+  'Adapter 3prime' : params.adapter ?: null,
   'Clipping' : params.picoV2 ? 'picoV2' : params.rnaLig ? 'RNA Lig' : null,
-  'Linker' : params.adapter5 ?: params.smartSeqV4 ? "smartSeqV4" : null,
+  'Adapter 5prime' : params.adapter5 ?: params.smartSeqV4 ? "smartSeqV4" : null,
   'PolyA'  : params.polyA ?: null,
   'Trim N' : params.nTrim ?: null,
   'Min Len': params.minLen ?: null,
+  'Min Qual': params.qualTrim ?: null,
   'Max Resources': "${params.maxMemory} memory, ${params.maxCpus} cpus, ${params.maxTime} time per job",
   'Container': workflow.containerEngine && workflow.container ? "${workflow.containerEngine} - ${workflow.container}" : null,
   'Profile' : workflow.profile,
@@ -149,8 +150,8 @@ include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftw
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
 include { fastqc as fastqcRaw } from './nf-modules/common/process/fastqc/fastqc'
 include { fastqc as fastqcTrim } from './nf-modules/common/process/fastqc/fastqc'
-include { multiqc } from './nf-modules/local/process/multiqc'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
+include { multiqc } from './nf-modules/local/process/multiqc'
 
 /*
 =====================================
@@ -163,7 +164,6 @@ workflow {
 
   main:
     // Init Channels
-    fastqcMqcCh = Channel.empty()
     xengsortMqcCh = Channel.empty()
     fastqScreenMqcCh = Channel.empty()
 
@@ -185,13 +185,13 @@ workflow {
     ======================================
     */
 
-    // SUBWORKFLOW: TrimGalore!
+    // SUBWORKFLOW: Trimming
     trimmingFlow(
       rawReadsCh
     )
     versionsCh = versionsCh.mix(trimmingFlow.out.versions)
     trimReadsCh = trimmingFlow.out.fastq 
-
+    
     /*
     ======================================
      WORK ON TRIMMED DATA
@@ -236,7 +236,10 @@ workflow {
         sPlanCh.collect(),
         metadataCh.ifEmpty([]),
         multiqcConfigCh.ifEmpty([]),
-        fastqcMqcCh.ifEmpty([]),
+        fastqcRaw.out.results.collect().ifEmpty([]),
+	trimmingFlow.out.mqc.collect().ifEmpty([]),
+	trimmingFlow.out.stats.collect().ifEmpty([]),
+	fastqcTrim.out.results.collect().ifEmpty([]),
         xengsort.out.logs.collect().ifEmpty([]),
         fastqScreenFlow.out.mqc.ifEmpty([]),
 	getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),

@@ -21,6 +21,6 @@ process fastqScreen {
   def args = task.ext.args ?: ''
   """
   fastq_screen ${args} --threads ${task.cpus} --conf ${config} ${reads}
-  echo \$(fastq_screen --version) > versions.txt
+  echo \$(fastq_screen --version | sed -e 's/FastQ Screen/FastqScreen/') > versions.txt
   """
 }

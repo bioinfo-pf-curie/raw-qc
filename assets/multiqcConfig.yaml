@@ -1,0 +1,285 @@
+#
+# Raw-QC config for MultiQC
+#
+#################################################################
+
+skip_generalstats: true
+read_count_multiplier: 0.000001
+read_count_prefix: 'M'
+read_count_desc: 'millions'
+
+###################################
+## Custom content
+
+custom_data:
+    basic_metrics:
+         file_format: 'csv'
+         section_name: 'General Metrics'
+         description: 'Calculated basic metric for the raw-qc pipeline'
+         plot_type: 'table'
+         pconfig:
+            id: 'stats'
+            title: 'Basic Metrics'
+            save_file: true
+            col1_header: 'Sample ID'
+         headers:
+              Sample_name:
+                title: 'Sample Name'
+                placement: 10
+              NUmber_of_frag:
+                title: 'Total Fragments'
+                format: '{:,.0f}'
+                placement: 20
+              Sample_representation:
+                title: 'Sample fraction (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 30
+              Mean_length:
+                title: 'Mean length'
+                format: '{:,.0f}'
+                placement: 40
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+                placement: 50
+              Q20_R1:
+                title: '>Q20 R1 (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 60
+              Q20_R2:
+                title: '>Q20 R1 (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 70
+              Trimmed_Mean_length:
+                title: 'Mean length after trimming'
+                format: '{:,.0f}'
+                placement: 80
+              Number_trimmed:
+                title: 'Trimmed reads (%)'
+                format: '{:.0f}'
+                hidden: true
+                placement: 90
+              Percent_trimmed:
+                title: 'Trimmed reads (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 100
+              Number_discarded:
+                title: 'Discared reads'
+                format: '{:.0f}'
+                hidden: true
+                placement: 110
+              Percent_discarded:
+                title: 'Discarded reads (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 120
+              Number_pdx_graft:
+                title: 'PDX Graft'
+                format: '{:.0f}'
+                hidden: true
+                placement: 130
+              Percent_pdx_graft:
+                title: 'PDX Graft (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 140
+              Number_pdx_host:
+                title: 'PDX Host'
+                format: '{:.0f}'
+                hidden: true
+                placement: 150
+              Percent_pdx_host:
+                title: 'PDX Host (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 160
+
+    adapter:
+         file_format: 'tsv'
+         section_name: 'Adapters'
+         description: 'detected from the trimming report.'
+         plot_type: 'table'
+         pconfig:
+            id: 'adapter'
+            title: 'Adapter'
+            scale: false
+            col1_header: 'Id'
+         headers:
+            Adapter:
+              title: "Adapter1"
+              scale: false
+              format: '{:.0f}'
+              placement: 20
+            Adapter_2:
+              title: "Adapter2"
+              scale: false
+              format: '{:.0f}'
+              placement: 30
+            Total_reads:
+              title: 'Total reads'
+              format: '{:,.0f}'
+              placement: 50
+            Qual_trimmed:
+              title: 'Quality trimmed (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 60
+            Qual_trimmed_2:
+              title: 'Quality trimmed R2 (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 70
+            Trimmed_reads:
+              title: 'Trimmed reads (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 80
+            Discarded_reads:
+              title: 'Discarded reads (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 90
+
+    xengsort:
+       file_format: 'tsv'
+       section_name: 'Xengsort'
+       description: 'is a fast lightweight accurate xenograft sorting able to distinguish host (ie. Mouse) to graft (ie. Human) sequencing reads.'
+       plot_type: 'bargraph'
+       pconfig:
+            namespace: 'xengsort'
+            id: 'xengsort'
+            title: 'PDX'
+            ylab: 'Number of reads'
+            scale: 'Pastel1'
+
+sp:
+    basic_metrics:
+        fn: '*mq.stats'
+    adapter:
+        fn: '*metrics.trim.tsv'
+    xengsort:
+        fn: '*_xengsort.log'
+
+table_cond_formatting_rules:
+    Q20_R1:
+        pass:
+            - gt: 94
+        warn:
+            - lt: 95
+        fail:
+            - lt: 90
+    Q20_R2:
+        pass:
+            - gt: 94
+        warn:
+            - lt: 95
+        fail:
+            - lt: 90
+    Percent_discarded:
+        pass:
+            - lt: 6
+        warn:
+            - gt: 5
+        fail:
+            - gt: 20 
+    Percent_pdx_graft:
+        pass:
+            - gt: 69
+        warn:
+            - lt: 70
+        fail:
+            - lt: 30
+    Percent_pdx_host:
+        pass:
+            - lt: 31
+        warn:
+            - gt: 30
+        fail:
+            - gt: 50
+
+
+###############################
+## Modules
+
+module_order:
+    - fastqc:
+        name: 'FastQC (raw)'
+        anchor: "fastqc_raw"
+        info: 'This section of the report shows FastQC results before adapter trimming.'
+        target: ''
+        path_filters:
+            - '*_fastqc.zip'
+        path_filters_exclude:
+            - '*trimmed*fastqc.zip'
+    - cutadapt:
+        name: 'Trimming (TrimGalore!)'
+    - fastp:
+        name: 'Trimming (fastp)'
+    - fastqc:
+        name: 'FastQC (trimmed)'
+        anchor: "fastqc_trimmed"
+        info: 'This section of the report shows FastQC results after adapter trimming.'
+        path_filters:
+              - '*trimmed*fastqc.zip'
+    - fastq_screen:
+        name: 'Fastq screen'
+
+#############################
+## Display
+
+remove_sections:
+  - fastqc_overrepresented_sequences
+  - fastqc_status_checks
+  - fastqc_sequence_counts
+  - fastqc_sequence_duplication_levels
+  - fastqc_overrepresented_sequences-1
+  - fastqc_status_checks-1
+  - fastqc_sequence_counts-1
+  - fastqc_sequence_duplication_levels-1
+  - cutadapt_filtered_reads
+
+report_section_order:
+  basic_metrics:
+    order: -1000  
+  adapter:
+    before: basic_metrics
+  fastqc_raw:
+    before: adapter
+  fastqc_trimmed:
+    before: fastqc_raw
+  fastq_screen:
+    before: fastqc_trimmed
+  xengsort:
+    before: fastq_screen
+  software_versions:
+    order: -10000
+  summary:
+    order: -11000
+
+
