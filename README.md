@@ -75,8 +75,8 @@ Launching `main.nf` [distracted_curie] - revision: dc75952132
   ______                      _____ _____ 
   | ___ \                    |  _  /  __ \
   | |_/ /__ ___      ________| | | | /  \/
-  |    // _` \ \ /\ / /______| | | | |    
-  | |\ \ (_| |\ V  V /       \ \/' / \__/\
+  |    // _  \ \ /\ / /______| | | | |    
+  | |\ \ (_| |\ V  V /       \ \/  / \__/\
   \_| \_\__,_| \_/\_/         \_/\_\\____/
 			
 
@@ -99,13 +99,13 @@ INPUTS:
     --singleEnd           For single-end input data
 	
 TRIMMING:
-	--adapter   STRING [auto, truseg, nextera, smallrna, *]   Type of 3' adapter to trim
-	--adapter5  STRING                                        Specified cutadapt options for 5' adapter trimming
+	--adapter   STRING [auto, truseg, nextera, smallrna, *]   Type of 3prime adapter to trim
+	--adapter5  STRING                                        Specified cutadapt options for 5prime adapter trimming
 	--minLen    INTEGER                                       Minimum length of trimmed sequences
 	--nTrim                                                   Trim poly-N sequence at the end of the reads
 	--qualTrim  INTEGER                                       Minimum mapping quality for trimming
 	--tooColour                                               Trimming for NextSeq/NovaSeq sequencers
-	--trimTool  STRING [trimgalore, fastp]                    Tool for 3' adapter trimming and auto-detection
+	--trimTool  STRING [trimgalore, fastp]                    Tool for 3prime adapter trimming and auto-detection
 
 PRESET:
 	--picoV2               Preset of clipping parameters for picoV2 protocol
