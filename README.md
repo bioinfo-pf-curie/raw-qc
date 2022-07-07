@@ -79,17 +79,14 @@ Launching `main.nf` [distracted_curie] - revision: dc75952132
   | |\ \ (_| |\ V  V /       \ \/  / \__/\
   \_| \_\__,_| \_/\_/         \_/\_\\____/
 			
-
                 v3.0.0
 ------------------------------------------------------------------------
 							   
-							   
 Usage:
-								   
 The typical command for running the pipeline is as follows:
 									   
-nextflow run main.nf --reads PATH --samplePlan PATH --profile STRING
-										   
+nextflow run main.nf --samplePlan PATH --profile STRING OPTIONS
+
 MANDATORY ARGUMENTS:
    --profile    STRING [conda, cluster, docker, multiconda, conda, path, multipath, singularity]  Configuration profile to use. Can use multiple (comma separated).
    --reads      PATH                                                                              Path to input data (must be surrounded with quotes)
