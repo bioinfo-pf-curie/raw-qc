@@ -41,19 +41,6 @@
       "arity": 0,
       "group": "Mandatory arguments"
     },
-    {
-      "name": "genome",
-      "label": "Reference genome",
-      "usage": "Name of the reference genome.",
-      "type": "string",
-      "nargs": "1",
-      "choices": [],
-      "default_value": false,
-      "pattern": "",
-      "render": "textfield",
-      "arity": 0,
-      "group": "Mandatory arguments"
-    },
 
     {
       "name": "singleEnd",
@@ -67,6 +54,142 @@
       "render": "check-box",
       "arity": 0,
       "group": "Inputs"
+    },
+
+    {
+      "name": "trimTool",
+      "label": "Trimming Tool",
+      "usage": "Tool for 3' adapter trimming and auto-detection",
+      "type": "string",
+      "choices": [ "trimgalore", "fastp"],
+      "default_value": false,
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Trimming"
+    },
+    {
+      "name": "adapter",
+      "label": "Type of 3' adapter",
+      "usage": "Type of 3' adapter to trim",
+      "type": "string",
+      "choices": [ "auto", "truseg", "nextera", "smallrna", "*"],
+      "default_value": "auto",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Trimming"
+    },
+    {
+      "name": "adapter5",
+      "label": "Trimming of 5' adapter",
+      "usage": "Specified cutadapt options for 5' adapter trimming",
+      "type": "string",
+      "choices": [],
+      "default_value": "auto",
+      "pattern": ".*",
+      "render": "textfield",
+      "arity": 0,
+      "group": "Trimming"
+    },
+    {
+      "name": "qualTrim",
+      "label": "Trimming quality",
+      "usage": "Minimum mapping quality for trimming",
+      "type": "integer",
+      "choices": [],
+      "default_value": 20,
+      "pattern": ".*",
+      "group": "Trimming"
+    },
+    {
+      "name": "minLen",
+      "label": "Trimming length",
+      "usage": "Minimum length of trimmed sequences",
+      "type": "integer",
+      "choices": [],
+      "default_value": 10,
+      "pattern": ".*",
+      "group": "Trimming"
+    },
+    {
+      "name": "nTrim",
+      "label": "Trimming N bases",
+      "usage": "Trim poly-N sequence at the end of the reads",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Trimming"
+    },
+    {
+      "name": "tooColour",
+      "label": "Two colour seuencing mode",
+      "usage": "Trimming for NextSeq/NovaSeq sequencers",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Trimming"
+    },
+
+    {
+      "name": "picoV2",
+      "label": "Preset",
+      "usage": "Preset of clipping parameters for picoV2 protocol",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preset"
+    },
+    {
+      "name": "rnaLig",
+      "label": "Preset",
+      "usage": "Preset for RNA ligation protocol",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preset"
+    },
+    {
+      "name": "polyA",
+      "label": "Preset",
+      "usage": "Preset for polyA tail trimming",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preset"
+    },
+    {
+      "name": "smartSeqV4",
+      "label": "Preset",
+      "usage": "Preset for smartSeqV4 RNA-seq protocol",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Preset"
     },
 
     {
@@ -84,9 +207,48 @@
     },
 
     {
-      "name": "skipFastqc",
-      "label": "Skip Fastqc",
-      "usage": "Disable Fastqc",
+      "name": "skipFastqcRaw",
+      "label": "Skip FastQC on raw data",
+      "usage": "Disable FastQC",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Skip options"
+    },
+    {
+      "name": "skipFastqcTrim",
+      "label": "Skip FastQC on trimmed data",
+      "usage": "Disable FastQC",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Skip options"
+    },
+    {
+      "name": "skipFastqcScreen",
+      "label": "Skip FastqcScreen",
+      "usage": "Disable FastqcScreen",
+      "type": "boolean",
+      "nargs": 0,
+      "choices": [],
+      "default_value": false,
+      "pattern": "",
+      "render": "check-box",
+      "arity": 0,
+      "group": "Skip options"
+    },
+    {
+      "name": "skipTrimming",
+      "label": "Skip Trimming step",
+      "usage": "Disable Trimming",
       "type": "boolean",
       "nargs": 0,
       "choices": [],
