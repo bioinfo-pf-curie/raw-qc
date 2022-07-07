@@ -93,38 +93,38 @@ MANDATORY ARGUMENTS:
    --samplePlan PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
 
 INPUTS:
-    --singleEnd           For single-end input data
+   --singleEnd           For single-end input data
 	
 TRIMMING:
-	--adapter   STRING [auto, truseg, nextera, smallrna, *]   Type of 3prime adapter to trim
-	--adapter5  STRING                                        Specified cutadapt options for 5prime adapter trimming
-	--minLen    INTEGER                                       Minimum length of trimmed sequences
-	--nTrim                                                   Trim poly-N sequence at the end of the reads
-	--qualTrim  INTEGER                                       Minimum mapping quality for trimming
-	--tooColour                                               Trimming for NextSeq/NovaSeq sequencers
-	--trimTool  STRING [trimgalore, fastp]                    Tool for 3prime adapter trimming and auto-detection
+   --adapter   STRING [auto, truseg, nextera, smallrna, *]   Type of 3prime adapter to trim
+   --adapter5  STRING                                        Specified cutadapt options for 5prime adapter trimming
+   --minLen    INTEGER                                       Minimum length of trimmed sequences
+   --nTrim                                                   Trim poly-N sequence at the end of the reads
+   --qualTrim  INTEGER                                       Minimum mapping quality for trimming
+   --tooColour                                               Trimming for NextSeq/NovaSeq sequencers
+   --trimTool  STRING [trimgalore, fastp]                    Tool for 3prime adapter trimming and auto-detection
 
 PRESET:
-	--picoV2               Preset of clipping parameters for picoV2 protocol
-	--polyA                Preset for polyA tail trimming
-	--rnaLig               Preset for RNA ligation protocol
-	--smartSeqV4           Preset for smartSeqV4 RNA-seq protocol
+   --picoV2               Preset of clipping parameters for picoV2 protocol
+   --polyA                Preset for polyA tail trimming
+   --rnaLig               Preset for RNA ligation protocol
+   --smartSeqV4           Preset for smartSeqV4 RNA-seq protocol
 
 REFERENCES:
-	--genomeAnnotationPath PATH   Path to genome annotations folder
+   --genomeAnnotationPath PATH   Path to genome annotations folder
 
 SKIP OPTIONS:
-	--skipFastqcRaw              Disable FastQC
-	--skipFastqcScreen           Disable FastqcScreen
-	--skipFastqcTrim             Disable FastQC
-	--skipMultiqc                Disable MultiQC
-	--skipTrimming               Disable Trimming
+   --skipFastqcRaw              Disable FastQC
+   --skipFastqcScreen           Disable FastqcScreen
+   --skipFastqcTrim             Disable FastQC
+   --skipMultiqc                Disable MultiQC
+   --skipTrimming               Disable Trimming
 
 OTHER OPTIONS:
-	--metadata      PATH     Specify a custom metadata file for MultiQC
-	--multiqcConfig PATH     Specify a custom config file for MultiQC
-	--name          STRING   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-	--outDir        PATH     The output directory where the results will be saved
+   --metadata      PATH     Specify a custom metadata file for MultiQC
+   --multiqcConfig PATH     Specify a custom config file for MultiQC
+   --name          STRING   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+   --outDir        PATH     The output directory where the results will be saved
 
 =======================================================
 Available Profiles
