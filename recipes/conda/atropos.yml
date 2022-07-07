@@ -1,5 +1,0 @@
-name: atropos-1.1.16
-channels:
-  - bioconda
-dependencies:
-  - bioconda::atropos=1.1.16=py36_0
