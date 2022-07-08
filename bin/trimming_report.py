@@ -98,7 +98,6 @@ def get_cutadapt_summary(logs, sample_name):
     Extract statistics from cutadapt logs file
     For paired-end data, a single log file is parsed
     """
-    base = os.path.basename(logs[0])
     adapter_seq = trimmed_reads = None
     adapter_seq_2 = trimmed_reads_2 = total_base = None
     qual_reads = qual_reads_2  = too_short = 0
@@ -143,127 +142,74 @@ def get_cutadapt_summary(logs, sample_name):
 
     return(out_list)
 
+def get_fastp_summary(logs, sample_name):
+    """
+    """
+    adapter_seq=adapter_seq_2=None
+    adapter_name=adapter_name_2='NA'
+    total_reads = trimmed_reads = qual_reads = polyA = too_short = 0
+    with open(logs[0]) as f:
+        for i, line in enumerate(f):
+            if re.findall('adapter sequence for read1', line):
+                adapter_name=next(f).strip()
+                adapter_seq=next(f).strip()
+            if re.findall('adapter sequence for read2', line):
+                adapter_name_2=next(f).strip()
+                adapter_seq_2=next(f).strip()
+            if re.findall('before filtering:', line):
+                total_reads += int(re.search('^total reads: [0-9]*',next(f)).group().strip().split(':')[1])
+            if re.findall('^reads with adapter trimmed:', line):
+                trimmed_reads = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
+            if re.findall('^reads failed due to low quality:', line):
+                qual_reads = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
+            if re.findall('^reads with polyX:', line):
+                polyA = int(re.search('^reads with polyX: [0-9]*',line.strip()).group().split(':')[1])
+            if re.findall('^reads failed due to too short:', line):
+                too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
 
-#    def get_adatptor_fastp(self, reports):
-#        l_list = list()   
-#        try:
-#           base = os.path.basename(reports[0])
-#           sample = os.path.splitext(base)[0].rsplit('.', 2)[0]
-#           with open(reports[0]) as json_file:
-#              data = json.load(json_file)
-#              if 'adapter_cutting' not in data:
-#                 l_list.append("None")
-
-#              else:
-#                 if 'read1_adapter_sequence' in data['adapter_cutting']:
-#                    self_adapter_seq_R1 = data['adapter_cutting']['read1_adapter_sequence']
-#                 else:
-#                    self_adapter_seq_R1 = ""
-
-#                 if 'read2_adapter_sequence' in data['adapter_cutting']:
-#                    self_adapter_seq_R2 = data['adapter_cutting']['read2_adapter_sequence']
-#                 else:
-#                    self_adapter_seq_R2 = ""
-                 
-#                 l_list.append(self_adapter_seq_R1)
-#                 l_list.append(self_adapter_seq_R2)
-
-#           adapter_seq_dict = dict(
-#              sample_name = sample,
-#              adapter_seq = l_list
-#           )
-#           print(adapter_seq_dict)
-#           return adapter_seq_dict
-#        except ValueError: return False
-
-    def get_stat_fastp(self, logs, length, biological_name):
-           base = os.path.basename(logs)
-           sample = os.path.splitext(base)[0].rsplit('_', 1)[0]
-           l_list = list()
-           read_block = []
-           base_block = []
-           Q20_block = []
-           if length==1:
-              with open(logs) as f:
-                for i, line in enumerate(f):
-                   if re.findall('^total reads:', line):
-                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
-                      read_block.append(total_reads)
-                   if re.findall('^total bases:', line):
-                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
-                      base_block.append(total_bases)
-                   if re.findall('^Q20 bases:', line):
-                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
-                      Q20_block.append(Q20)
-                   if re.findall('^reads with adapter trimmed:', line):
-                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to low quality:', line):
-                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to too many N:', line):
-                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to too short:', line):
-                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
-#                total_reads = read_block[0]  ##befor_trimming
-                total_bases = base_block[0]  ##befor_trimming
-                q20_reads1 = Q20_block[1]
-                trimmed_reads = (adapt_trimmed/total_reads)*100
-                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
-                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
-#           if length==2:
-              with open(logs) as f:
-                for i, line in enumerate(f):
-                   if re.findall('^total reads:', line):
-                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
-                      read_block.append(total_reads)
-                   if re.findall('^total bases:', line):
-                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
-                      base_block.append(total_bases)
-                   if re.findall('^Q20 bases:', line):
-                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
-                      Q20_block.append(Q20) 
-                   if re.findall('^reads with adapter trimmed:', line):
-                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to low quality:', line):
-                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to too many N:', line):
-                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
-                   if re.findall('^reads failed due to too short:', line):
-                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
-                total_reads = (read_block[0]+read_block[1])  ##befor_trimming
-                total_bases = (base_block[0]+base_block[1]) ##befor_trimming
-                q20_reads1 = Q20_block[2]
-                q20_reads2 = Q20_block[3]
-                trimmed_reads = (adapt_trimmed/total_reads)*100
-                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
-                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
-           stat_dict = dict(
-              sample_name = sample,
-              biological_name = biological_name,
-              stat = l_list
-           )
-           print(stat_dict)
-           return stat_dict
+    qual_reads=format(qual_reads/total_reads*100,('.2f'))
+    trimmed_reads=format(trimmed_reads/total_reads*100,('.2f'))
+    polyA=format(polyA/total_reads*100,('.2f'))
+    too_short=format(too_short/total_reads*100,('.2f'))
+    stats_list=[qual_reads, trimmed_reads, polyA, too_short]
+    if adapter_seq_2 is not None:
+        out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), adapter_2 = simplify(adapter_seq_2), stat = stats_list)
+    else:
+        out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), stat = stats_list)
+    return out_list
 
  
-def write_summary(stats_dict, atype, oprefix):
+def write_summary(stats_dict, atype, oprefix, tool):
     """ 
     Write tsv stats file.
     This file is read by MultiQC to summarize results of the trimming.
     """
-    #my_formatted_list = [ '%.2f' % elem for elem in stats_dict.get('stat')]
     my_formatted_list = stats_dict.get('stat')
     for key, value in stats_dict.items():
-        if len(stats_dict['stat']) == 3:
-            with open(oprefix + "_metrics.trim.tsv", 'w') as out:
-                out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Qual_trimmed'+'\t'+'Trimmed_reads'+'\t'+'Too_short'+'\n')
-                out.write(stats_dict.get('sample_name') + " [" + atype + "]" + 
-                          '\t'+stats_dict.get('adapter')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
-  
-        if len(stats_dict['stat']) == 5:
-            with open(oprefix + "_metrics.trim.tsv", 'w') as out:
-                out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Adapter_2'+'\t'+'Qual_trimmed'+'\t'+'Qual_trimmed_2'+'\t'+'Trimmed_reads'+'\t'+'Trimmed_reads_2'+'\t'+'Too_short'+'\n')
-                out.write(stats_dict.get('sample_name')+ " [" + atype +"]" +
-                          '\t'+stats_dict.get('adapter')+'\t'+stats_dict.get('adapter_2')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
+        if tool == "trimgalore" or tool == "cutadapt":
+            if len(stats_dict['stat']) == 3:
+                with open(oprefix + "_cutadapt_metrics.trim.tsv", 'w') as out:
+                    out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Qual_trimmed'+'\t'+'Trimmed_reads'+'\t'+'Too_short'+'\n')
+                    out.write(stats_dict.get('sample_name') + " [" + atype + "]" + 
+                              '\t'+stats_dict.get('adapter')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
+            elif len(stats_dict['stat']) == 5:
+                with open(oprefix + "_cutadapt_metrics.trim.tsv", 'w') as out:
+                    out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Adapter_2'+'\t'+'Qual_trimmed'+'\t'+'Qual_trimmed_2'+'\t'+'Trimmed_reads'+'\t'+'Trimmed_reads_2'+'\t'+'Too_short'+'\n')
+                    out.write(stats_dict.get('sample_name')+ " [" + atype +"]" +
+                              '\t'+stats_dict.get('adapter')+'\t'+stats_dict.get('adapter_2')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
+
+        if tool=="fastp":
+            if "adapter_2" in stats_dict.keys():
+                with open(oprefix + "_fastp_metrics.trim.tsv", 'w') as out:
+                    out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Adapter_2'+'\t'+'Qual_trimmed'+'\t'+'Trimmed_reads'+'\t'+'PolyX'+'\t'+'Too_short'+'\n')
+                    out.write(stats_dict.get('sample_name')+ " [" + atype +"]" +
+                              '\t'+stats_dict.get('adapter')+'\t'+stats_dict.get('adapter_2')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
+            else:
+                with open(oprefix + "_fastp_metrics.trim.tsv", 'w') as out:
+                    out.write('Sample_id'+'\t'+'Adapter'+'\t'+'Qual_trimmed'+'\t'+'Trimmed_reads'+'\t'+'PolyX'+'\t'+'Too_short'+'\n')
+                    out.write(stats_dict.get('sample_name')+ " [" + atype +"]" +
+                              '\t'+stats_dict.get('adapter')+'\t'+'\t'.join(map(str, my_formatted_list))+'\n')
+
 
 if __name__ == '__main__':
     args = get_options()
@@ -276,4 +222,4 @@ if __name__ == '__main__':
         summary_dict = get_fastp_summary(args.logs, sample_name=args.name)
 
     print(summary_dict)
-    write_summary(summary_dict, atype=args.atype, oprefix=args.oprefix)
+    write_summary(summary_dict, atype=args.atype, oprefix=args.oprefix, tool=args.trim_tool)

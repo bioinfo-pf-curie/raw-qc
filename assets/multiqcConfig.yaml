@@ -112,10 +112,10 @@ custom_data:
                 suffix: '%'
                 placement: 160
 
-    adapter:
+    adapter_cutadapt:
          file_format: 'tsv'
          section_name: 'Adapters'
-         description: 'detected from the trimming report(s). Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
+         description: 'detected from the trimming report(s) with trimgalore/cutadapt. Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
          plot_type: 'table'
          pconfig:
             id: 'adapter'
@@ -132,10 +132,6 @@ custom_data:
               scale: false
               format: '{:.0f}'
               placement: 30
-            Total_reads:
-              title: 'Total reads'
-              format: '{:,.0f}'
-              placement: 50
             Qual_trimmed:
               title: 'Quality trimmed R1 (%)'
               min: 0
@@ -172,6 +168,55 @@ custom_data:
               suffix: '%'
               placement: 100
 
+    adapter_fastp:
+         file_format: 'tsv'
+         section_name: 'Adapters'
+         description: 'detected from the trimming report(s) with fastp. Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
+         plot_type: 'table'
+         pconfig:
+            id: 'adapter'
+            title: 'Adapter'
+            col1_header: 'Id'
+         headers:
+            Adapter:
+              title: "Adapter1"
+              scale: false
+              format: '{:.0f}'
+              placement: 20
+            Adapter_2:
+              title: "Adapter2"
+              scale: false
+              format: '{:.0f}'
+              placement: 30
+            Qual_trimmed:
+              title: 'Quality trimmed (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 60
+            Trimmed_reads:
+              title: 'Trimmed reads (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 80
+            PolyX:
+              title: 'PolyX reads (%)'
+              min: 0
+              max: 0
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 90
+            Too_short:
+              title: 'Too short (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 100
+
     xengsort:
        file_format: 'tsv'
        section_name: 'Xengsort'
@@ -187,8 +232,10 @@ custom_data:
 sp:
     basic_metrics:
         fn: '*mq.stats'
-    adapter:
-        fn: '*metrics.trim.tsv'
+    adapter_cutadapt:
+        fn: '*_cutadapt_metrics.trim.tsv'
+    adapter_fastp:
+        fn: '*_fastp_metrics.trim.tsv'
     xengsort:
         fn: '*_xengsort.log'
 
@@ -303,17 +350,19 @@ remove_sections:
 
 report_section_order:
   basic_metrics:
-    order: -1000  
-  adapter:
-    before: basic_metrics
+    order: -1000
+  adapter_cutadapt:
+    order: -2000
+  adapter_fastp:
+    order: -3000
   fastqc_raw:
-    before: adapter
+    order: -4000
   fastqc_trimmed:
-    before: fastqc_raw
+    order: -5000
   fastq_screen:
-    before: fastqc_trimmed
+    order: -6000
   xengsort:
-    before: fastq_screen
+    order: -7000
   software_versions:
     order: -10000
   summary:

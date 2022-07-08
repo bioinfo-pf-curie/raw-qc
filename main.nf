@@ -149,6 +149,7 @@ include { fastpFlow } from './nf-modules/local/subworkflow/fastp'
 // Processes
 include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
 include { outputDocumentation } from './nf-modules/common/process/utils/outputDocumentation'
+include { generalMetrics } from './nf-modules/local/process/generalMetrics'
 include { fastqc as fastqcRaw } from './nf-modules/common/process/fastqc/fastqc'
 include { fastqc as fastqcTrim } from './nf-modules/common/process/fastqc/fastqc'
 include { xengsort } from './nf-modules/common/process/xengsort/xengsort'
@@ -187,7 +188,6 @@ workflow {
     if (params.skipTrimming){
       trimReadsCh = rawReadsCh
       trimMqcCh = Channel.empty()
-      trimStatsCh = Channel.empty()
     }else if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
       trimgaloreFlow(
         rawReadsCh
@@ -195,16 +195,14 @@ workflow {
       versionsCh = versionsCh.mix(trimgaloreFlow.out.versions)
       trimReadsCh = trimgaloreFlow.out.fastq
       trimMqcCh = trimgaloreFlow.out.mqc
-      trimStatsCh = trimgaloreFlow.out.stats
-    }else if ( params.trimTool == "fastp" && !params.skipTrimming){
+     }else if ( params.trimTool == "fastp" && !params.skipTrimming){
       fastpFlow(
         rawReadsCh
       )
       versionsCh = versionsCh.mix(fastpFlow.out.versions)
       trimReadsCh = fastpFlow.out.fastq
       trimMqcCh = fastpFlow.out.mqc
-      trimStatsCh = fastpFlow.out.stats
-    }
+     }
     
     /*
     ======================================
@@ -239,6 +237,10 @@ workflow {
     // Warnings that will be printed in the mqc report
     warnCh = Channel.empty()
 
+    generalMetrics(
+      rawReadsCh.join(trimReadsCh)
+    )
+
     if (!params.skipMultiqc){
 
       getSoftwareVersions(
@@ -252,7 +254,7 @@ workflow {
         multiqcConfigCh.ifEmpty([]),
         fastqcRaw.out.results.collect().ifEmpty([]),
 	trimMqcCh.collect().ifEmpty([]),
-	trimStatsCh.collect().ifEmpty([]),
+	generalMetrics.out.csv.collect().ifEmpty([]),
 	fastqcTrim.out.results.collect().ifEmpty([]),
         xengsort.out.logs.collect().ifEmpty([]),
         fastqScreenFlow.out.mqc.ifEmpty([]),

@@ -5,7 +5,6 @@
 
 include { fastp } from '../../common/process/fastp/fastp'
 include { trimmingSummary } from '../../local/process/trimmingSummary'
-include { trimmingStats } from '../../local/process/trimmingStats'
 
 workflow fastpFlow {
 
@@ -34,15 +33,10 @@ workflow fastpFlow {
     fastp.out.logs
   )
 
-  trimmingStats(
-    reads.join(chTrimReads)
-  )
-
   emit:
   fastq = chTrimReads
   logs = fastp.out.logs
   mqc = trimmingSummary.out.mqc
-  stats = trimmingStats.out.csv
   versions = chVersions
 }
 
