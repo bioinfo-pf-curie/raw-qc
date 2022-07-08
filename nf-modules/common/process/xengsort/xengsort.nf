@@ -31,5 +31,4 @@ process xengsort {
   for f in *.fq; do mv -- "$f" "${f%.fq}.fastq"; done
   gzip *.fastq
   """
-  }
 }
