@@ -164,9 +164,6 @@ workflow {
   versionsCh = Channel.empty()
 
   main:
-    // Init Channels
-    xengsortMqcCh = Channel.empty()
-    fastqScreenMqcCh = Channel.empty()
 
     // subroutines
     outputDocumentation(
@@ -187,7 +184,11 @@ workflow {
     */
 
     // SUBWORKFLOW: Trimming
-    if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
+    if (params.skipTrimming){
+      trimReadsCh = rawReadsCh
+      trimMqcCh = Channel.empty()
+      trimStatsCh = Channel.empty()
+    }else if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
       trimgaloreFlow(
         rawReadsCh
       )
@@ -195,8 +196,7 @@ workflow {
       trimReadsCh = trimgaloreFlow.out.fastq
       trimMqcCh = trimgaloreFlow.out.mqc
       trimStatsCh = trimgaloreFlow.out.stats
-    }
-    if ( params.trimTool == "fastp" && !params.skipTrimming){
+    }else if ( params.trimTool == "fastp" && !params.skipTrimming){
       fastpFlow(
         rawReadsCh
       )
@@ -204,9 +204,6 @@ workflow {
       trimReadsCh = fastpFlow.out.fastq
       trimMqcCh = fastpFlow.out.mqc
       trimStatsCh = fastpFlow.out.stats
-    }
-    if (params.skipTrimming){
-      trimReadsCh = rawReadsCh
     }
     
     /*
