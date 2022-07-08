@@ -93,6 +93,7 @@ MANDATORY ARGUMENTS:
    --samplePlan PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
 
 INPUTS:
+   --pdx                 Deconvolute host/graft reads for PDX samples
    --singleEnd           For single-end input data
 	
 TRIMMING:
