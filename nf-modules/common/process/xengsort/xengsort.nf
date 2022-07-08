@@ -28,10 +28,7 @@ process xengsort {
   """
   echo "xengsort "\$(xengsort --version) > versions.txt
   xengsort classify -T ${task.cpus} --index ${index} ${inputs} --prefix ${prefix} ${args} > ${prefix}_xengsort.log
-  for f in *.fq; do mv -- "\$f" "\${f%.fq}.fastq"; done
+  for f in *.fq; do out=\$(echo "\$f" | sed -e 's/.1.fq/_R1.fastq/g' -e 's/.2.fq/_R2.fastq/' -e 's/.fq/.fastq/'); mv -- "\$f" "\$out"; done
   gzip *.fastq
   """
 }
-
-
-//for f in *.fq; do mv -- "$f" "${f%.fq}.fastq"; done

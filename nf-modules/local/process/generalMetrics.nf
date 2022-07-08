@@ -21,7 +21,7 @@ process generalMetrics {
   def prefix = task.ext.prefix ?: "${meta.id}"
   def args = task.ext.args ?: ''
   def inputs = meta.singleEnd ? "-i $reads" : "-i ${reads[0]} -I ${reads[1]}"
-  def trims = meta.singleEnd ? "-t $trims" : "-t ${trims[0]} -T ${trims[1]}"
+  def trims = trims ? meta.singleEnd ? "-t $trims" : "-t ${trims[0]} -T ${trims[1]}" : ""
   """
   general_metrics.sh \
     $inputs \

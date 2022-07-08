@@ -4,7 +4,7 @@
 
 
 include { fastp } from '../../common/process/fastp/fastp'
-include { trimmingSummary } from '../../local/process/trimmingSummary'
+include { trimmingSummary as trimmingSummaryFastp } from '../../local/process/trimmingSummary'
 
 workflow fastpFlow {
 
@@ -29,7 +29,7 @@ workflow fastpFlow {
   chVersions = chVersions.mix(fastp.out.versions)
   chTrimReads = fastp.out.fastq
 
-  trimmingSummary(
+  trimmingSummaryFastp(
     fastp.out.logs
   )
 

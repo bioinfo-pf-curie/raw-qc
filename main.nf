@@ -206,7 +206,7 @@ workflow {
     
     /*
     ======================================
-     WORK ON TRIMMED DATA
+     WORK ON TRIMMED DATA IF ANY
     ======================================
     */
 
@@ -237,8 +237,14 @@ workflow {
     // Warnings that will be printed in the mqc report
     warnCh = Channel.empty()
 
+    if (params.skipTrimming){
+      inputMetricsCh = rawReadsCh.map{[it[0], it[1], []]}
+    }else{
+      inputMetricsCh = rawReadsCh.join(trimReadsCh)
+    }
+    inputMetricsCh.view()
     generalMetrics(
-      rawReadsCh.join(trimReadsCh)
+      inputMetricsCh
     )
 
     if (!params.skipMultiqc){
