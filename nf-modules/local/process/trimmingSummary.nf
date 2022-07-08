@@ -2,7 +2,7 @@
  * Build trimming report for MultiQC
  */
 
-process extractTrimmingSummary {
+process trimmingSummary {
   tag "${meta.id}"
   label 'python'
   label 'minCpu'

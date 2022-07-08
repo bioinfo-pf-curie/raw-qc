@@ -19,6 +19,29 @@ def get_options():
     return(args)
 
 
+def simplify(s):
+    if len(s) > 100:
+        output=''
+        counts=1
+        for i in range(len(s)- 1):
+            if s[i] == s[i+1]:
+                counts+=1
+            else:
+                if counts==1:
+                    output+=s[i]
+                else:
+                    output+=s[i]+"{"+str(counts)+"}"
+                    counts=1
+
+        if counts == 1:
+            output+=s[i+1]
+        else:
+            output+=s[i+1]+"{"+str(counts)+"}"
+        return output
+    else:
+        return s
+
+ 
 def get_trimgalore_summary(logs, sample_name):
     """"
     Extract statistics from trimGalore logs file
@@ -43,7 +66,7 @@ def get_trimgalore_summary(logs, sample_name):
             if re.findall('Sequences removed', line.strip()):
                 too_short = float(re.search('^Sequences removed [\$|\W|\s|\S|\w]*',line).group().strip().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
     stats_list=[qual_reads, trimmed_reads, too_short]
-    out_list = dict(sample_name = sample_name, adapter = adapter_seq, stat = stats_list)
+    out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), stat = stats_list)
 
     if len(logs)==2:
         adapter_seq_2 = trimmed_reads_2 = 'NA'
@@ -66,7 +89,7 @@ def get_trimgalore_summary(logs, sample_name):
             #trimmed_reads = "{:.2f}".format(float((trimmed_reads + trimmed_reads_2)/2))
             #discarded_reads = discarded_reads + discarded_reads_2
         stats_list=[qual_reads, qual_reads_2, trimmed_reads, trimmed_reads_2, too_short]
-        out_list = dict(sample_name = sample_name, adapter = adapter_seq, adapter_2 = adapter_seq_2, stat = stats_list)
+        out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), adapter_2 = simplify(adapter_seq_2), stat = stats_list)
 
     return(out_list)
 
@@ -113,10 +136,10 @@ def get_cutadapt_summary(logs, sample_name):
     ## single-end
     if adapter_seq_2 is None and trimmed_reads_2 is None:
         stats_list=[qual_reads, trimmed_reads, too_short]
-        out_list = dict(sample_name = sample_name, adapter = adapter_seq, stat = stats_list)
+        out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), stat = stats_list)
     else:
         stats_list=[qual_reads, qual_reads_2, trimmed_reads, trimmed_reads_2, too_short]
-        out_list = dict(sample_name = sample_name, adapter = adapter_seq, adapter_2 = adapter_seq_2, stat = stats_list)
+        out_list = dict(sample_name = sample_name, adapter = simplify(adapter_seq), adapter_2 = simplify(adapter_seq_2), stat = stats_list)
 
     return(out_list)
 
@@ -153,77 +176,74 @@ def get_cutadapt_summary(logs, sample_name):
 #           return adapter_seq_dict
 #        except ValueError: return False
 
-#    def get_stat_fastp(self, logs, length, biological_name):
-#        try:
-#           base = os.path.basename(logs)
-#           sample = os.path.splitext(base)[0].rsplit('_', 1)[0]
-#           l_list = list()
-#           read_block = []
-#           base_block = []
-#           Q20_block = []
-#           if length==1:
-#              with open(logs) as f:
-#                for i, line in enumerate(f):
-#                   if re.findall('^total reads:', line):
-#                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
-#                      read_block.append(total_reads)
-#                   if re.findall('^total bases:', line):
-#                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
-#                      base_block.append(total_bases)
-#                   if re.findall('^Q20 bases:', line):
-#                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
-#                      Q20_block.append(Q20)
-#                   if re.findall('^reads with adapter trimmed:', line):
-#                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to low quality:', line):
-#                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to too many N:', line):
-#                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to too short:', line):
-#                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
-
+    def get_stat_fastp(self, logs, length, biological_name):
+           base = os.path.basename(logs)
+           sample = os.path.splitext(base)[0].rsplit('_', 1)[0]
+           l_list = list()
+           read_block = []
+           base_block = []
+           Q20_block = []
+           if length==1:
+              with open(logs) as f:
+                for i, line in enumerate(f):
+                   if re.findall('^total reads:', line):
+                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
+                      read_block.append(total_reads)
+                   if re.findall('^total bases:', line):
+                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
+                      base_block.append(total_bases)
+                   if re.findall('^Q20 bases:', line):
+                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                      Q20_block.append(Q20)
+                   if re.findall('^reads with adapter trimmed:', line):
+                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to low quality:', line):
+                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too many N:', line):
+                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too short:', line):
+                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
 #                total_reads = read_block[0]  ##befor_trimming
-#                total_bases = base_block[0]  ##befor_trimming
-#                q20_reads1 = Q20_block[1]
-#                trimmed_reads = (adapt_trimmed/total_reads)*100
-#                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
-#                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
-
+                total_bases = base_block[0]  ##befor_trimming
+                q20_reads1 = Q20_block[1]
+                trimmed_reads = (adapt_trimmed/total_reads)*100
+                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
+                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, self.mean_length_trimmed, trimmed_reads, discarded_reads])
 #           if length==2:
-#              with open(logs) as f:
-#                for i, line in enumerate(f):
-#                   if re.findall('^total reads:', line):
-#                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
-#                      read_block.append(total_reads)
-#                   if re.findall('^total bases:', line):
-#                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
-#                      base_block.append(total_bases)
-#                   if re.findall('^Q20 bases:', line):
-#                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
-#                      Q20_block.append(Q20) 
-#                   if re.findall('^reads with adapter trimmed:', line):
-#                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to low quality:', line):
-#                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to too many N:', line):
-#                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
-#                   if re.findall('^reads failed due to too short:', line):
-#                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
-#                total_reads = (read_block[0]+read_block[1])  ##befor_trimming
-#                total_bases = (base_block[0]+base_block[1]) ##befor_trimming
-#                q20_reads1 = Q20_block[2]
-#                q20_reads2 = Q20_block[3]
-#                trimmed_reads = (adapt_trimmed/total_reads)*100
-#                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
-#                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
-#           stat_dict = dict(
-#              sample_name = sample,
-#              biological_name = biological_name,
-#              stat = l_list
-#           )
-#           print(stat_dict)
-#           return stat_dict
-#        except ValueError: return False
+              with open(logs) as f:
+                for i, line in enumerate(f):
+                   if re.findall('^total reads:', line):
+                      total_reads = int(re.search('^total reads: [0-9]*',line.strip()).group().split(':')[1])
+                      read_block.append(total_reads)
+                   if re.findall('^total bases:', line):
+                      total_bases = int(re.search('^total bases: [0-9]*',line.strip()).group().split(':')[1])
+                      base_block.append(total_bases)
+                   if re.findall('^Q20 bases:', line):
+                      Q20=float(re.search('^Q20 bases: [\$|\W|\s|\S|\w]*',line.strip()).group().split(':')[1].split('(')[1].split(')')[0].split('%')[0])
+                      Q20_block.append(Q20) 
+                   if re.findall('^reads with adapter trimmed:', line):
+                      adapt_trimmed = int(re.search('^reads with adapter trimmed: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to low quality:', line):
+                      low_qulaity = int(re.search('^reads failed due to low quality: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too many N:', line):
+                      many_N = int(re.search('^reads failed due to too many N: [0-9]*',line.strip()).group().split(':')[1])
+                   if re.findall('^reads failed due to too short:', line):
+                      too_short = int(re.search('^reads failed due to too short: [0-9]*',line.strip()).group().split(':')[1])
+                total_reads = (read_block[0]+read_block[1])  ##befor_trimming
+                total_bases = (base_block[0]+base_block[1]) ##befor_trimming
+                q20_reads1 = Q20_block[2]
+                q20_reads2 = Q20_block[3]
+                trimmed_reads = (adapt_trimmed/total_reads)*100
+                discarded_reads= ((low_qulaity + many_N + too_short)/total_reads)*100
+                l_list.extend([total_reads, self.mean_length, total_bases, q20_reads1, q20_reads2, self.mean_length_trimmed, trimmed_reads, discarded_reads])
+           stat_dict = dict(
+              sample_name = sample,
+              biological_name = biological_name,
+              stat = l_list
+           )
+           print(stat_dict)
+           return stat_dict
+
  
 def write_summary(stats_dict, atype, oprefix):
     """ 

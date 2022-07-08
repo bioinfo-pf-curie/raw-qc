@@ -233,9 +233,9 @@
       "group": "Skip options"
     },
     {
-      "name": "skipFastqcScreen",
-      "label": "Skip FastqcScreen",
-      "usage": "Disable FastqcScreen",
+      "name": "skipFastqScreen",
+      "label": "Skip FastqScreen",
+      "usage": "Disable FastqScreen",
       "type": "boolean",
       "nargs": 0,
       "choices": [],

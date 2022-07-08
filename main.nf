@@ -131,7 +131,7 @@ workflowSummaryCh = NFTools.summarize(summary, workflow, params)
 
 // Load raw reads
 rawReadsCh = NFTools.getInputData(params.samplePlan, params.reads, params.readPaths, params.singleEnd, params)
-rawReadsCh.view()
+
 // Make samplePlan if not available
 sPlanCh = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPaths, params.singleEnd)
 
@@ -143,7 +143,8 @@ sPlanCh = NFTools.getSamplePlan(params.samplePlan, params.reads, params.readPath
 
 // Workflows
 include { fastqScreenFlow } from './nf-modules/local/subworkflow/fastqScreen'
-include { trimmingFlow } from './nf-modules/local/subworkflow/trimming'
+include { trimgaloreFlow } from './nf-modules/local/subworkflow/trimgalore'
+include { fastpFlow } from './nf-modules/local/subworkflow/fastp'
 
 // Processes
 include { getSoftwareVersions } from './nf-modules/common/process/utils/getSoftwareVersions'
@@ -186,11 +187,27 @@ workflow {
     */
 
     // SUBWORKFLOW: Trimming
-    trimmingFlow(
-      rawReadsCh
-    )
-    versionsCh = versionsCh.mix(trimmingFlow.out.versions)
-    trimReadsCh = trimmingFlow.out.fastq 
+    if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
+      trimgaloreFlow(
+        rawReadsCh
+      )
+      versionsCh = versionsCh.mix(trimgaloreFlow.out.versions)
+      trimReadsCh = trimgaloreFlow.out.fastq
+      trimMqcCh = trimgaloreFlow.out.mqc
+      trimStatsCh = trimgaloreFlow.out.stats
+    }
+    if ( params.trimTool == "fastp" && !params.skipTrimming){
+      fastpFlow(
+        rawReadsCh
+      )
+      versionsCh = versionsCh.mix(fastpFlow.out.versions)
+      trimReadsCh = fastpFlow.out.fastq
+      trimMqcCh = fastpFlow.out.mqc
+      trimStatsCh = fastpFlow.out.stats
+    }
+    if (params.skipTrimming){
+      trimReadsCh = rawReadsCh
+    }
     
     /*
     ======================================
@@ -237,8 +254,8 @@ workflow {
         metadataCh.ifEmpty([]),
         multiqcConfigCh.ifEmpty([]),
         fastqcRaw.out.results.collect().ifEmpty([]),
-	trimmingFlow.out.mqc.collect().ifEmpty([]),
-	trimmingFlow.out.stats.collect().ifEmpty([]),
+	trimMqcCh.collect().ifEmpty([]),
+	trimStatsCh.collect().ifEmpty([]),
 	fastqcTrim.out.results.collect().ifEmpty([]),
         xengsort.out.logs.collect().ifEmpty([]),
         fastqScreenFlow.out.mqc.ifEmpty([]),

@@ -3,15 +3,14 @@
  */
 
 include { trimGalore } from '../../common/process/trimGalore/trimGalore' 
-include { fastp } from '../../common/process/fastp/fastp'
 include { cutadapt as cutLinker } from '../../common/process/cutadapt/cutadapt'
 include { cutadapt as cutPolyA } from '../../common/process/cutadapt/cutadapt'
-include { extractTrimmingSummary as trimmingSummary3p } from '../../local/process/extractTrimmingSummary'
-include { extractTrimmingSummary as trimmingSummary5p } from '../../local/process/extractTrimmingSummary'
-include { extractTrimmingSummary as trimmingSummaryPolyA } from '../../local/process/extractTrimmingSummary'
+include { trimmingSummary as trimmingSummary3p } from '../../local/process/trimmingSummary'
+include { trimmingSummary as trimmingSummary5p } from '../../local/process/trimmingSummary'
+include { trimmingSummary as trimmingSummaryPolyA } from '../../local/process/trimmingSummary'
 include { trimmingStats } from '../../local/process/trimmingStats'
 
-workflow trimmingFlow {
+workflow trimgaloreFlow {
 
   take:
   reads
@@ -28,29 +27,17 @@ workflow trimmingFlow {
    =======================================================
   */
 
-  if (params.trimTool == 'trimgalore'){
-    trimGalore(
-      reads
-    )
-    chVersions = chVersions.mix(trimGalore.out.versions)
-    ch3pTrimReads = trimGalore.out.fastq
-    ch3pTrimLogs = trimGalore.out.logs
-  }
-
-  if (params.trimTool == 'fastp'){
-    fastp(
-      reads
-    )
-    chVersions = chVersions.mix(fastp.out.versions)
-    ch3pTrimReads = fastp.out.fastq
-    ch3pTrimLogs = fastp.out.logs
-  }
+  trimGalore(
+    reads
+  )
+  chVersions = chVersions.mix(trimGalore.out.versions)
+  chTrimReads = trimGalore.out.fastq
 
   trimmingSummary3p(
-    ch3pTrimLogs
+    trimGalore.out.logs
   )
   chTrimMqc = chTrimMqc.mix(trimmingSummary3p.out.mqc)
-  chTrimLogs = chTrimLogs.mix(ch3pTrimLogs)   
+  chTrimLogs = chTrimLogs.mix(chTrimLogs)   
 
   /*
    ===========================
@@ -60,19 +47,16 @@ workflow trimmingFlow {
 
   if (params.adapter5 || params.smartSeqV4){
     cutLinker(
-      ch3pTrimReads
+      chTrimReads
     )
     chVersions = chVersions.mix(cutLinker.out.versions)
-    ch3p5pReadsCh = cutLinker.out.fastq
+    chTrimReads = cutLinker.out.fastq
 
     trimmingSummary5p(
       cutLinker.out.logs
     )
     chTrimMqc = chTrimMqc.mix(trimmingSummary5p.out.mqc)
     chTrimLogs = chTrimLogs.mix(cutLinker.out.logs)
-
-  }else{
-    ch3p5pReadsCh = ch3pTrimReads
   }
 
   /*
@@ -80,29 +64,27 @@ workflow trimmingFlow {
     Trim polyA tail
    ===================
   */
+
   if (params.polyA){
     cutPolyA(
-      ch3p5pReadsCh
+      chTrimReads
     )
     chVersions = chVersions.mix(cutPolyA.out.versions)
-    chFinalTrimReads = cutPolyA.out.fastq
+    chTrimReads = cutPolyA.out.fastq
     
     trimmingSummaryPolyA(
       cutPolyA.out.logs
     )
     chTrimMqc = chTrimMqc.mix(trimmingSummaryPolyA.out.mqc)
     chTrimLogs = chTrimLogs.mix(cutPolyA.out.logs)
-
-  }else{
-    chFinalTrimReads = ch3p5pReadsCh
   }
 
   trimmingStats(
-    reads.join(chFinalTrimReads)
+    reads.join(chTrimReads)
   )
 
   emit:
-  fastq = chFinalTrimReads
+  fastq = chTrimReads
   logs = chTrimLogs
   mqc = chTrimMqc
   stats = trimmingStats.out.csv

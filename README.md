@@ -115,7 +115,7 @@ REFERENCES:
 
 SKIP OPTIONS:
    --skipFastqcRaw              Disable FastQC
-   --skipFastqcScreen           Disable FastqcScreen
+   --skipFastqScreen            Disable FastqScreen
    --skipFastqcTrim             Disable FastQC
    --skipMultiqc                Disable MultiQC
    --skipTrimming               Disable Trimming

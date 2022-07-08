@@ -26,7 +26,7 @@ custom_data:
               Sample_name:
                 title: 'Sample Name'
                 placement: 10
-              NUmber_of_frag:
+              Number_of_frag:
                 title: 'Total Fragments'
                 format: '{:,.0f}'
                 placement: 20
@@ -64,7 +64,7 @@ custom_data:
                 format: '{:,.0f}'
                 placement: 80
               Number_trimmed:
-                title: 'Trimmed reads (%)'
+                title: 'Trimmed reads'
                 format: '{:.0f}'
                 hidden: true
                 placement: 90
@@ -115,7 +115,7 @@ custom_data:
     adapter:
          file_format: 'tsv'
          section_name: 'Adapters'
-         description: 'detected from the trimming report(s). Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail.'
+         description: 'detected from the trimming report(s). Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
          plot_type: 'table'
          pconfig:
             id: 'adapter'
@@ -137,7 +137,7 @@ custom_data:
               format: '{:,.0f}'
               placement: 50
             Qual_trimmed:
-              title: 'Quality trimmed (%)'
+              title: 'Quality trimmed R1 (%)'
               min: 0
               max: 100
               format: '{:,.1f}'
@@ -151,7 +151,7 @@ custom_data:
               suffix: '%'
               placement: 70
             Trimmed_reads:
-              title: 'Trimmed reads (%)'
+              title: 'Trimmed reads R1 (%)'
               min: 0
               max: 100
               format: '{:,.1f}'

@@ -13,8 +13,8 @@ process xengsort {
   path (index)
 
   output :
-  tuple val(meta),path("*graft*.fq.gz"), emit: fastqHuman
-  tuple val(meta),path("*host*.fq.gz"), emit: fastqMouse
+  tuple val(meta),path("*graft*.fastq.gz"), emit: fastqHuman
+  tuple val(meta),path("*host*.fastq.gz"), emit: fastqMouse
   path("*.log"), emit: logs
   path("versions.txt") , emit: versions
 
@@ -28,6 +28,8 @@ process xengsort {
   """
   echo "xengsort "\$(xengsort --version) > versions.txt
   xengsort classify -T ${task.cpus} --index ${index} ${inputs} --prefix ${prefix} ${args} > ${prefix}_xengsort.log
-  gzip *.fq
+  for f in *.fq; do mv -- "$f" "${f%.fq}.fastq"; done
+  gzip *.fastq
   """
+  }
 }
