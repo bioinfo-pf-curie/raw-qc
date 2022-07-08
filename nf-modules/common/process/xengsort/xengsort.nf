@@ -21,14 +21,17 @@ process xengsort {
   when:
   task.ext.when == null || task.ext.when
 
-  script :
+  script:
   def args = task.ext.args ?: ''
   def prefix = task.ext.prefix ?: "${meta.id}"
   def inputs = meta.singleEnd ? "--fastq <(zcat ${reads})" : "--fastq <(zcat ${reads[0]})  --pairs <(zcat ${reads[1]})"
   """
   echo "xengsort "\$(xengsort --version) > versions.txt
   xengsort classify -T ${task.cpus} --index ${index} ${inputs} --prefix ${prefix} ${args} > ${prefix}_xengsort.log
-  for f in *.fq; do mv -- "$f" "${f%.fq}.fastq"; done
+  for f in *.fq; do mv -- "\$f" "\${f%.fq}.fastq"; done
   gzip *.fastq
   """
 }
+
+
+//for f in *.fq; do mv -- "$f" "${f%.fq}.fastq"; done
