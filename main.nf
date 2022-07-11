@@ -263,7 +263,7 @@ workflow {
 	generalMetrics.out.csv.collect().ifEmpty([]),
 	fastqcTrim.out.results.collect().ifEmpty([]),
         xengsort.out.logs.collect().ifEmpty([]),
-        fastqScreenFlow.out.mqc.ifEmpty([]),
+        fastqScreenFlow.out.mqc.collect().ifEmpty([]),
 	getSoftwareVersions.out.versionsYaml.collect().ifEmpty([]),
 	workflowSummaryCh.collectFile(name: "workflow_summary_mqc.yaml"),
         warnCh.collect().ifEmpty([])
