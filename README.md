@@ -30,8 +30,8 @@ In addition, `raw-qc` also provides a few preset for automatic clipping:
 
 | Options                   | single-end                     | paired-end                               |
 |---------------------------|--------------------------------|------------------------------------------|
-| pico version2 (--picoV2)  |                                | R1: clip 3bp in 3' / R2: clip 3bp in 5'  |
-| RNA ligation (--rnaLig)   | R1: clip 1bp in 5' + 2bp in 3' | R1/R2 :  clip 1bp in 5' + 2bp in 3'      |
+| `--picoV2`                |                                | R1: clip 3bp in 3' / R2: clip 3bp in 5'  |
+| `--rnaLig`                | R1: clip 1bp in 5' + 2bp in 3' | R1/R2 :  clip 1bp in 5' + 2bp in 3'      |
 
 Additional available options:
 
@@ -47,13 +47,19 @@ The `cutadapt` can be defined directly using `--adapter5` option, or the followi
 
 | Options                   | single-end                     | paired-end                                                  |
 |---------------------------|--------------------------------|-------------------------------------------------------------|
-| smartSeqV4                | '-g AAGCAGTGGTATCAACGCAGAGTAC' | '-g AAGCAGTGGTATCAACGCAGAGTAC -G AAGCAGTGGTATCAACGCAGAGTAC' |
+| `--smartSeqV4`            | '-g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' | '-g AAGCAGTGGTATCAACGCAGAGTAC -G AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' |
 
 
 3. PolyA trimming
 
-Finally, for RNA-seq data, it can usually be useful to trim for polyA tail.  
-This step can specified using the option `--polyA`.
+Finally, for RNA-seq data, it can also be useful to trim for polyA tail.  
+
+Of note, for `fastp` the polyA trimming is performed using the `--polyX` option.
+Otherwise, `cutadapt` is run with the following options:
+
+| Options                   | single-end                     | paired-end                              |
+|---------------------------|--------------------------------|-----------------------------------------|
+| `--polyA`                 | '-a A{20} -g T{150}'           | '-a A{20} -g T{150} -A A{20} -G T{150}' |
 
 
 ### Pipline summary
