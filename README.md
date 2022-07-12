@@ -108,7 +108,7 @@ TRIMMING:
    --minLen    INTEGER                                       Minimum length of trimmed sequences
    --nTrim                                                   Trim poly-N sequence at the end of the reads
    --qualTrim  INTEGER                                       Minimum mapping quality for trimming
-   --tooColour                                               Trimming for NextSeq/NovaSeq sequencers
+   --twoColour                                               Trimming for NextSeq/NovaSeq sequencers
    --trimTool  STRING [trimgalore, fastp]                    Tool for 3prime adapter trimming and auto-detection
 
 PRESET:

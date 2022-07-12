@@ -140,7 +140,7 @@
       "group": "Trimming"
     },
     {
-      "name": "tooColour",
+      "name": "twoColour",
       "label": "Two colour seuencing mode",
       "usage": "Trimming for NextSeq/NovaSeq sequencers",
       "type": "boolean",
