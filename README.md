@@ -21,46 +21,17 @@ It comes with docker / singularity containers making installation trivial and re
 Several steps of trimming can be performed accord to the specified options.
 
 1. 3' adapter trimming (with `TrimGalore!` or `fastp`)
+2. 5' adapter trimming with `cutadapt`
+3. PolyA tail trimming (with `cutadapt` or `fastp`)
 
-The adapters can be automatically detected (default, `--adapter 'auto'`).  
-However, one can force the 3' adapter sequence by either specifying the type of library (`truseq`,`nextera`,`smallrna`), 
-or by directly specifying the trimming options (`--adapter '-a CTGTCTCTTATACACATCT'`).
+Additional options can be specified to define the type of sequencing, and the minimum quality/length threshold.
 
-In addition, `raw-qc` also provides a few preset for automatic clipping:
+In addition, `raw-qc` also provides a few presets for automatic clipping/trimming:
+- `--picoV2`, add 3/5prime end clipping
+- `--rnaLig`, add 3/5prime end clipping
+- `--smartSeqV4`, remove 5prime linker
 
-| Options                   | single-end                     | paired-end                               |
-|---------------------------|--------------------------------|------------------------------------------|
-| `--picoV2`                |                                | R1: clip 3bp in 3' / R2: clip 3bp in 5'  |
-| `--rnaLig`                | R1: clip 1bp in 5' + 2bp in 3' | R1/R2 :  clip 1bp in 5' + 2bp in 3'      |
-
-Additional available options:
-
-* `--nTrim` - trim N at both read ends
-* `--twoColour` - for two colours sequencing technologies (Novaseq/Nextseq)
-* `--qualTrim` - Minimum base quality (default 20)
-* `--minLen` - Minimum read size (default 10)
-
-2. 5' adapter (linkers)
-
-In addition to 3' end adapter, some protocols can require linkers (such as TSO) which has to be removed from the 5' end of reads.  
-The `cutadapt` can be defined directly using `--adapter5` option, or the following preset
-
-| Options                   | single-end                     | paired-end                                                  |
-|---------------------------|--------------------------------|-------------------------------------------------------------|
-| `--smartSeqV4`            | '-g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' | '-g AAGCAGTGGTATCAACGCAGAGTAC -G AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' |
-
-
-3. PolyA trimming
-
-Finally, for RNA-seq data, it can also be useful to trim for polyA tail.  
-
-Of note, for `fastp` the polyA trimming is performed using the `--polyX` option.
-Otherwise, `cutadapt` is run with the following options:
-
-| Options                   | single-end                     | paired-end                              |
-|---------------------------|--------------------------------|-----------------------------------------|
-| `--polyA`                 | '-a A{20} -g T{150}'           | '-a A{20} -g T{150} -A A{20} -G T{150}' |
-
+See the [usage](docs/usage.md) page for details.
 
 ### Pipline summary
 
