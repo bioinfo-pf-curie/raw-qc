@@ -22,11 +22,11 @@ The directories listed below will be created in the output directory after the p
 **Output directory: `trimming`**
 
 * `sample_trimmed_R[1,2].gz`
-  * trimmed Reads [1,2] . 
-* `sample.json`
-  * report JSON format result for further interpreting..
-* `sample.log`
-  * statistical reports.
+  * trimmed Reads [1,2]. Note that the final name of the output file can vary according to the number of trimming steps wich is performed. The name of the output files usually reflects the last trimming step performed. 
+* `logs/`
+  * logs files
+* `stats/`
+  * summary of the trimming statistics
 
 ### Fastp
 [Fastp] (https://github.com/OpenGene/fastp) is another tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
@@ -34,28 +34,11 @@ The directories listed below will be created in the output directory after the p
 **Output directory: `trimming`**
 
 * `sample_trimmed_R[1,2].gz`
-  * trimmed Reads [1,2] . 
-* `sample.json`
-  * report JSON format result for further interpreting..
-* `sample.log`
-  * statistical reports.
-
-
-### Atropos
-
-[Atropos](https://github.com/jdidion/atropos) is tool for specific, sensitive, and speedy trimming of NGS reads.
-
-**Output directory: `trimming`**
-
-* `sample_trimmed_R[1,2].gz`
-  * trimmed Reads [1,2] . 
-* `sample.json`
-  * report JSON format result for further interpreting..
-* `sample.log`
-  * statistical reports.
-
-The `General Metrics` are presented in the MultiQC report as a statistical information on sequences before and after trimming.
-
+  * trimmed Reads [1,2]. 
+* `logs/`
+  * logs files
+* `stats/`
+  * summary of the trimming statistics
 
 ## Sequencing quality
 
@@ -85,6 +68,25 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 * `sample_trimmed_R[1,2].tagged_filter.fastq.gz`
   * a library of sequences in Fastq format against a set of sequence databases.
 
+## PDX
+
+If the `--pdx` option is specified, the pipeline will run `xengsort` to separate Human and Mouse reads in distinct fastq files.
+
+**Output directory: `xengsort`**
+
+* `*graft*fastq.gz`
+  * Graft fastq files (i.e *human* data)
+* `*host*fastq.gz`
+  * Host fastq files (i.e *mouse* data)
+* `logs/`
+  * logs files
+
+## General metrics
+
+In order to perform the `MultiQC` report, the pipeline will first compute a few general metrics such as the
+number of sequenced fragments, the reads length before and after trimming and the statistics of trimmed reads.
+
+**Output directory: `stats`**
 
 ## MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available within the report data directory.
