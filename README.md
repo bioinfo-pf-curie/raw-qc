@@ -18,13 +18,13 @@ It comes with docker / singularity containers making installation trivial and re
 
 ### 3'/5' adapter Trimming
 
-Several steps of trimming can be performed accord to the specified options.
+Several steps of trimming can be performed according to the specified options.
 
 1. 3' adapter trimming (with `TrimGalore!` or `fastp`)
 2. 5' adapter trimming with `cutadapt`
 3. PolyA tail trimming (with `cutadapt` or `fastp`)
 
-Additional options can be specified to define the type of sequencing, and the minimum quality/length threshold.
+Additional options can be specified to define the type of sequencing and the minimum quality/length thresholds.
 
 In addition, `raw-qc` also provides a few presets for automatic clipping/trimming:
 - `--picoV2`, add 3/5prime end clipping
@@ -32,6 +32,12 @@ In addition, `raw-qc` also provides a few presets for automatic clipping/trimmin
 - `--smartSeqV4`, remove 5prime linker
 
 See the [usage](docs/usage.md) page for details.
+
+### PDX model
+
+In the context of Mouse xenograft samples, it is strongly recommanded to distinguish Mouse from Human reads in order to avoid data misalignment.
+To do so, `raw-qc` implements the [`xengsort`](https://gitlab.com/genomeinformatics/xengsort) tool (`--pdx`) which generates in output distinct fastq files for both genomes.
+These new fastq files can then be used for downstream alignment and analysis.
 
 ### Pipline summary
 
