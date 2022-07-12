@@ -104,30 +104,8 @@ Use this to specify a `sample plan` file instead of a regular expression to find
 The `sample plan` is a csv file with the following information (and no header) :
 
 ```
-Sample ID | Sample Name | /path/to/R1/fastq/file | /path/to/R2/fastq/file (for paired-end only)
+Sample ID,Sample Name,/path/to/R1/fastq/file,/path/to/R2/fastq/file (for paired-end only)
 ```
-
-### `--design`
-
-Specify a `design` file for extended analysis.
-
-```bash
---design 'path/to/data/design.csv'
-```
-
-The `design` is a custom csv file that list all experimental samples, their IDs, the associated control as well as any other useful metadata. It can contain any information you need during the analysis.
-The design is expected to be created with the following header :
-
-```bash
-SAMPLE_ID | VARIABLE1 | VARIABLE2
-```
-
-Importantly, defining a custom `design` file implies that you modify the variable `designHeader` in the `bin/apCheckDesign.py` script accordingly. For example: set `designHeader=['SAMPLE_ID', 'VARIABLE1', 'VARIABLE2']`. Modify also the `designCh` channel in the `main.nf` to use the custom information.
-
-
-
-The `--samplePlan` and the `--design` will be checked by the pipeline and have to be rigorously defined in order to make the pipeline work.
-If the `design` file is not specified, the pipeline will run over the first steps but the downstream analysis will be ignored.
 
 ## Inputs
 
@@ -187,14 +165,6 @@ Otherwise, `cutadapt` is run with the following options:
 
 ## Reference Genomes
 The pipeline config files come bundled with paths to the genomes reference files.
-
-You can find the keys to specify the genomes in the [genomes config file](../conf/genomes.config). Common genomes that are supported are:
-
-* Human
-* Mouse
-	
-> There are numerous others - check the config file for more.
-
 The syntax for this reference configuration is as follows:
 
 ```nextflow
@@ -283,8 +253,8 @@ Should be a string in the format integer-unit. eg. `--maxCpus 1`
 ### `--multiqcConfig`
 Specify a path to a custom MultiQC configuration file.
 
-## Profile parameters
 
+## Profile parameters
 
 ### `--condaCacheDir`
 
