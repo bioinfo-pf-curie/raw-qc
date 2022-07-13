@@ -242,7 +242,7 @@ workflow {
     }else{
       inputMetricsCh = rawReadsCh.join(trimReadsCh)
     }
-    inputMetricsCh.view()
+
     generalMetrics(
       inputMetricsCh
     )
