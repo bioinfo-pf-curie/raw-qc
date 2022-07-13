@@ -79,15 +79,10 @@ workflow trimgaloreFlow {
     chTrimLogs = chTrimLogs.mix(cutPolyA.out.logs)
   }
 
-//trimmingStats(
-//  reads.join(chTrimReads)
-//)
-
   emit:
   fastq = chTrimReads
   logs = chTrimLogs
   mqc = chTrimMqc
-//stats = trimmingStats.out.csv
   versions = chVersions
 }
 

@@ -43,7 +43,7 @@ include {checkAlignmentPercent} from './lib/functions'
 // Genome-based variables
 
 // Initialize variable from the genome.conf file
-params.indexXengsort = NFTools.getGenomeAttribute(params, 'xengsort', genome='pdx')
+params.xengsortIndex = NFTools.getGenomeAttribute(params, 'xengsort', genome='pdx')
 
 // Stage config files
 multiqcConfigCh = Channel.fromPath(params.multiqcConfig)
@@ -80,20 +80,10 @@ if (params.rnaLig && params.singleEnd){
 ==========================
 */
 
-if ( params.metadata ){
-  Channel
-    .fromPath( params.metadata )
-    .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
-    .set { metadataCh }
-}
-Channel
-  .of( params.genomes.fastqScreenGenomes )
-  .set{ fastqScreenGenomeCh }
+metadataCh           = params.metadata         ? Channel.fromPath(params.metadata, checkIfExists: true).collect()       : Channel.empty()
+pdxIndexCh           = params.xengsortIndex    ? Channel.fromPath(params.xengsortIndex, checkIfExists: true).collect()  : Channel.empty()
+fastqScreenGenomeCh  = Channel.of(params.genomes.fastqScreenGenomes)
 
-Channel
-  .fromPath( params.indexXengsort )
-  .ifEmpty { exit 1, "index file not found "}
-  .set { index }
 
 /*
 ===========================
@@ -185,24 +175,24 @@ workflow {
     */
 
     // SUBWORKFLOW: Trimming
-    if (params.skipTrimming){
-      trimReadsCh = rawReadsCh
-      trimMqcCh = Channel.empty()
-    }else if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
+
+    trimReadsCh = rawReadsCh
+    trimMqcCh = Channel.empty()
+    if ( params.trimTool == 'trimgalore' && !params.skipTrimming){
       trimgaloreFlow(
         rawReadsCh
       )
       versionsCh = versionsCh.mix(trimgaloreFlow.out.versions)
       trimReadsCh = trimgaloreFlow.out.fastq
       trimMqcCh = trimgaloreFlow.out.mqc
-     }else if ( params.trimTool == "fastp" && !params.skipTrimming){
+    }else if ( params.trimTool == "fastp" && !params.skipTrimming){
       fastpFlow(
         rawReadsCh
       )
       versionsCh = versionsCh.mix(fastpFlow.out.versions)
       trimReadsCh = fastpFlow.out.fastq
       trimMqcCh = fastpFlow.out.mqc
-     }
+    }
     
     /*
     ======================================
@@ -226,7 +216,7 @@ workflow {
     // PROCESS: xengsort
     xengsort(
       trimReadsCh,
-      index.collect()
+      pdxIndexCh.collect()
     )
     versionsCh = versionsCh.mix(xengsort.out.versions)
 
