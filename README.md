@@ -69,10 +69,9 @@ Launching `main.nf` [distracted_curie] - revision: dc75952132
 Usage:
 The typical command for running the pipeline is as follows:
 									   
-nextflow run main.nf --samplePlan PATH --profile STRING OPTIONS
+nextflow run main.nf --samplePlan PATH -profile STRING OPTIONS
 
 MANDATORY ARGUMENTS:
-   --profile    STRING [conda, cluster, docker, multiconda, conda, path, multipath, singularity]  Configuration profile to use. Can use multiple (comma separated).
    --reads      PATH                                                                              Path to input data (must be surrounded with quotes)
    --samplePlan PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
 
