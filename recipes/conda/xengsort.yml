@@ -10,6 +10,6 @@ dependencies:
   - conda-forge::numba=0.53.1=py37hb11d6e1_1
   - h5py=3.6.0=py37ha0f2276_0
   - conda-forge::pytest=7.1.2=py37h89c1867_0
-  - bioconda::sra-tools=2.11.0=pl5321ha49a11a_3
+  - bioconda::sra-tools=2.10=pl526he1b5a44_0
   - pip:
     - xengsort-cubic==1.1.0
