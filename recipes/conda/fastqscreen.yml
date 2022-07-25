@@ -1,4 +1,4 @@
-name: fastqScreen
+name: fastqscreen
 channels:
   - conda-forge
   - bioconda
