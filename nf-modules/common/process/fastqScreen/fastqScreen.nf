@@ -1,6 +1,6 @@
 process fastqScreen {
   tag "${meta.id}"
-  label 'fastqScreen'
+  label 'fastqscreen'
   label 'medCpu'
   label 'medMem'
 
