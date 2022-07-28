@@ -61,18 +61,18 @@ if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePla
 }
 
 // Protocols
-if (params.picoV2 && params.rnaLig){
-  exit 1, "Options '--picoV2', 'rnaLig' cannot be used together. Please choose one option"
-}
+//if (params.picoV2 && params.rnaLig){
+//  exit 1, "Options '--picoV2', 'rnaLig' cannot be used together. Please choose one option"
+//}
 
 // Not available for single-end
 if (params.picoV2 && params.singleEnd){
   exit 1, "Options '--picoV2' cannot be used with single-end data !"
 }
 
-if (params.rnaLig && params.singleEnd){
-  exit 1, "Options '--rnaLig' cannot be used with single-end data !"
-}
+//if (params.rnaLig && params.singleEnd){
+//  exit 1, "Options '--rnaLig' cannot be used with single-end data !"
+//}
 
 /*
 ==========================
