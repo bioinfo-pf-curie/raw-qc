@@ -26,6 +26,8 @@ custom_data:
               Sample_name:
                 title: 'Sample Name'
                 placement: 10
+                scale: false
+                format: '{:.0f}'
               Number_of_frag:
                 title: 'Total Fragments'
                 format: '{:,.0f}'
