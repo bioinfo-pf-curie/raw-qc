@@ -13,6 +13,9 @@ DEPRECATED
   - Atropos is not longer supported
   - Preset '--picoV1' is no longer supported
 
+BUG FIXES
+  - When sample names are numbers
+
 ***********************************
 version-2.2.0
 
