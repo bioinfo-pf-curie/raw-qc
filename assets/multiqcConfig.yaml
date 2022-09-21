@@ -15,7 +15,7 @@ custom_data:
     basic_metrics:
          file_format: 'csv'
          section_name: 'General Metrics'
-         description: 'Calculated quality metric from the raw-qc pipeline. Quality metrics are extracted from the FastQC module before trimming. The fraction of trimmed reads is computed as the fraction of trimmed reads with a size lower than before trimming. The discarded reads represent the reads/pairs with were too short after trimming.'
+         description: 'Calculated quality metric from the raw-qc pipeline. Quality metrics are extracted from the FastQC. The percentage of Q20 reads is calculated after trimming. The discarded reads represent the reads/pairs which were too short after trimming.'
          plot_type: 'table'
          pconfig:
             id: 'stats'
@@ -47,31 +47,31 @@ custom_data:
                 title: 'Total base'
                 format: '{:,.0f}'
                 placement: 50
+              Trimmed_Mean_length:
+                title: 'Mean length after trimming'
+                format: '{:,.0f}'
+                placement: 60
+              Number_trimmed:
+                title: 'Trimmed reads'
+                format: '{:.0f}'
+                hidden: true
+                placement: 70
+              Percent_trimmed:
+                title: 'Trimmed reads (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 80
               Q20_R1:
                 title: '>Q20 R1 (%)'
                 min: 0
                 max: 100
                 format: '{:,.1f}'
                 suffix: '%'
-                placement: 60
+                placement: 90
               Q20_R2:
                 title: '>Q20 R2 (%)'
-                min: 0
-                max: 100
-                format: '{:,.1f}'
-                suffix: '%'
-                placement: 70
-              Trimmed_Mean_length:
-                title: 'Mean length after trimming'
-                format: '{:,.0f}'
-                placement: 80
-              Number_trimmed:
-                title: 'Trimmed reads'
-                format: '{:.0f}'
-                hidden: true
-                placement: 90
-              Percent_trimmed:
-                title: 'Trimmed reads (%)'
                 min: 0
                 max: 100
                 format: '{:,.1f}'

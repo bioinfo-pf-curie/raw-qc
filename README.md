@@ -30,7 +30,7 @@ Additional options can be specified to define the type of sequencing and the min
 In addition, `raw-qc` also provides a few presets for automatic clipping/trimming:
 - `--picoV2`, add 3/5prime end clipping
 - `--rnaLig`, add 3/5prime end clipping
-- `--smartSeqV4`, remove 5prime linker
+- `--smartSeqV4`, remove 3/5prime adapters 
 
 See the [usage](docs/usage.md) page for details.
 

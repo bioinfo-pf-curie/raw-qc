@@ -3,8 +3,8 @@
  */
 
 include { trimGalore } from '../../common/process/trimGalore/trimGalore' 
-include { cutadapt as cutLinker } from '../../common/process/cutadapt/cutadapt'
-include { cutadapt as cutPolyA } from '../../common/process/cutadapt/cutadapt'
+include { cutadapt as trimAdapter5p } from '../../common/process/cutadapt/cutadapt'
+include { cutadapt as trimPolyA } from '../../common/process/cutadapt/cutadapt'
 include { trimmingSummary as trimmingSummary3p } from '../../local/process/trimmingSummary'
 include { trimmingSummary as trimmingSummary5p } from '../../local/process/trimmingSummary'
 include { trimmingSummary as trimmingSummaryPolyA } from '../../local/process/trimmingSummary'
@@ -46,17 +46,17 @@ workflow trimgaloreFlow {
   */
 
   if (params.adapter5 || params.smartSeqV4){
-    cutLinker(
+    trimAdapter5p(
       chTrimReads
     )
-    chVersions = chVersions.mix(cutLinker.out.versions)
-    chTrimReads = cutLinker.out.fastq
+    chVersions = chVersions.mix(trimAdapter5p.out.versions)
+    chTrimReads = trimAdapter5p.out.fastq
 
     trimmingSummary5p(
-      cutLinker.out.logs
+      trimAdapter5p.out.logs
     )
     chTrimMqc = chTrimMqc.mix(trimmingSummary5p.out.mqc)
-    chTrimLogs = chTrimLogs.mix(cutLinker.out.logs)
+    chTrimLogs = chTrimLogs.mix(trimAdapter5p.out.logs)
   }
 
   /*
@@ -66,17 +66,17 @@ workflow trimgaloreFlow {
   */
 
   if (params.polyA){
-    cutPolyA(
+    trimPolyA(
       chTrimReads
     )
-    chVersions = chVersions.mix(cutPolyA.out.versions)
-    chTrimReads = cutPolyA.out.fastq
+    chVersions = chVersions.mix(trimPolyA.out.versions)
+    chTrimReads = trimPolyA.out.fastq
     
     trimmingSummaryPolyA(
-      cutPolyA.out.logs
+      trimPolyA.out.logs
     )
     chTrimMqc = chTrimMqc.mix(trimmingSummaryPolyA.out.mqc)
-    chTrimLogs = chTrimLogs.mix(cutPolyA.out.logs)
+    chTrimLogs = chTrimLogs.mix(trimPolyA.out.logs)
   }
 
   emit:

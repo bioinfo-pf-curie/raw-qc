@@ -32,16 +32,16 @@ do
     q20_R1='NA'
     q20_R2='NA'
 
-    if [[ $is_pe == "0" && -e fastqc/${sample}_fastqc.zip ]]; then
-	q20_R1=$(unzip -p fastqc/${sample}_fastqc.zip ${sample}_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
+    if [[ $is_pe == "0" && -e fastqc_trimmed/${sample}_fastqc.zip ]]; then
+	q20_R1=$(unzip -p fastqc_trimmed/${sample}_fastqc.zip ${sample}_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
 	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{printf "%.*f",2,s*100/nfrag }')
 	header="${header},Q20_R1"
 	output="${output},${q20_R1}"
 
-    elif [[ -e fastqc/${sample}_1_fastqc.zip && fastqc/${sample}_2_fastqc.zip ]]; then
-	q20_R1=$(unzip -p fastqc/${sample}_1_fastqc.zip ${sample}_1_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
+    elif [[ -e fastqc_trimmed/${sample}_1_fastqc.zip && fastqc_trimmed/${sample}_2_fastqc.zip ]]; then
+	q20_R1=$(unzip -p fastqc_trimmed/${sample}_1_fastqc.zip ${sample}_1_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
 	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{printf "%.*f",2,s*100/nfrag }')
-	q20_R2=$(unzip -p fastqc/${sample}_2_fastqc.zip ${sample}_2_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
+	q20_R2=$(unzip -p fastqc_trimmed/${sample}_2_fastqc.zip ${sample}_2_fastqc/fastqc_data.txt | sed -n "/^>>Per sequence quality scores/,/>>END_MODULE/p" \
 	    | awk -F"\t" -v qt=20 -v nfrag=${n_frag} '$1 ~ /^[0-9]+$/ && $1>=qt{s=s+$2}END{printf "%.*f",2,s*100/nfrag }')
 	header="${header},Q20_R1,Q20_R2"
 	output="${output},${q20_R1},${q20_R2}"

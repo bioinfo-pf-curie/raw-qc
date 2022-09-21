@@ -145,7 +145,7 @@ Additional available options:
 ### 5' adapter
 
 In addition to 3' end adapter, some protocols can require linkers (such as TSO) which has to be removed from the 5' end of reads.  
-The `cutadapt` can be defined directly using `--adapter5` option, or the following preset
+The `cutadapt` software can be defined directly using `--adapter5` option, or the following preset
 
 | Options                   | single-end                     | paired-end                                                  |
 |---------------------------|--------------------------------|-------------------------------------------------------------|
