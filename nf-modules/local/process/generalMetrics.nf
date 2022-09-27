@@ -4,7 +4,7 @@
 
 process generalMetrics {
   tag "${meta.id}"
-  label 'onlyLinux'
+  label 'onlylinux'
   label 'minCpu'
   label 'minMem'
 
