@@ -1,14 +1,12 @@
-name: python-3.7.10
+name: python
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-     - bioconda::atropos=1.1.29=py37hf01694f_0
-     - bioconda::pysam=0.16.0.1=py37h45aed0b_3
-     - conda-forge::matplotlib=3.4.2=py37h89c1867_0
-     - conda-forge::numpy=1.20.3=py37h038b26d_0
-     - conda-forge::pandas=1.2.5=py37h219a48f_0 
-     - conda-forge::python=3.7.10=hffdb5ce_100_cpython
-     - conda-forge::seaborn=0.11.1=hd8ed1ab_1 
-     - conda-forge::pymdown-extensions=7.1=pyh9f0ad1d_0
+  - conda-forge::python=3.7.10=hffdb5ce_100_cpython
+  - conda-forge::pip=22.1.2=pyhd8ed1ab_0
+  - conda-forge::pymdown-extensions=7.1=pyh9f0ad1d_0
+  - conda-forge::numpy=1.21.6=py37h976b520_0
+  - pip:
+    - biopython==1.79

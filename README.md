@@ -8,6 +8,7 @@
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 [![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
+
 ### Introduction
 
 The main goal of the `raw-qc` pipeline is to perform quality controls on raw sequencing reads, regardless the sequencing application.
@@ -16,90 +17,110 @@ It was designed to help sequencing facilities to validate the quality of the gen
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
 It comes with docker / singularity containers making installation trivial and results highly reproducible.
 
-### Short comparison of trimming tools
+### 3'/5' adapter Trimming
 
-By default, `raw-qc` is using `TrimGalore!` for quality and adapters trimming, but other tools are also available.
+Several steps of trimming can be performed according to the specified options.
 
-|                      | TrimGalore |  Fastp   | Atropos  |
-|----------------------|------------|----------|----------|
-| pico protocol        |  &#x2611;  | &#x2611; |          | 
-| 3'seq protocol       |  &#x2611;  |          | &#x2611; |
-| 2-colour support     |  &#x2611;  | &#x2611; | &#x2611; |
-| Min adapter overlap  |  &#x2611;  |          | &#x2611; |
-| Adapter detection    |  +++       | ++       | -        |
-| Poly N trimming      |  &#x2611;  |          | &#x2611; |
-| Speed                |  ++        | +++      | +        |
+1. 3' adapter trimming (with `TrimGalore!` or `fastp`)
+2. 5' adapter trimming with `cutadapt`
+3. PolyA tail trimming (with `cutadapt` or `fastp`)
 
+Additional options can be specified to define the type of sequencing and the minimum quality/length thresholds.
 
-**/!\ Because of serval issues found in the auto-detection mode of the Atropos software, the `detect` command has been removed from the pipeline. 
-It means that Atropos currently requires the specification of the adapter to remove (`--adapter`) to be used.**
+In addition, `raw-qc` also provides a few presets for automatic clipping/trimming:
+- `--picoV2`, add 3/5prime end clipping
+- `--rnaLig`, add 3/5prime end clipping
+- `--smartSeqV4`, remove 3/5prime adapters 
 
+See the [usage](docs/usage.md) page for details.
+
+### PDX model
+
+In the context of Mouse xenograft samples, it is strongly recommanded to distinguish Mouse from Human reads in order to avoid data misalignment.
+To do so, `raw-qc` implements the [`xengsort`](https://gitlab.com/genomeinformatics/xengsort) tool (`--pdx`) which generates in output distinct fastq files for both genomes.
+These new fastq files can then be used for downstream alignment and analysis.
 
 ### Pipline summary
 
 1. Run quality control of raw sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp) / [`Atropos`](http://gensoft.pasteur.fr/docs/atropos/1.1.18/guide.html))
+2. Trim sequencing adapters ([`TrimGalore!`](https://github.com/FelixKrueger/TrimGalore) / [`fastp`](https://github.com/OpenGene/fastp)
 3. Run quality control of trimmed sequencing reads ([`fastqc`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 4. Run first mapping screen on know references and sources of contamination ([`fastq Screen`](https://www.bioinformatics.babraham.ac.uk/projects/fastq_screen/))
-5. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
+5. Separate host/graft reads for PDX model ([`xengsort`](https://gitlab.com/genomeinformatics/xengsort))
+6. Present all QC results in a final report ([`MultiQC`](http://multiqc.info/))
 
 ### Quick help
 
 ```bash
-N E X T F L O W  ~  version 19.04.0
-Launching `main.nf` [cheesy_fermi] - revision: 8038a4770c
-raw-qc v1.2.0
-=======================================================
-	
+N E X T F L O W  ~  version 21.10.6
+Launching `main.nf` [distracted_curie] - revision: dc75952132
+------------------------------------------------------------------------
+
+  ______                      _____ _____ 
+  | ___ \                    |  _  /  __ \
+  | |_/ /__ ___      ________| | | | /  \/
+  |    // _  \ \ /\ / /______| | | | |    
+  | |\ \ (_| |\ V  V /       \ \/  / \__/\
+  \_| \_\__,_| \_/\_/         \_/\_\\____/
+			
+                v3.0.0
+------------------------------------------------------------------------
+							   
 Usage:
-nextflow run main.nf --reads '*_R{1,2}.fastq.gz' -profile conda
-nextflow run main.nf --samplePlan sample_plan -profile conda
-				
-Mandatory arguments:
---reads [file]                Path to input data (must be surrounded with quotes)
---samplePlan [file]           Path to sample plan input file (cannot be used with --reads)
--profile [str]                Configuration profile to use. test / conda / singularity / cluster (see below)
-									  
-Options:
---singleEnd [bool]            Specifies that the input is single end reads
---trimTool [str]              Specifies adapter trimming tool ['trimgalore', 'atropos', 'fastp']. Default is 'trimgalore'
-								  
-Trimming options:
---adapter [str]               Type of adapter to trim ['auto', 'truseq', 'nextera', 'smallrna']. Default is 'auto' for automatic detection
---qualTrim [int]              Minimum mapping quality for trimming. Default is '20'
---nTrim [bool]                Trim 'N' bases from either side of the reads
---twoColour [bool]            Trimming for NextSeq/NovaSeq sequencers
---minLen [int]                Minimum length of trimmed sequences. Default is '10'
-																						
-Presets:
---picoV1 [bool]               Sets version 1 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
---picoV2 [bool]               Sets version 2 for the SMARTer Stranded Total RNA-Seq Kit - Pico Input kit. Only for trimgalore and fastp
---rnaLig [bool]               Sets trimming setting for the stranded mRNA prep Ligation-Illumina. Only for trimgalore and fastp.
---polyA [bool]                Sets trimming setting for 3-seq analysis with polyA tail detection
-																													
-Other options:
---outDir [dir]                The output directory where the results will be saved
--name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
---metadata [file]             Add metadata file for multiQC report
-																																		  
-Skip options:
---skipFastqcRaw [bool]        Skip FastQC on raw sequencing reads
---skipTrimming [bool]         Skip trimming step
---skipFastqcTrim [bool]       Skip FastQC on trimmed sequencing reads
---skipFastqSreeen [bool]      Skip FastQScreen on trimmed sequencing reads
---skipMultiqc [bool]          Skip MultiQC step
-																																											
+The typical command for running the pipeline is as follows:
+									   
+nextflow run main.nf --samplePlan PATH -profile STRING OPTIONS
+
+MANDATORY ARGUMENTS:
+   --reads      PATH                                                                              Path to input data (must be surrounded with quotes)
+   --samplePlan PATH                                                                              Path to sample plan (csv format) with raw reads (if `--reads` is not specified)
+
+INPUTS:
+   --pdx                 Deconvolute host/graft reads for PDX samples
+   --singleEnd           For single-end input data
+	
+TRIMMING:
+   --adapter   STRING [auto, truseg, nextera, smallrna, *]   Type of 3prime adapter to trim
+   --adapter5  STRING                                        Specified cutadapt options for 5prime adapter trimming
+   --minLen    INTEGER                                       Minimum length of trimmed sequences
+   --nTrim                                                   Trim poly-N sequence at the end of the reads
+   --qualTrim  INTEGER                                       Minimum mapping quality for trimming
+   --twoColour                                               Trimming for NextSeq/NovaSeq sequencers
+   --trimTool  STRING [trimgalore, fastp]                    Tool for 3prime adapter trimming and auto-detection
+
+PRESET:
+   --picoV2               Preset of clipping parameters for picoV2 protocol
+   --polyA                Preset for polyA tail trimming
+   --rnaLig               Preset for RNA ligation protocol
+   --smartSeqV4           Preset for smartSeqV4 RNA-seq protocol
+
+REFERENCES:
+   --genomeAnnotationPath PATH   Path to genome annotations folder
+
+SKIP OPTIONS:
+   --skipFastqcRaw              Disable FastQC
+   --skipFastqScreen            Disable FastqScreen
+   --skipFastqcTrim             Disable FastQC
+   --skipMultiqc                Disable MultiQC
+   --skipTrimming               Disable Trimming
+
+OTHER OPTIONS:
+   --metadata      PATH     Specify a custom metadata file for MultiQC
+   --multiqcConfig PATH     Specify a custom config file for MultiQC
+   --name          STRING   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+   --outDir        PATH     The output directory where the results will be saved
+
 =======================================================
 Available Profiles
--profile test                 Run the test dataset
--profile conda                Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
--profile multiconda           Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
--profile path                 Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
--profile multipath            Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
--profile docker               Use the Docker images for each process
--profile singularity          Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
--profile cluster              Run the workflow on the cluster, instead of locally
-
+  -profile test                        Run the test dataset
+  -profile conda                       Build a new conda environment before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile multiconda                  Build a new conda environment per process before running the pipeline. Use `--condaCacheDir` to define the conda cache path
+  -profile path                        Use the installation path defined for all tools. Use `--globalPath` to define the insallation path
+  -profile multipath                   Use the installation paths defined for each tool. Use `--globalPath` to define the insallation path
+  -profile docker                      Use the Docker images for each process
+  -profile singularity                 Use the Singularity images for each process. Use `--singularityPath` to define the insallation path
+  -profile cluster                     Run the workflow on the cluster, instead of locally
+  
 ```
 
 ### Quick run
@@ -152,8 +173,7 @@ Here are a few examples of how to set the profile option. See the [full document
 
 A sample plan is a csv file (comma separated) that list all samples with their biological IDs, **with no header**.
 
-
-SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
+SAMPLE_ID,SAMPLE_NAME,PATH_TO_R1_FASTQ,[PATH_TO_R2_FASTQ]
 
 ### Full Documentation
 
@@ -165,7 +185,7 @@ SAMPLE_ID | SAMPLE_NAME | PATH_TO_R1_FASTQ | [PATH_TO_R2_FASTQ]
 
 ### Credits
 
-This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, S. Baulande, N. Servant)
+This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, F. Martin, S. Baulande, N. Servant)
 
 ### Contacts
 

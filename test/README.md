@@ -1,1 +1,18 @@
-Put here data such as the sample description or any other files needed to launch the test.
+## Dataset for operational testing
+
+### smartSeqV4
+NGS21-3900,D920,2015017
+NGS22-4322,L440,2015818
+
+### PDX
+NGS21-3972,D956,2015295
+
+### picoV2
+NGS22-4225,D1045,2015765
+
+### rnaLig
+NGS22-4263,D1056,2015815
+
+### 3'seq
+D1051,2015775
+

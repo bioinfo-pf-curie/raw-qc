@@ -1,4 +1,22 @@
 ***********************************
+version-3.0.0
+
+NEW FEATURES
+  - DSL2 version of raw-qc
+  - support PDX samples with Xengsort (--pdx)
+  - Support smartSeq v4 trimming
+  - Trim polyA with cutadapt instead of trimGalore
+  - Trim linter with cutadapt
+  - '--adapter' and '--adapter5' can support direct cutadapt options
+  
+DEPRECATED
+  - Atropos is not longer supported
+  - Preset '--picoV1' is no longer supported
+
+BUG FIXES
+  - When sample names are numbers
+
+***********************************
 version-2.2.0
 
 NEW FEATURES

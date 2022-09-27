@@ -13,6 +13,10 @@
 	* [`--design`](#--design) 
 * [Inputs](#inputs)
     * [`--singleEnd`](#--singleend)
+* [Trimming](#trimming)
+    * [3' adapter](#3adapter)
+	* [5' adapter](#5adapter)
+	* [polyA trimming](#polya-trimming)
 * [Reference genomes](#reference-genomes)
 * [Nextflow profiles](#nextflow-profiles)
 * [Job resources](#job-resources)
@@ -100,30 +104,8 @@ Use this to specify a `sample plan` file instead of a regular expression to find
 The `sample plan` is a csv file with the following information (and no header) :
 
 ```
-Sample ID | Sample Name | /path/to/R1/fastq/file | /path/to/R2/fastq/file (for paired-end only)
+Sample ID,Sample Name,/path/to/R1/fastq/file,/path/to/R2/fastq/file (for paired-end only)
 ```
-
-### `--design`
-
-Specify a `design` file for extended analysis.
-
-```bash
---design 'path/to/data/design.csv'
-```
-
-The `design` is a custom csv file that list all experimental samples, their IDs, the associated control as well as any other useful metadata. It can contain any information you need during the analysis.
-The design is expected to be created with the following header :
-
-```bash
-SAMPLE_ID | VARIABLE1 | VARIABLE2
-```
-
-Importantly, defining a custom `design` file implies that you modify the variable `designHeader` in the `bin/apCheckDesign.py` script accordingly. For example: set `designHeader=['SAMPLE_ID', 'VARIABLE1', 'VARIABLE2']`. Modify also the `designCh` channel in the `main.nf` to use the custom information.
-
-
-
-The `--samplePlan` and the `--design` will be checked by the pipeline and have to be rigorously defined in order to make the pipeline work.
-If the `design` file is not specified, the pipeline will run over the first steps but the downstream analysis will be ignored.
 
 ## Inputs
 
@@ -136,16 +118,53 @@ in quotation marks, can then be used for `--reads`. For example:
 --singleEnd --reads '*.fastq.gz'
 ```
 
+## Trimming
+
+### 3' adapter
+
+3' adapter trimming can be performed either with `TrimGalore!` or `fastp`.
+By default, the adapters are automatically detected (default, `--adapter 'auto'`).  
+
+However, the 3' adapter sequence to trim can be specified by either specifying the type of library (`truseq`,`nextera`,`smallrna`), 
+or by directly specifying the trimming options (`--adapter '-a CTGTCTCTTATACACATCT'`).
+
+In addition, `raw-qc` also provides a few preset for automatic clipping:
+
+| Options                   | single-end                     | paired-end                               |
+|---------------------------|--------------------------------|------------------------------------------|
+| `--picoV2`                |                                | R1: clip 3bp in 3' / R2: clip 3bp in 5'  |
+| `--rnaLig`                | R1: clip 1bp in 5' + 2bp in 3' | R1/R2 :  clip 1bp in 5' + 2bp in 3'      |
+
+Additional available options:
+
+* `--nTrim` - trim N at both read ends
+* `--twoColour` - for two colours sequencing technologies (Novaseq/Nextseq)
+* `--qualTrim` - Minimum base quality (default 20)
+* `--minLen` - Minimum read size (default 10)
+
+### 5' adapter
+
+In addition to 3' end adapter, some protocols can require linkers (such as TSO) which has to be removed from the 5' end of reads.  
+The `cutadapt` software can be defined directly using `--adapter5` option, or the following preset
+
+| Options                   | single-end                     | paired-end                                                  |
+|---------------------------|--------------------------------|-------------------------------------------------------------|
+| `--smartSeqV4`            | '-g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' | '-g AAGCAGTGGTATCAACGCAGAGTAC -G AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTAC -g AAGCAGTGGTATCAACGCAGAGTACGGG' |
+
+### PolyA trimming
+
+Finally, for RNA-seq data, it can also be useful to trim for polyA tail.  
+
+Of note, for `fastp` the polyA trimming is performed using the `--polyX` option.
+Otherwise, `cutadapt` is run with the following options:
+
+| Options                   | single-end                     | paired-end                              |
+|---------------------------|--------------------------------|-----------------------------------------|
+| `--polyA`                 | '-a A{20} -g T{150}'           | '-a A{20} -g T{150} -A A{20} -G T{150}' |
+
+
 ## Reference Genomes
 The pipeline config files come bundled with paths to the genomes reference files.
-
-You can find the keys to specify the genomes in the [genomes config file](../conf/genomes.config). Common genomes that are supported are:
-
-* Human
-* Mouse
-	
-> There are numerous others - check the config file for more.
-
 The syntax for this reference configuration is as follows:
 
 ```nextflow
@@ -234,8 +253,8 @@ Should be a string in the format integer-unit. eg. `--maxCpus 1`
 ### `--multiqcConfig`
 Specify a path to a custom MultiQC configuration file.
 
-## Profile parameters
 
+## Profile parameters
 
 ### `--condaCacheDir`
 

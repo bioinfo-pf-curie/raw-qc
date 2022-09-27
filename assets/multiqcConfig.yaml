@@ -1,0 +1,373 @@
+#
+# Raw-QC config for MultiQC
+#
+#################################################################
+
+skip_generalstats: true
+read_count_multiplier: 0.000001
+read_count_prefix: 'M'
+read_count_desc: 'millions'
+
+###################################
+## Custom content
+
+custom_data:
+    basic_metrics:
+         file_format: 'csv'
+         section_name: 'General Metrics'
+         description: 'Calculated quality metric from the raw-qc pipeline. Quality metrics are extracted from the FastQC. The percentage of Q20 reads is calculated after trimming. The discarded reads represent the reads/pairs which were too short after trimming.'
+         plot_type: 'table'
+         pconfig:
+            id: 'stats'
+            title: 'Basic Metrics'
+            save_file: true
+            col1_header: 'Sample ID'
+         headers:
+              Sample_name:
+                title: 'Sample Name'
+                placement: 10
+                scale: false
+                format: '{:.0f}'
+              Number_of_frag:
+                title: 'Total Fragments'
+                format: '{:,.0f}'
+                placement: 20
+              Sample_representation:
+                title: 'Sample fraction (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 30
+              Mean_length:
+                title: 'Mean length'
+                format: '{:,.0f}'
+                placement: 40
+              Total_base:
+                title: 'Total base'
+                format: '{:,.0f}'
+                placement: 50
+              Trimmed_Mean_length:
+                title: 'Mean length after trimming'
+                format: '{:,.0f}'
+                placement: 60
+              Number_trimmed:
+                title: 'Trimmed reads'
+                format: '{:.0f}'
+                hidden: true
+                placement: 70
+              Percent_trimmed:
+                title: 'Trimmed reads (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 80
+              Q20_R1:
+                title: '>Q20 R1 (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 90
+              Q20_R2:
+                title: '>Q20 R2 (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 100
+              Number_discarded:
+                title: 'Discared reads'
+                format: '{:.0f}'
+                hidden: true
+                placement: 110
+              Percent_discarded:
+                title: 'Discarded reads (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 120
+              Number_pdx_graft:
+                title: 'PDX Graft'
+                format: '{:.0f}'
+                hidden: true
+                placement: 130
+              Percent_pdx_graft:
+                title: 'PDX Graft (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 140
+              Number_pdx_host:
+                title: 'PDX Host'
+                format: '{:.0f}'
+                hidden: true
+                placement: 150
+              Percent_pdx_host:
+                title: 'PDX Host (%)'
+                min: 0
+                max: 100
+                format: '{:,.1f}'
+                suffix: '%'
+                placement: 160
+
+    adapter_cutadapt:
+         file_format: 'tsv'
+         section_name: 'Adapters'
+         description: 'detected from the trimming report(s) with trimgalore/cutadapt. Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter, 5p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
+         plot_type: 'table'
+         pconfig:
+            id: 'adapter'
+            title: 'Adapter'
+            col1_header: 'Id'
+         headers:
+            Adapter:
+              title: "Adapter1"
+              scale: false
+              format: '{:.0f}'
+              placement: 20
+            Adapter_2:
+              title: "Adapter2"
+              scale: false
+              format: '{:.0f}'
+              placement: 30
+            Qual_trimmed:
+              title: 'Quality trimmed R1 (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 60
+            Qual_trimmed_2:
+              title: 'Quality trimmed R2 (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 70
+            Trimmed_reads:
+              title: 'Trimmed reads R1 (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 80
+            Trimmed_reads_2:
+              title: 'Trimmed reads R2 (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 90
+            Too_short:
+              title: 'Too short (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 100
+
+    adapter_fastp:
+         file_format: 'tsv'
+         section_name: 'Adapters'
+         description: 'detected from the trimming report(s) with fastp. Each line represents a trimming step for a given sample. At most, the pipeline can try to detect 3p adapter and polyA tail. Too short reads or read pairs are discarded because unlikely to map on a reference genome.'
+         plot_type: 'table'
+         pconfig:
+            id: 'adapter'
+            title: 'Adapter'
+            col1_header: 'Id'
+         headers:
+            Adapter:
+              title: "Adapter1"
+              scale: false
+              format: '{:.0f}'
+              placement: 20
+            Adapter_2:
+              title: "Adapter2"
+              scale: false
+              format: '{:.0f}'
+              placement: 30
+            Qual_trimmed:
+              title: 'Quality trimmed (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 60
+            Trimmed_reads:
+              title: 'Trimmed reads (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 80
+            PolyX:
+              title: 'PolyX reads (%)'
+              min: 0
+              max: 0
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 90
+            Too_short:
+              title: 'Too short (%)'
+              min: 0
+              max: 100
+              format: '{:,.1f}'
+              suffix: '%'
+              placement: 100
+
+    xengsort:
+       file_format: 'tsv'
+       section_name: 'Xengsort'
+       description: 'is a fast lightweight accurate xenograft sorting able to distinguish host (ie. Mouse) to graft (ie. Human) sequencing reads.'
+       plot_type: 'bargraph'
+       pconfig:
+            namespace: 'xengsort'
+            id: 'xengsort'
+            title: 'PDX'
+            ylab: 'Number of reads'
+            scale: 'Pastel1'
+
+sp:
+    basic_metrics:
+        fn: '*mq.stats'
+    adapter_cutadapt:
+        fn: '*_cutadapt_metrics.trim.tsv'
+    adapter_fastp:
+        fn: '*_fastp_metrics.trim.tsv'
+    xengsort:
+        fn: '*_xengsort.log'
+
+table_cond_formatting_rules:
+    Q20_R1:
+        pass:
+            - gt: 94
+        warn:
+            - lt: 95
+        fail:
+            - lt: 90
+    Q20_R2:
+        pass:
+            - gt: 94
+        warn:
+            - lt: 95
+        fail:
+            - lt: 90
+    Qual_trimmed:
+        pass:
+            - lt: 5
+        warn:
+            - gt: 4
+        fail:
+            - gt: 10
+    Qual_trimmed_2:
+        pass:
+            - lt: 5
+        warn:
+            - gt: 4
+        fail:
+            - gt: 10
+    Trimmed_reads:
+        pass:
+            - lt: 20
+        warn:
+            - gt: 19
+    Trimmed_reads_2:
+        pass:
+            - lt: 20
+        warn:
+            - gt: 19
+    Too_short:
+        pass:
+            - lt: 6
+        warn:
+            - gt: 5
+        fail:
+            - gt: 20
+    Percent_discarded:
+        pass:
+            - lt: 6
+        warn:
+            - gt: 5
+        fail:
+            - gt: 20 
+    Percent_pdx_graft:
+        pass:
+            - gt: 69
+        warn:
+            - lt: 70
+        fail:
+            - lt: 30
+    Percent_pdx_host:
+        pass:
+            - lt: 31
+        warn:
+            - gt: 30
+        fail:
+            - gt: 50
+
+
+###############################
+## Modules
+
+module_order:
+    - fastqc:
+        name: 'FastQC (raw)'
+        anchor: "fastqc_raw"
+        info: 'This section of the report shows FastQC results before adapter trimming.'
+        target: ''
+        path_filters:
+            - '*_fastqc.zip'
+        path_filters_exclude:
+            - '*trimmed*fastqc.zip'
+    - cutadapt:
+        name: 'Trimming (TrimGalore!)'
+    - fastp:
+        name: 'Trimming (fastp)'
+    - fastqc:
+        name: 'FastQC (trimmed)'
+        anchor: "fastqc_trimmed"
+        info: 'This section of the report shows FastQC results after adapter trimming.'
+        path_filters:
+              - '*trimmed*fastqc.zip'
+    - fastq_screen:
+        name: 'Fastq screen'
+
+#############################
+## Display
+
+remove_sections:
+  - fastqc_raw_fastqc_overrepresented_sequences
+  - fastqc_raw_fastqc_status_checks
+  - fastqc_raw_fastqc_sequence_counts
+  - fastqc_raw_fastqc_sequence_duplication_levels
+  - fastqc_trimmed_fastqc_overrepresented_sequences
+  - fastqc_trimmed_fastqc_status_checks
+  - fastqc_trimmed_fastqc_sequence_counts
+  - fastqc_trimmed_fastqc_sequence_duplication_levels
+  - cutadapt_filtered_reads
+
+report_section_order:
+  basic_metrics:
+    order: -1000
+  adapter_cutadapt:
+    order: -2000
+  adapter_fastp:
+    order: -3000
+  fastqc_raw:
+    order: -4000
+  fastqc_trimmed:
+    order: -5000
+  fastq_screen:
+    order: -6000
+  xengsort:
+    order: -7000
+  software_versions:
+    order: -10000
+  summary:
+    order: -11000
+
+
