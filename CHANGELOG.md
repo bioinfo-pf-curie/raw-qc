@@ -1,4 +1,10 @@
 ***********************************
+version-3.0.1
+
+BUG FIXES
+  - Bug in FastqScreen (limited to 14 samples #80)
+
+***********************************
 version-3.0.0
 
 NEW FEATURES

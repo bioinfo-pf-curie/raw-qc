@@ -5,8 +5,8 @@ process fastqScreen {
   label 'medMem'
 
   input:
-  path(genomes)
   tuple val(meta), path(reads)
+  //path(genomes)
   path(config)
 
   output:

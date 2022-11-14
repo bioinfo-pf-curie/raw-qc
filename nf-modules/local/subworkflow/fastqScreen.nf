@@ -18,8 +18,8 @@ workflow fastqScreenFlow {
   )
 
   fastqScreen(
-    Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)}),
     reads,
+//  Channel.fromList(params.genomes.fastqScreenGenomes.values().collect{file(it)}),
     makeFastqScreenGenomeConfig.out.fastqScreenConfigCh.collect()
   )
   chVersions = chVersions.mix(fastqScreen.out.versions)
