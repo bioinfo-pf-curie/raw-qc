@@ -8,7 +8,7 @@ include { cutadapt as trimPolyA } from '../../common/process/cutadapt/cutadapt'
 include { trimmingSummary as trimmingSummary3p } from '../../local/process/trimmingSummary'
 include { trimmingSummary as trimmingSummary5p } from '../../local/process/trimmingSummary'
 include { trimmingSummary as trimmingSummaryPolyA } from '../../local/process/trimmingSummary'
-//include { trimmingStats } from '../../local/process/trimmingStats'
+include { renameTrim } from '../../local/process/renameTrim'
 
 workflow trimgaloreFlow {
 
@@ -79,8 +79,18 @@ workflow trimgaloreFlow {
     chTrimLogs = chTrimLogs.mix(trimPolyA.out.logs)
   }
 
+  /*
+  ==================
+   Rename outputs
+  ==================
+  */
+
+  renameTrim(
+    chTrimReads
+  )
+
   emit:
-  fastq = chTrimReads
+  fastq = renameTrim.out.fastq
   logs = chTrimLogs
   mqc = chTrimMqc
   versions = chVersions
