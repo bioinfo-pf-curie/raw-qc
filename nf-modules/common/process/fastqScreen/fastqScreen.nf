@@ -6,7 +6,6 @@ process fastqScreen {
 
   input:
   tuple val(meta), path(reads)
-  //path(genomes)
   path(config)
 
   output:
