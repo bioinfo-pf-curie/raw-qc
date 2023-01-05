@@ -23,7 +23,7 @@ process renameTrim {
   
   if (meta.singleEnd){
   """
-  cp ${reads} ${prefix}_trimmed.fastq.gz
+  cp ${reads} ${prefix}_trimmed_R1.fastq.gz
   """
   }else{
   """
