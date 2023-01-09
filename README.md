@@ -3,11 +3,12 @@
 **Institut Curie - Nextflow raw-qc analysis pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
-[![MultiQC](https://img.shields.io/badge/MultiQC-1.8-blue.svg)](https://multiqc.info/)
-[![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.11-blue.svg)](https://multiqc.info/)
+[![Install with conda](https://img.shields.io/badge/install%20with-conda-brightgreen.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 [![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)
 
+[![DOI](https://zenodo.org/badge/228601234.svg)](https://zenodo.org/badge/latestdoi/228601234)
 
 ### Introduction
 
@@ -185,7 +186,9 @@ SAMPLE_ID,SAMPLE_NAME,PATH_TO_R1_FASTQ,[PATH_TO_R2_FASTQ]
 
 ### Credits
 
-This pipeline has been set up and written by the sequencing facility and the bioinformatics platform of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, F. Martin, S. Baulande, N. Servant)
+This pipeline has been set up and written by the sequencing and the bioinformatics core facilities of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, F. Martin, S. Baulande, N. Servant).  
+If you use this pipeline for your project, please cite it using the following doi: [10.5281/zenodo.7515639](https://zenodo.org/badge/latestdoi/228601234).
+Do not hesitate to use the Zenodo doi corresponding to the version you used !
 
 ### Contacts
 
