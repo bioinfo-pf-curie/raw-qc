@@ -186,8 +186,11 @@ SAMPLE_ID,SAMPLE_NAME,PATH_TO_R1_FASTQ,[PATH_TO_R2_FASTQ]
 
 ### Credits
 
-This pipeline has been set up and written by the sequencing and the bioinformatics core facilities of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, F. Martin, S. Baulande, N. Servant).  
-If you use this pipeline for your project, please cite it using the following doi: [10.5281/zenodo.7515639](https://zenodo.org/badge/latestdoi/228601234).
+This pipeline has been set up and written by the sequencing and the bioinformatics core facilities of the Institut Curie (T. Alaeitabar, D. Desvillechabrol, F. Martin, S. Baulande, N. Servant).
+
+### Citation
+
+If you use this pipeline for your project, please cite it using the following doi: [10.5281/zenodo.7515639](https://zenodo.org/badge/latestdoi/228601234).  
 Do not hesitate to use the Zenodo doi corresponding to the version you used !
 
 ### Contacts
