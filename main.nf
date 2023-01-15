@@ -92,7 +92,9 @@ fastqScreenGenomeCh  = Channel.of(params.genomes.fastqScreenGenomes)
 */
 
 summary = [
-  'Pipeline Release': workflow.revision ?: null,
+  'Pipeline' : workflow.manifest.name ?: null,
+  'Version': workflow.manifest.version ?: null,
+  'DOI': workflow.manifest.doi ?: null,
   'Run Name': customRunName,
   'Inputs' : params.samplePlan ?: params.reads ?: null,
   'Trimming' : params.trimTool,
