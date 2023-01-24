@@ -1,4 +1,10 @@
 ***********************************
+version-3.0.3
+
+SIGNIFICANT USER-VISIBLE CHANGES
+  - Move default time process to 12 hours instead of 2 hours
+
+***********************************
 version-3.0.2
 
 BUG FIXES
