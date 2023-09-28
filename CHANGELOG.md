@@ -1,4 +1,14 @@
 ***********************************
+version-3.0.4
+
+NEW FEATURES
+  - Update singularityRunOptions
+
+DOCUMENTATION
+  - DOI
+
+***********************************
+
 version-3.0.3
 
 SIGNIFICANT USER-VISIBLE CHANGES
