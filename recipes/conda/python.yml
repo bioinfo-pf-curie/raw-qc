@@ -4,9 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - conda-forge::python=3.7.10=hffdb5ce_100_cpython
-  - conda-forge::pip=22.1.2=pyhd8ed1ab_0
-  - conda-forge::pymdown-extensions=7.1=pyh9f0ad1d_0
-  - conda-forge::numpy=1.21.6=py37h976b520_0
-  - pip:
-    - biopython==1.79
+  - conda-forge::markdown==3.6=pyhd8ed1ab_0
+  - conda-forge::pymdown-extensions==10.12=pyhd8ed1ab_0
+  - conda-forge::biopython==1.84=py311h331c9d8_0
