@@ -4,4 +4,5 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - conda-forge::perl=5.32.1=7_hd590300_perl5
   - bioconda::fastqc=0.11.9=hdfd78af_1
