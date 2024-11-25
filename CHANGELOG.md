@@ -1,4 +1,11 @@
 ***********************************
+version-3.0.5
+
+NEW FEATURES
+  - Mise à jour de multiqc sur la version 1.25.1
+  - Mise à jour des recettes singularity python et fastqc
+
+***********************************
 version-3.0.4
 
 NEW FEATURES
